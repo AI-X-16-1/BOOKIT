@@ -14,5 +14,18 @@
  *
  * reviews.body 는 학생 본인에게만 보인다 — is_shared 를 켜지 않는 한
  * 교사도 보호자도 볼 수 없다 (CLAUDE.md §5).
+ *
+ * ⚠️ 아래 mock export 는 임시다. Supabase 연결 없이 목업대로 화면을 보기 위한 것이고,
+ *    실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
  */
-export {};
+
+export { WriteFlow } from "./components/WriteFlow";
+export { ReviewEditor, type ReviewEditorProps } from "./components/ReviewEditor";
+export {
+  delay,
+  submitReview,
+  writingHelper,
+  MOCK_BOOK,
+  MOCK_REVIEW,
+  MOCK_REVIEW_BODY,
+} from "./mock";
