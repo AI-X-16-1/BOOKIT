@@ -27,6 +27,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # typecheck 스크립트가 next typegen 을 먼저 돌린다.
+      # LayoutProps 같은 전역 타입은 Next 가 .next/types 에 생성하는 것이라
+      # 갓 체크아웃한 상태에서 tsc 만 돌리면 "Cannot find name 'LayoutProps'" 로 깨진다.
       - name: Typecheck
         run: npm run typecheck
 
