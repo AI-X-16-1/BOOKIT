@@ -132,12 +132,21 @@ $$;
 -- Postgres RLS 는 행 단위라 "reviews 를 읽되 body 만 못 본다"를 정책으로 쓸 수 없다.
 -- 그래서 교사에게는 위에서 행 접근 자체를 막고, 대신 필요한 컬럼만 담은 뷰를 준다.
 --
--- security_invoker = false: 뷰가 소유자 권한으로 돌아 아래 테이블의 RLS 를 우회한다.
--- 그래서 뷰 안에 is_teacher_of() 필터를 직접 넣는 게 필수다 — 이게 실질적인 접근 통제다.
--- 이 뷰들에는 body 와 answer 컬럼이 아예 없다.
+-- security_invoker = false 는 의도적이고, 바꾸면 안 된다 (github issue #3).
+-- true 로 바꾸려면 verifications 에 교사용 SELECT 정책이 필요한데,
+-- RLS 는 컬럼을 가리지 못하므로 그 순간 교사가 answer 원문을 읽게 된다 — CLAUDE.md §5 위반이다.
+-- 따라서 접근 통제는 뷰 정의문의 is_teacher_of() 필터가 전담한다.
+--
+-- 이 뷰를 고칠 때의 규칙:
+--   1. where is_teacher_of() 필터를 지우지 않는다.
+--   2. reviews.body, verifications.answer 등 학생 자유 서술 컬럼을 추가하지 않는다.
+--   3. 컬럼을 추가할 때마다 위 둘을 다시 확인한다.
+--
+-- security_barrier: 사용자가 넘긴 함수가 is_teacher_of() 필터보다 먼저 평가되어
+-- 남의 반 행을 엿보는 걸 막는다. definer 뷰에서는 이게 필터의 실질적인 뒷받침이다.
 
 create view v_teacher_student_progress
-with (security_invoker = false) as
+with (security_invoker = false, security_barrier = true) as
 select
   p.id                                        as student_id,
   p.display_name                              as name,
@@ -154,9 +163,19 @@ where is_teacher_of(p.id)
 group by p.id, p.display_name;
 
 comment on view v_teacher_student_progress is
-  '교사용 학생 진도. 독후감 본문과 답변 원문은 포함하지 않는다 (CLAUDE.md §5).';
+  '교사용 학생 진도. 독후감 본문과 답변 원문은 포함하지 않는다 (CLAUDE.md §5). '
+  'security definer 유지 필수 — invoker 로 바꾸면 교사가 verifications.answer 를 읽게 된다.';
 
-create view v_teacher_class_ranking
+-- ── 반 랭킹 뷰 ───────────────────────────────────────
+--
+-- 교사 대시보드와 학생 마이페이지의 반 순위가 함께 쓴다. 그래서 이름에 teacher 를 붙이지 않는다.
+--
+-- 여기서도 security_invoker = false 는 의도적이다. classes 는 RLS 상
+-- 교사에게 자기 반, 학생에게 소속 반만 보이므로 invoker 로 돌리면
+-- "반 대 반" 이라는 기능 자체가 성립하지 않는다.
+-- 대신 개인 식별 정보를 담지 않는 것이 이 뷰의 계약이다 — 학생 단위 컬럼을 추가하지 않는다.
+
+create view v_class_ranking
 with (security_invoker = false) as
 select
   c.id                                     as class_id,
@@ -168,8 +187,9 @@ left join class_members cm on cm.class_id = c.id
 left join verifications v  on v.student_id = cm.student_id
 group by c.id, c.school_name, c.grade_level, c.class_no;
 
-comment on view v_teacher_class_ranking is
-  '반 대 반 랭킹 집계. 개인 순위는 노출하지 않는다. 전체 반이 대상이라 별도 필터 없음.';
+comment on view v_class_ranking is
+  '반 대 반 랭킹 집계. 교사·학생 양쪽이 쓴다. 개인 순위와 학생 식별 컬럼은 노출하지 않는다. '
+  '전체 반이 대상이라 별도 필터 없음.';
 
 grant select on v_teacher_student_progress to authenticated;
-grant select on v_teacher_class_ranking    to authenticated;
+grant select on v_class_ranking            to authenticated;
