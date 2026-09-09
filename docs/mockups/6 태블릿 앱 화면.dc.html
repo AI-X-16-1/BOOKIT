@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #17161a; }
+  a { color: #ff8f75; text-decoration: none; }
+  a:hover { color: #ffb8a6; }
+</style>
+</helmet>
+
+<section style="display:flex; flex-direction:column; gap:56px; padding:80px; font-family:'Noto Sans KR',sans-serif;">
+  <div style="display:flex; flex-direction:column; gap:12px; max-width:900px;">
+    <div style="font-size:13px; letter-spacing:.18em; font-family:ui-monospace,monospace; color:#8f8a82;">WEB · 1024 × 768</div>
+    <div style="font-size:38px; font-weight:700; color:#f4f2ee;">6. 태블릿 앱 화면 (원본 재현)</div>
+    <div style="font-size:17px; line-height:1.7; color:#a9a49c;">태블릿 가로에서의 앱 전체 화면 세트입니다. 모바일 흐름과 같은 기능을 넓은 화면 배치로 보여줍니다. (1024 × 768)</div>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(2, 1024px); column-gap:80px; row-gap:120px; justify-content:start;">
+    <div id="tablet-app-1" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">1.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">로그인</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; position:relative; box-shadow:0 20px 50px rgba(0,0,0,.45); background-color:#fdf6ec; background-image:repeating-linear-gradient(#fdf6ec 0 31px,#f4e5d1 31px 32px); display:flex; align-items:center; justify-content:center;">
+        <div style="position:absolute; left:96px; top:52px; width:100px; height:22px; background:#ffd866; transform:rotate(-4deg);"></div>
+        <div style="position:absolute; right:120px; bottom:74px; width:110px; height:24px; background:#7cbbe6; transform:rotate(-4deg);"></div>
+        <div style="position:absolute; right:158px; top:98px; color:#ff6b4a; font-size:22px;">★</div>
+        <div style="position:absolute; left:114px; bottom:118px; color:#3fa778; font-size:20px;">★</div>
+        <div style="position:relative; width:400px; background:#fffdf9; border-radius:24px; padding:44px 40px; box-shadow:0 12px 34px rgba(90,66,40,.10); display:flex; flex-direction:column; align-items:center; gap:0;">
+          <div style="width:64px; height:64px; border-radius:18px; background:#2e241d; display:flex; align-items:center; justify-content:center; color:#fdf6ec; font-size:26px; font-weight:700;">▯▯</div>
+          <div style="height:18px;"></div>
+          <div style="font-size:29px; font-weight:700; color:#2e241d;">책잇</div>
+          <div style="height:8px;"></div>
+          <div style="font-size:14px; color:#9a8b7c;">네가 진짜 읽었는지, 밑줄로 증명해봐</div>
+          <div style="height:32px;"></div>
+          <div style="width:100%; border:1px solid #ecdfcd; border-radius:14px; padding:16px; display:flex; align-items:center; justify-content:center; gap:10px; background:#fff;">
+            <div style="width:19px; height:19px; border-radius:50%; background:conic-gradient(#ea4335 0 25%,#fbbc05 0 50%,#34a853 0 75%,#4285f4 0);"></div>
+            <span style="font-size:15px; font-weight:700; color:#3c3229;">Google로 시작하기</span>
+          </div>
+          <div style="height:22px;"></div>
+          <div style="font-size:13px; color:#a99a89;">학년과 학교는 로그인 다음에 정해요 ✎</div>
+        </div>
+      </div>
+      
+    </div>
+    <div id="tablet-app-2" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">2.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">학년 · 학교 설정</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; position:relative; box-shadow:0 20px 50px rgba(0,0,0,.45); background-color:#fdf6ec; background-image:repeating-linear-gradient(#fdf6ec 0 31px,#f4e5d1 31px 32px); display:flex; align-items:center; justify-content:center;">
+        <div style="position:absolute; left:132px; top:82px; color:#4a9fd8; font-size:22px;">★</div>
+        <div style="position:absolute; right:140px; bottom:96px; width:100px; height:22px; background:#ffd866; transform:rotate(-5deg);"></div>
+        <div style="position:relative; width:460px; background:#fffdf9; border-radius:24px; padding:36px 40px; box-shadow:0 12px 34px rgba(90,66,40,.10);">
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div style="width:44px; height:44px; border-radius:50%; background:#ffd866; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:#5d4a1c;">민</div>
+            <div>
+              <div style="font-size:21px; font-weight:700; color:#2e241d;">반가워요, 민경님!</div>
+              <div style="font-size:13px; color:#9a8b7c; margin-top:4px;">Google 계정으로 연결했어요 · 학년만 정하면 끝</div>
+            </div>
+          </div>
+          <div style="height:26px;"></div>
+          <div style="font-size:13px; font-weight:700; color:#7a6a5a;">학년을 골라줘</div>
+          <div style="height:8px;"></div>
+          <div style="border:1.5px solid #ff6b4a; border-radius:12px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; background:#fff;">
+            <span style="font-size:15px; color:#2e241d;">초등학교 5학년</span>
+            <span style="color:#a99a89; font-size:13px;">▾</span>
+          </div>
+          <div style="height:10px;"></div>
+          <div style="background:#fffdf9; border-radius:12px; display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">
+            <div style="background:#fdf0cd; border-radius:9px; padding:12px; text-align:center; font-size:13px; color:#7a6a5a;">초1</div>
+            <div style="background:#fdf0cd; border-radius:9px; padding:12px; text-align:center; font-size:13px; color:#7a6a5a;">초2</div>
+            <div style="background:#fdf0cd; border-radius:9px; padding:12px; text-align:center; font-size:13px; color:#7a6a5a;">초3</div>
+            <div style="background:#fdf0cd; border-radius:9px; padding:12px; text-align:center; font-size:13px; color:#7a6a5a;">초4</div>
+            <div style="background:#ff6b4a; border-radius:9px; padding:12px; text-align:center; font-size:13px; font-weight:700; color:#fff;">초5</div>
+            <div style="background:#fdf0cd; border-radius:9px; padding:12px; text-align:center; font-size:13px; color:#7a6a5a;">초6</div>
+            <div style="background:#fdf0cd; border-radius:9px; padding:12px; text-align:center; font-size:13px; color:#7a6a5a;">중1</div>
+            <div style="background:#fdf0cd; border-radius:9px; padding:12px; text-align:center; font-size:13px; color:#7a6a5a;">중2</div>
+            <div style="background:#fdf0cd; border-radius:9px; padding:12px; text-align:center; font-size:13px; color:#7a6a5a;">중3</div>
+          </div>
+          <div style="height:22px;"></div>
+          <div style="display:grid; grid-template-columns:1fr 92px; gap:14px; align-items:end;">
+            <div>
+              <div style="font-size:12px; color:#9a8b7c; margin-bottom:6px;">학교</div>
+              <div style="border:1px solid #ecdfcd; border-radius:10px; padding:14px 14px; font-size:15px; color:#2e241d; background:#fff;">한빛초등학교</div>
+            </div>
+            <div>
+              <div style="font-size:12px; color:#9a8b7c; margin-bottom:6px;">반</div>
+              <div style="border:1px solid #ecdfcd; border-radius:10px; padding:14px 14px; font-size:15px; color:#2e241d; background:#fff;">2반</div>
+            </div>
+          </div>
+          <div style="height:26px;"></div>
+          <div style="background:#2e241d; border-radius:14px; padding:18px; text-align:center; color:#fdf6ec; font-size:16px; font-weight:700;">책잇 시작하기</div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-3" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">3.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">홈 · 검색 추천</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#fdf6ec; display:flex;">
+        <div style="width:76px; flex:none; background:#2b211b; display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:14px;">
+          <div style="width:44px; height:44px; border-radius:14px; background:#ff6b4a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;">⌄</div>
+          <div style="height:6px;"></div>
+          <div style="width:44px; height:44px; border-radius:14px; background:#3d302810; display:flex; align-items:center; justify-content:center; color:#fdf6ec; font-size:19px; background:#3b2e26;">⌂</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">✎</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">◈</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">☺</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">▤</div>
+          <div style="flex:1;"></div>
+          <div style="width:40px; height:40px; border-radius:50%; background:#ffd866; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#5d4a1c;">민</div>
+        </div>
+        <div style="flex:1; padding:32px 40px; position:relative;">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:30px;">
+            <div>
+              <div style="font-size:27px; font-weight:700; color:#2e241d;">오늘도 책갈피 모으러 가볼까?</div>
+              <div style="font-size:13px; color:#9a8b7c; margin-top:8px;">7일째 연속으로 오고 있어요 🔥</div>
+            </div>
+            <div style="width:240px; flex:none;">
+              <div style="border:1.5px solid #ff6b4a; border-radius:12px; padding:12px 14px; background:#fff; display:flex; align-items:center; gap:8px; font-size:14px; color:#2e241d;">
+                <span style="color:#b3a494;">⌕</span><span>완</span><span style="color:#ff6b4a;">|</span>
+              </div>
+              <div style="margin-top:8px; background:#fff; border-radius:12px; box-shadow:0 10px 26px rgba(90,66,40,.12); overflow:hidden;">
+                <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:#fdf0cd;">
+                  <div style="width:26px; height:26px; border-radius:6px; background:#ff8a6b;"></div>
+                  <span style="font-size:14px; font-weight:700; color:#2e241d; flex:1;">완득이</span><span style="color:#b3a494;">›</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px; padding:12px 14px;">
+                  <div style="width:26px; height:26px; border-radius:6px; background:#7cbbe6;"></div>
+                  <span style="font-size:14px; color:#3c3229; flex:1;">완전한 어제</span><span style="color:#b3a494;">›</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="height:78px;"></div>
+          <div style="display:flex; align-items:baseline; gap:10px;">
+            <div style="font-size:16px; font-weight:700; color:#2e241d;">너를 위한 추천</div>
+            <div style="font-size:12px; color:#9a8b7c;">읽어온 장르 + 살짝 새로운 장르</div>
+          </div>
+          <div style="height:14px;"></div>
+          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">
+            <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:14px; padding:12px;">
+              <div style="height:104px; border-radius:10px; background:linear-gradient(160deg,#ff8a6b,#f5674a);"></div>
+              <div style="font-size:14px; font-weight:700; color:#2e241d; margin-top:12px;">완득이</div>
+              <div style="font-size:12px; color:#9a8b7c; margin-top:3px;">김려령</div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:12px;">
+                <span style="background:#fdf0cd; color:#8a7550; font-size:11px; border-radius:999px; padding:5px 9px;">성장소설</span>
+                <span style="background:#e2f4e9; color:#3f7f5c; font-size:11px; border-radius:999px; padding:5px 9px;">도서관 무료</span>
+                <span style="flex:1;"></span><span style="color:#b3a494;">›</span>
+              </div>
+            </div>
+            <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:14px; padding:12px;">
+              <div style="height:104px; border-radius:10px; background:linear-gradient(160deg,#63c99a,#3fa778);"></div>
+              <div style="font-size:14px; font-weight:700; color:#2e241d; margin-top:12px;">아몬드</div>
+              <div style="font-size:12px; color:#9a8b7c; margin-top:3px;">손원평</div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:12px;">
+                <span style="background:#fdf0cd; color:#8a7550; font-size:11px; border-radius:999px; padding:5px 9px;">성장소설</span>
+                <span style="flex:1;"></span><span style="color:#b3a494;">›</span>
+              </div>
+            </div>
+            <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:14px; padding:12px; position:relative;">
+              <div style="position:absolute; right:16px; top:16px; background:#7cbbe6; color:#fff; font-size:10px; font-weight:700; border-radius:999px; padding:5px 10px;">NEW 장르</div>
+              <div style="height:104px; border-radius:10px; background:linear-gradient(160deg,#8fc9ec,#5aa6dd);"></div>
+              <div style="font-size:14px; font-weight:700; color:#2e241d; margin-top:12px;">우주 쓰레기</div>
+              <div style="font-size:12px; color:#9a8b7c; margin-top:3px;">장이지</div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:12px;">
+                <span style="background:#e6eefb; color:#4a6b9c; font-size:11px; border-radius:999px; padding:5px 9px;">SF</span>
+                <span style="flex:1;"></span><span style="color:#b3a494;">›</span>
+              </div>
+            </div>
+            <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:14px; padding:12px;">
+              <div style="height:104px; border-radius:10px; background:linear-gradient(160deg,#b489d6,#9a6cc4);"></div>
+              <div style="font-size:14px; font-weight:700; color:#2e241d; margin-top:12px;">소나기</div>
+              <div style="font-size:12px; color:#9a8b7c; margin-top:3px;">황순원</div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:12px;">
+                <span style="background:#fdf0cd; color:#8a7550; font-size:11px; border-radius:999px; padding:5px 9px;">성장소설</span>
+                <span style="flex:1;"></span><span style="color:#b3a494;">›</span>
+              </div>
+            </div>
+          </div>
+          <div style="height:20px;"></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div style="background:#2b211b; border-radius:16px; padding:22px 24px; display:flex; align-items:center; gap:16px;">
+              <div style="flex:1;">
+                <div style="font-size:16px; font-weight:700; color:#fdf6ec;">이어서 쓰기</div>
+                <div style="font-size:12px; color:#b3a494; margin-top:5px;">아몬드 · 독후감 초고 저장됨</div>
+              </div>
+              <span style="color:#ff6b4a; font-size:20px;">→</span>
+            </div>
+            <div style="background:#fdf0cd; border-radius:16px; padding:22px 24px; display:flex; align-items:center; gap:16px;">
+              <div style="flex:1;">
+                <div style="font-size:16px; font-weight:700; color:#2e241d;">책잇 서재</div>
+                <div style="font-size:12px; color:#8a7550; margin-top:5px;">모르는 단어, 눌러서 바로 뜻보기</div>
+              </div>
+              <span style="color:#2e241d; font-size:20px;">→</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-4" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">4.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">외부 도서관 이동</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#2e241d; display:flex; position:relative;">
+        <div style="width:76px; flex:none; background:#3a2d25; padding:20px 0; display:flex; justify-content:center;">
+          <div style="width:44px; height:44px; border-radius:14px; background:#8a4835; display:flex; align-items:center; justify-content:center; color:#e6b9aa; font-size:18px;">⌄</div>
+        </div>
+        <div style="flex:1; display:flex; align-items:center; justify-content:center;">
+          <div style="width:420px; background:#fdf6ec; border-radius:22px; padding:32px; box-shadow:0 24px 60px rgba(0,0,0,.4); position:relative;">
+            <div style="position:absolute; right:26px; top:24px; color:#9a8b7c; font-size:15px;">✕</div>
+            <div style="display:flex; gap:16px; align-items:flex-start;">
+              <div style="width:56px; height:56px; border-radius:10px; background:linear-gradient(160deg,#ff8a6b,#f5674a); flex:none;"></div>
+              <div>
+                <div style="font-size:19px; font-weight:700; color:#2e241d;">완득이</div>
+                <div style="font-size:13px; color:#9a8b7c; margin-top:4px;">김려령 · 창비</div>
+                <div style="display:inline-block; margin-top:10px; background:#e2f4e9; color:#3f7f5c; font-size:11px; font-weight:700; border-radius:999px; padding:6px 11px;">무료 전자책 열람 가능</div>
+              </div>
+            </div>
+            <div style="height:22px;"></div>
+            <div style="background:#fffdf9; border-radius:14px; padding:20px;">
+              <div style="font-size:15px; font-weight:700; color:#2e241d;">국회전자도서관으로 이동해요</div>
+              <div style="font-size:13px; color:#8a7c6d; line-height:1.7; margin-top:8px;">책잇 안에서는 아직 못 읽고, 국회도서관 사이트에서 계속 읽는 방식이에요. 다 읽고 독후감 쓰러 다시 돌아오면 돼요!</div>
+            </div>
+            <div style="height:18px;"></div>
+            <div style="display:flex; align-items:center; gap:8px; font-size:12px; color:#9a8b7c;"><span>ⓘ</span><span>국회도서관 회원 로그인이 필요할 수 있어요</span></div>
+            <div style="height:16px;"></div>
+            <div style="background:#2e241d; border-radius:12px; padding:17px; text-align:center; color:#fdf6ec; font-size:15px; font-weight:700;">국회도서관에서 열기 ↗</div>
+            <div style="height:14px;"></div>
+            <div style="text-align:center; font-size:13px; color:#a99a89;">그냥 책잇에 남아있을래요</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-5" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">5.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">독후감 쓰기 + AI</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#fdf6ec; display:flex;">
+        <div style="width:76px; flex:none; background:#2b211b; display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:14px;">
+          <div style="width:44px; height:44px; border-radius:14px; background:#ff6b4a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;">⌄</div>
+          <div style="height:6px;"></div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">⌂</div>
+          <div style="width:44px; height:44px; border-radius:14px; background:#3b2e26; display:flex; align-items:center; justify-content:center; color:#fdf6ec; font-size:19px;">✎</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">◈</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">☺</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">▤</div>
+          <div style="flex:1;"></div>
+          <div style="width:40px; height:40px; border-radius:50%; background:#ffd866; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#5d4a1c;">민</div>
+        </div>
+        <div style="flex:1; padding:26px 30px; display:flex; gap:22px; min-width:0;">
+          <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:34px; height:34px; border-radius:8px; background:linear-gradient(160deg,#63c99a,#3fa778);"></div>
+              <div>
+                <div style="font-size:16px; font-weight:700; color:#2e241d;">아몬드 · 독후감</div>
+                <div style="font-size:12px; color:#9a8b7c; margin-top:2px;">손원평</div>
+              </div>
+            </div>
+            <div style="height:16px;"></div>
+            <div style="background:#fdf0cd; border-left:3px solid #ffd866; border-radius:10px; padding:14px 16px;">
+              <div style="font-size:13px; font-weight:700; color:#7a6320;">✎ 글쓰기 도우미</div>
+              <div style="font-size:13px; color:#8a7550; margin-top:6px;">가장 인상 깊었던 장면은? 그 장면에서 인물의 감정은 어떻게 바뀌었어?</div>
+            </div>
+            <div style="height:14px;"></div>
+            <div style="flex:1; background:#fffdf9; border:1px solid #f0e4d3; border-radius:12px; padding:24px 26px; font-size:14px; line-height:2.05; color:#3c3229;">
+              이 책에서 가장 기억에 남는 부분은 곤이와 윤재가 다시 만나는 장면이다. 나는 처음에 윤재가 감정을 잘 느끼지 못한다는 설정이 단순히 특이한 캐릭터를 위한 장치라고 생각했는데, 읽다 보니 그게 오히려 다른 사람들의 감정을 더 정확히 관찰하게 만드는 이유가 된다는 걸 알게 됐다. <span style="font-weight:700; border-bottom:2px solid #ff6b4a;">주인공은 결국 변화했다.</span> 나는 이 부분이 이 책에서 가장 인상 깊었다.<span style="color:#ff6b4a;">|</span>
+            </div>
+            <div style="height:12px;"></div>
+            <div style="display:flex; justify-content:space-between; font-size:12px;">
+              <span style="color:#a99a89;">초고 자동 저장됨 · 312자</span>
+              <span style="color:#ff6b4a;">→ 오른쪽에서 이해도 확인 중</span>
+            </div>
+          </div>
+          <div style="width:330px; flex:none; background:#2b211b; border-radius:16px; padding:22px; display:flex; flex-direction:column;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline;">
+              <span style="font-size:15px; font-weight:700; color:#fdf6ec;">책잇 AI가 물어봐</span>
+              <span style="font-size:14px; font-weight:700; color:#ffd866;">00:47</span>
+            </div>
+            <div style="height:10px;"></div>
+            <div style="height:3px; background:#463830; border-radius:999px;"><div style="width:55%; height:3px; background:#ff6b4a; border-radius:999px;"></div></div>
+            <div style="height:18px;"></div>
+            <div style="background:#3a2d25; border-radius:10px; padding:14px;">
+              <div style="font-size:11px; color:#a4917f;">네가 쓴 문장</div>
+              <div style="font-size:13px; color:#f0e6da; margin-top:6px;">"주인공은 결국 변화했다."</div>
+            </div>
+            <div style="height:12px;"></div>
+            <div style="background:#fffdf9; border-radius:10px; padding:16px; font-size:14px; line-height:1.65; color:#2e241d;">구체적으로 어떤 장면에서 그 변화가 가장 잘 드러났다고 생각해?</div>
+            <div style="height:12px;"></div>
+            <div style="flex:1; background:#3a2d25; border-radius:10px; padding:16px; font-size:13px; line-height:1.7; color:#e8dccd;">곤이가 다시 나타났을 때, 윤재가 예전처럼 아무렇지 않게<span style="color:#ff8f75;">|</span></div>
+            <div style="height:14px;"></div>
+            <div style="background:#ff6b4a; border-radius:10px; padding:15px; text-align:center; font-size:15px; font-weight:700; color:#fff;">답변 제출</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-6" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">6.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">이해도 확인 결과</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; position:relative; box-shadow:0 20px 50px rgba(0,0,0,.45); background-color:#fdf6ec; background-image:repeating-linear-gradient(#fdf6ec 0 31px,#f4e5d1 31px 32px); display:flex; align-items:center; justify-content:center;">
+        <div style="position:absolute; left:114px; top:74px; color:#ffc93c; font-size:20px;">★</div>
+        <div style="position:absolute; left:150px; bottom:96px; color:#4a9fd8; font-size:20px;">★</div>
+        <div style="position:relative; width:420px; background:#fffdf9; border-radius:22px; padding:32px; box-shadow:0 14px 38px rgba(90,66,40,.12);">
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div style="width:44px; height:44px; border-radius:9px; background:linear-gradient(160deg,#63c99a,#3fa778);"></div>
+            <div>
+              <div style="font-size:12px; color:#9a8b7c;">아몬드 · 독후감</div>
+              <div style="font-size:15px; font-weight:700; color:#2e241d; margin-top:3px;">AI 이해도 확인 결과</div>
+            </div>
+          </div>
+          <div style="height:26px;"></div>
+          <div style="position:absolute; right:-26px; top:-26px; width:86px; height:86px; border-radius:50%; background:#ffd866; border:3px dashed #fff8e2; display:flex; flex-direction:column; align-items:center; justify-content:center; transform:rotate(-8deg); box-shadow:0 8px 20px rgba(90,66,40,.18);">
+            <span style="font-size:17px; color:#7a6320;">★</span>
+            <span style="font-size:13px; font-weight:700; color:#5d4a1c;">완독</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div style="width:52px; height:52px; border-radius:50%; background:#3fa778; display:flex; align-items:center; justify-content:center; color:#fff; font-size:24px;">✓</div>
+            <div style="font-size:27px; font-weight:700; color:#2e241d;">완독! 통과했어요</div>
+          </div>
+          <div style="height:24px;"></div>
+          <div style="background:#fdf0cd; border-radius:12px; padding:16px 18px;">
+            <div style="font-size:13px; font-weight:700; color:#7a6320;">✎ 책잇 AI 피드백</div>
+            <div style="font-size:13px; color:#8a7550; line-height:1.7; margin-top:6px;">장면을 직접 근거로 들어서 구체적으로 설명했어요. 좋은 해석이에요!</div>
+          </div>
+          <div style="height:16px;"></div>
+          <div style="background:#2e241d; border-radius:12px; padding:20px 22px; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:15px; font-weight:700; color:#fdf6ec;">🔖 책갈피 획득</span>
+            <span style="font-size:22px; font-weight:700; color:#ff8f75;">+50</span>
+          </div>
+          <div style="height:14px;"></div>
+          <div style="text-align:center; font-size:13px; color:#8a7c6d;">7일째 연속으로 통과하고 있어요 🔥</div>
+          <div style="height:16px;"></div>
+          <div style="display:flex; gap:10px;">
+            <div style="flex:1; background:#ff6b4a; border-radius:12px; padding:17px; text-align:center; font-size:16px; font-weight:700; color:#fff;">다음 책 보러가기</div>
+            <div style="background:#2e241d; border-radius:12px; padding:17px 20px; display:flex; align-items:center; gap:8px; font-size:15px; font-weight:700; color:#fdf6ec;"><span>⤳</span><span>카드 공유</span></div>
+          </div>
+          <div style="height:14px;"></div>
+          <div style="text-align:center; font-size:13px; color:#a99a89;">내 독후감 다시 보기</div>
+        </div>
+        <div style="position:absolute; right:34px; bottom:110px; width:200px; background:#fffdf9; border-radius:14px; padding:18px; box-shadow:0 12px 30px rgba(90,66,40,.14);">
+          <div style="font-size:11px; color:#a99a89;">다시 써야 할 때 (예시)</div>
+          <div style="height:10px;"></div>
+          <div style="display:flex; align-items:center; gap:9px;">
+            <div style="width:26px; height:26px; border-radius:50%; background:#ffe3d9; display:flex; align-items:center; justify-content:center; color:#e0563a; font-size:13px;">!</div>
+            <span style="font-size:14px; font-weight:700; color:#2e241d;">조금만 더!</span>
+          </div>
+          <div style="font-size:12px; color:#8a7c6d; line-height:1.65; margin-top:10px;">책 내용을 조금 더 구체적으로 들어서 다시 답해볼까?</div>
+          <div style="height:12px;"></div>
+          <div style="border:1px solid #ecdfcd; border-radius:9px; padding:11px; text-align:center; font-size:13px; font-weight:700; color:#2e241d;">다시 쓰기</div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-7" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">7.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">서재 · 단어 뜻보기</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#fdf6ec; display:flex;">
+        <div style="width:76px; flex:none; background:#2b211b; display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:14px;">
+          <div style="width:44px; height:44px; border-radius:14px; background:#ff6b4a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;">⌄</div>
+          <div style="height:6px;"></div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">⌂</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">✎</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">◈</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">☺</div>
+          <div style="width:44px; height:44px; border-radius:14px; background:#3b2e26; display:flex; align-items:center; justify-content:center; color:#fdf6ec; font-size:19px;">▤</div>
+          <div style="flex:1;"></div>
+          <div style="width:40px; height:40px; border-radius:50%; background:#ffd866; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#5d4a1c;">민</div>
+        </div>
+        <div style="flex:1; position:relative; background-color:#fdf6ec; background-image:repeating-linear-gradient(#fdf6ec 0 33px,#f4e5d1 33px 34px);">
+          <div style="height:52px; display:flex; align-items:center; justify-content:center; gap:14px;">
+            <span style="font-size:14px; font-weight:700; color:#2e241d;">흥부와 놀부</span>
+            <span style="font-size:12px; color:#9a8b7c;">한국 전래동화</span>
+            <span style="width:150px; height:5px; border-radius:999px; background:#ece0cc; display:inline-block;"><span style="display:block; width:22%; height:5px; border-radius:999px; background:#ff6b4a;"></span></span>
+          </div>
+          <div style="padding:26px 76px 0; font-size:16px; line-height:2.13; color:#3c3229; max-width:640px;">
+            옛날 어느 마을에 흥부와 놀부, 두 형제가 살았어요. 동생 흥부는 마음이 착했지만 살림이 가난했고, 형 놀부는 부자였지만 <span style="border-bottom:2px solid #ff6b4a;">심술</span>이 사나웠지요. 어느 봄날, 다리를 다친 제비 한 마리가 흥부네 <span style="color:#e0563a; border-bottom:2px solid #ff6b4a;">처마</span> 밑으로 툭 떨어졌어요. 흥부는 제비의 다리를 정성껏 고쳐 주었답니다.
+          </div>
+          <div style="position:absolute; right:36px; top:82px; width:270px; background:#fffdf9; border-radius:14px; padding:18px; box-shadow:0 12px 30px rgba(90,66,40,.16);">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+              <span style="font-size:16px; font-weight:700; color:#2e241d;">처마</span>
+              <span style="color:#a99a89; font-size:13px;">✕</span>
+            </div>
+            <div style="font-size:13px; color:#8a7c6d; line-height:1.6; margin-top:8px;">지붕이 벽보다 밖으로 튀어나온 부분.</div>
+            <div style="font-size:11px; color:#b3a494; margin-top:12px;">국립국어원 한국어기초사전</div>
+          </div>
+          <div style="position:absolute; right:52px; top:216px; font-size:12px; color:#a99a89;">모르는 단어를 누르면 여기 뜻이 떠요 ✎</div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-8" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">8.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">독후감 빈틈 분석</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#fdf6ec; display:flex;">
+        <div style="width:76px; flex:none; background:#2b211b; display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:14px;">
+          <div style="width:44px; height:44px; border-radius:14px; background:#ff6b4a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;">⌄</div>
+          <div style="height:6px;"></div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">⌂</div>
+          <div style="width:44px; height:44px; border-radius:14px; background:#3b2e26; display:flex; align-items:center; justify-content:center; color:#fdf6ec; font-size:19px;">✎</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">◈</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">☺</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">▤</div>
+          <div style="flex:1;"></div>
+          <div style="width:40px; height:40px; border-radius:50%; background:#ffd866; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#5d4a1c;">민</div>
+        </div>
+        <div style="flex:1; padding:26px 30px; display:flex; gap:22px; min-width:0;">
+          <div style="flex:1; display:flex; flex-direction:column; min-width:0;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="width:34px; height:34px; border-radius:8px; background:linear-gradient(160deg,#63c99a,#3fa778);"></div>
+              <div style="flex:1;">
+                <div style="font-size:16px; font-weight:700; color:#2e241d;">아몬드 · 독후감 검사 중</div>
+                <div style="font-size:12px; color:#9a8b7c; margin-top:2px;">책 실제 내용과 대조하고 있어요</div>
+              </div>
+              <div style="background:#e6eefb; color:#4a6b9c; font-size:11px; font-weight:700; border-radius:999px; padding:6px 11px;">빈틈 3곳 발견</div>
+            </div>
+            <div style="height:16px;"></div>
+            <div style="flex:1; background:#fffdf9; border:1px solid #f0e4d3; border-radius:12px; padding:24px 26px; font-size:14px; line-height:2.05; color:#3c3229;">
+              이 책에서 가장 기억에 남는 부분은 곤이와 윤재가 다시 만나는 장면이다. <span style="background:#ffe3d9; border-bottom:2px solid #ff6b4a;">주인공은 결국 변화했다.</span> 나는 처음에 윤재가 감정을 잘 느끼지 못한다는 설정이 특이하다고 생각했다. <span style="background:#fdf0cd; border-bottom:2px solid #ffd866;">그리고 여러 사건이 있었다.</span> 그래서 이 책은 <span style="background:#fdf0cd; border-bottom:2px solid #ffd866;">감동적이었다.</span> 나는 이 부분이 이 책에서 가장 인상 깊었다.
+            </div>
+            <div style="height:12px;"></div>
+            <div style="display:flex; gap:16px; font-size:12px; color:#8a7c6d;">
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; background:#ffb9a6; display:inline-block; border-radius:3px;"></span>근거 없이 단정</span>
+              <span style="display:flex; align-items:center; gap:6px;"><span style="width:12px; height:12px; background:#ffd866; display:inline-block; border-radius:3px;"></span>뭉뚱그린 문장</span>
+            </div>
+          </div>
+          <div style="width:340px; flex:none; background:#2b211b; border-radius:16px; padding:22px; display:flex; flex-direction:column;">
+            <div style="font-size:15px; font-weight:700; color:#fdf6ec;">찾아낸 빈틈</div>
+            <div style="font-size:12px; color:#a4917f; margin-top:6px;">이 지점들이 꼬리질문의 재료가 돼요</div>
+            <div style="height:18px;"></div>
+            <div style="background:#3a2d25; border-radius:12px; padding:16px; border-left:3px solid #ff6b4a;">
+              <div style="font-size:12px; color:#ffb9a6; font-weight:700;">01 · 근거 없이 단정</div>
+              <div style="font-size:13px; color:#f0e6da; margin-top:7px; line-height:1.6;">"주인공은 결국 변화했다."<br><span style="color:#a4917f;">어느 장면을 근거로 했는지 없음</span></div>
+            </div>
+            <div style="height:10px;"></div>
+            <div style="background:#3a2d25; border-radius:12px; padding:16px; border-left:3px solid #ffd866;">
+              <div style="font-size:12px; color:#ffd866; font-weight:700;">02 · 뭉뚱그린 문장</div>
+              <div style="font-size:13px; color:#f0e6da; margin-top:7px; line-height:1.6;">"여러 사건이 있었다."<br><span style="color:#a4917f;">어떤 사건인지 특정되지 않음</span></div>
+            </div>
+            <div style="height:10px;"></div>
+            <div style="background:#3a2d25; border-radius:12px; padding:16px; border-left:3px solid #ffd866;">
+              <div style="font-size:12px; color:#ffd866; font-weight:700;">03 · 감상만 남음</div>
+              <div style="font-size:13px; color:#f0e6da; margin-top:7px; line-height:1.6;">"감동적이었다."<br><span style="color:#a4917f;">인물·장면 연결 없음</span></div>
+            </div>
+            <div style="flex:1;"></div>
+            <div style="background:#ff6b4a; border-radius:10px; padding:15px; text-align:center; font-size:15px; font-weight:700; color:#fff;">이 빈틈으로 질문 만들기</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-9" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">9.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">채점 상세 · 재작성</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; position:relative; box-shadow:0 20px 50px rgba(0,0,0,.45); background-color:#fdf6ec; background-image:repeating-linear-gradient(#fdf6ec 0 31px,#f4e5d1 31px 32px); display:flex; align-items:center; justify-content:center;">
+        <div style="width:460px; background:#fffdf9; border-radius:22px; padding:32px; box-shadow:0 14px 38px rgba(90,66,40,.12);">
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div style="width:44px; height:44px; border-radius:9px; background:linear-gradient(160deg,#63c99a,#3fa778);"></div>
+            <div style="flex:1;">
+              <div style="font-size:12px; color:#9a8b7c;">아몬드 · 독후감</div>
+              <div style="font-size:15px; font-weight:700; color:#2e241d; margin-top:3px;">채점 결과</div>
+            </div>
+            <div style="background:#fff2ec; color:#e0563a; font-size:11px; font-weight:700; border-radius:999px; padding:6px 11px;">1차 제출</div>
+          </div>
+          <div style="height:24px;"></div>
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div style="width:52px; height:52px; border-radius:50%; background:#ffe3d9; display:flex; align-items:center; justify-content:center; color:#e0563a; font-size:24px;">!</div>
+            <div>
+              <div style="font-size:25px; font-weight:700; color:#2e241d;">조금만 더!</div>
+              <div style="font-size:13px; color:#9a8b7c; margin-top:4px;">정답 여부가 아니라 독후감과의 정합성을 봐요</div>
+            </div>
+          </div>
+          <div style="height:24px;"></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+            <div style="background:#e2f4e9; border-radius:12px; padding:16px;"><div style="font-size:12px; color:#3f7f5c;">논리 정합성</div><div style="font-size:20px; font-weight:700; color:#2b6349; margin-top:5px;">통과</div></div>
+            <div style="background:#fff2ec; border-radius:12px; padding:16px;"><div style="font-size:12px; color:#b5502f;">구체성</div><div style="font-size:20px; font-weight:700; color:#b5502f; margin-top:5px;">부족</div></div>
+            <div style="background:#e2f4e9; border-radius:12px; padding:16px;"><div style="font-size:12px; color:#3f7f5c;">문체 일관성</div><div style="font-size:20px; font-weight:700; color:#2b6349; margin-top:5px;">동일</div></div>
+          </div>
+          <div style="height:16px;"></div>
+          <div style="background:#fdf0cd; border-radius:12px; padding:16px 18px;">
+            <div style="font-size:13px; font-weight:700; color:#7a6320;">✎ 왜 통과가 아닐까?</div>
+            <div style="font-size:13px; color:#8a7550; line-height:1.7; margin-top:6px;">답변이 독후감과 어긋나진 않았지만, 장면을 특정하지 않았어요. 책 내용을 조금 더 구체적으로 들어서 다시 답해볼까?</div>
+          </div>
+          <div style="height:16px;"></div>
+          <div style="background:#f6f0e4; border-radius:12px; padding:16px 18px; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:14px; color:#7a6a5a;">포인트는 통과할 때만 지급돼요</span>
+            <span style="font-size:16px; font-weight:700; color:#a99a89;">+0</span>
+          </div>
+          <div style="height:20px;"></div>
+          <div style="background:#ff6b4a; border-radius:12px; padding:17px; text-align:center; font-size:16px; font-weight:700; color:#fff;">다시 쓰기 (새 질문이 나와요)</div>
+          <div style="height:14px;"></div>
+          <div style="text-align:center; font-size:13px; color:#a99a89;">내 독후감 고치러 가기</div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-10" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">10.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">포인트 리워드 · 책 연결</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#fdf6ec; display:flex;">
+        <div style="width:76px; flex:none; background:#2b211b; display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:14px;">
+          <div style="width:44px; height:44px; border-radius:14px; background:#ff6b4a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;">⌄</div>
+          <div style="height:6px;"></div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">⌂</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">✎</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">◈</div>
+          <div style="width:44px; height:44px; border-radius:14px; background:#3b2e26; display:flex; align-items:center; justify-content:center; color:#fdf6ec; font-size:19px;">☺</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">▤</div>
+          <div style="flex:1;"></div>
+          <div style="width:40px; height:40px; border-radius:50%; background:#ffd866; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#5d4a1c;">민</div>
+        </div>
+        <div style="flex:1; padding:28px 32px; display:flex; flex-direction:column; gap:18px; min-width:0;">
+          <div style="display:flex; align-items:center; gap:18px;">
+            <div style="flex:1;">
+              <div style="font-size:22px; font-weight:700; color:#2e241d;">책갈피 쓰기</div>
+              <div style="font-size:13px; color:#9a8b7c; margin-top:5px;">기프티콘 대신 책으로 돌아오는 리워드</div>
+            </div>
+            <div style="background:#2b211b; border-radius:14px; padding:16px 24px; text-align:right;">
+              <div style="font-size:12px; color:#b3a494;">내 책갈피</div>
+              <div style="font-size:26px; font-weight:700; color:#fdf6ec; margin-top:3px;">1,240</div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:16px; padding:22px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:32px; height:32px; border-radius:8px; background:#3fa778;"></div>
+                <span style="font-size:16px; font-weight:700; color:#2e241d;">국회도서관 전자책 열람</span>
+              </div>
+              <div style="font-size:13px; color:#8a7c6d; line-height:1.7; margin-top:10px;">모은 책갈피로 무료 열람권을 열어요. 오디오북도 같은 방식이에요.</div>
+              <div style="height:16px;"></div>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:20px; font-weight:700; color:#ff6b4a;">300</span>
+                <span style="background:#2e241d; color:#fdf6ec; border-radius:10px; padding:11px 18px; font-size:14px; font-weight:700;">열람권 받기</span>
+              </div>
+            </div>
+            <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:16px; padding:22px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:32px; height:32px; border-radius:8px; background:#7cbbe6;"></div>
+                <span style="font-size:16px; font-weight:700; color:#2e241d;">오디오북 열람</span>
+              </div>
+              <div style="font-size:13px; color:#8a7c6d; line-height:1.7; margin-top:10px;">듣고 읽기를 같이 하고 싶을 때 쓰는 열람권이에요.</div>
+              <div style="height:16px;"></div>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:20px; font-weight:700; color:#ff6b4a;">450</span>
+                <span style="background:#2e241d; color:#fdf6ec; border-radius:10px; padding:11px 18px; font-size:14px; font-weight:700;">열람권 받기</span>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1; background:#fdf0cd; border-radius:16px; padding:24px; min-height:0;">
+            <div style="display:flex; align-items:baseline; gap:10px;">
+              <div style="font-size:16px; font-weight:700; color:#2e241d;">마음에 든 책, 사서 보기</div>
+              <div style="font-size:12px; color:#8a7550;">알라딘으로 이동해요</div>
+            </div>
+            <div style="height:16px;"></div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+              <div style="background:#fffdf9; border-radius:14px; padding:16px; display:flex; gap:12px; align-items:center;">
+                <div style="width:44px; height:56px; border-radius:6px; background:linear-gradient(160deg,#63c99a,#3fa778); flex:none;"></div>
+                <div>
+                  <div style="font-size:14px; font-weight:700; color:#2e241d;">아몬드</div>
+                  <div style="font-size:12px; color:#9a8b7c; margin-top:3px;">92점 통과</div>
+                  <div style="font-size:12px; color:#e0563a; font-weight:700; margin-top:8px;">알라딘에서 보기 ↗</div>
+                </div>
+              </div>
+              <div style="background:#fffdf9; border-radius:14px; padding:16px; display:flex; gap:12px; align-items:center;">
+                <div style="width:44px; height:56px; border-radius:6px; background:linear-gradient(160deg,#ff8a6b,#f5674a); flex:none;"></div>
+                <div>
+                  <div style="font-size:14px; font-weight:700; color:#2e241d;">완득이</div>
+                  <div style="font-size:12px; color:#9a8b7c; margin-top:3px;">88점 통과</div>
+                  <div style="font-size:12px; color:#e0563a; font-weight:700; margin-top:8px;">알라딘에서 보기 ↗</div>
+                </div>
+              </div>
+              <div style="background:#fffdf9; border-radius:14px; padding:16px; display:flex; gap:12px; align-items:center;">
+                <div style="width:44px; height:56px; border-radius:6px; background:linear-gradient(160deg,#b489d6,#9a6cc4); flex:none;"></div>
+                <div>
+                  <div style="font-size:14px; font-weight:700; color:#2e241d;">소나기</div>
+                  <div style="font-size:12px; color:#9a8b7c; margin-top:3px;">95점 통과</div>
+                  <div style="font-size:12px; color:#e0563a; font-weight:700; margin-top:8px;">알라딘에서 보기 ↗</div>
+                </div>
+              </div>
+            </div>
+            <div style="height:16px;"></div>
+            <div style="font-size:12px; color:#8a7550;">구매 링크는 제휴 링크예요 · 학교 단위 도입 시 반별 열람권으로도 전환돼요</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-11" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">11.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">추천 이유 · 태그</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#fdf6ec; display:flex;">
+        <div style="width:76px; flex:none; background:#2b211b; display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:14px;">
+          <div style="width:44px; height:44px; border-radius:14px; background:#ff6b4a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;">⌄</div>
+          <div style="height:6px;"></div>
+          <div style="width:44px; height:44px; border-radius:14px; background:#3b2e26; display:flex; align-items:center; justify-content:center; color:#fdf6ec; font-size:19px;">⌂</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">✎</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">◈</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">☺</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">▤</div>
+          <div style="flex:1;"></div>
+          <div style="width:40px; height:40px; border-radius:50%; background:#ffd866; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#5d4a1c;">민</div>
+        </div>
+        <div style="flex:1; padding:28px 32px; display:flex; flex-direction:column; gap:18px; min-width:0;">
+          <div>
+            <div style="font-size:22px; font-weight:700; color:#2e241d;">왜 이 책을 추천했을까?</div>
+            <div style="font-size:13px; color:#9a8b7c; margin-top:5px;">읽은 책의 주제어를 모아, 태그가 대부분 겹치고 한두 개만 새로운 책을 먼저 보여줘요</div>
+          </div>
+          <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:16px; padding:22px;">
+            <div style="font-size:13px; color:#9a8b7c;">내가 읽어온 태그</div>
+            <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+              <span style="background:#fdf0cd; color:#8a7550; font-size:13px; font-weight:700; border-radius:999px; padding:8px 14px;">성장 12</span>
+              <span style="background:#fdf0cd; color:#8a7550; font-size:13px; font-weight:700; border-radius:999px; padding:8px 14px;">인물 심리 9</span>
+              <span style="background:#fdf0cd; color:#8a7550; font-size:13px; font-weight:700; border-radius:999px; padding:8px 14px;">판타지 7</span>
+              <span style="background:#fdf0cd; color:#8a7550; font-size:13px; font-weight:700; border-radius:999px; padding:8px 14px;">우정 5</span>
+              <span style="background:#f0e9dc; color:#9a8b7c; font-size:13px; border-radius:999px; padding:8px 14px;">모험 3</span>
+            </div>
+          </div>
+          <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:16px; min-height:0;">
+            <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:16px; padding:22px; display:flex; gap:18px;">
+              <div style="width:96px; height:130px; border-radius:8px; background:linear-gradient(160deg,#8fc9ec,#5aa6dd); flex:none;"></div>
+              <div style="min-width:0;">
+                <div style="background:#7cbbe6; color:#fff; font-size:11px; font-weight:700; border-radius:999px; padding:5px 10px; display:inline-block;">NEW 장르 1개</div>
+                <div style="font-size:18px; font-weight:700; color:#2e241d; margin-top:10px;">우주 쓰레기</div>
+                <div style="font-size:13px; color:#9a8b7c; margin-top:4px;">장이지</div>
+                <div style="font-size:13px; color:#3c3229; line-height:1.7; margin-top:12px;">평소 좋아하는 <b>성장</b>에 <b>SF</b>가 살짝 섞였어요</div>
+                <div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">
+                  <span style="background:#fdf0cd; color:#8a7550; font-size:11px; border-radius:999px; padding:5px 9px;">성장 ✓</span>
+                  <span style="background:#fdf0cd; color:#8a7550; font-size:11px; border-radius:999px; padding:5px 9px;">인물 심리 ✓</span>
+                  <span style="background:#e6eefb; color:#4a6b9c; font-size:11px; font-weight:700; border-radius:999px; padding:5px 9px;">SF NEW</span>
+                </div>
+              </div>
+            </div>
+            <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:16px; padding:22px; display:flex; gap:18px;">
+              <div style="width:96px; height:130px; border-radius:8px; background:linear-gradient(160deg,#d9b56a,#c19845); flex:none;"></div>
+              <div style="min-width:0;">
+                <div style="background:#fdf0cd; color:#8a7550; font-size:11px; font-weight:700; border-radius:999px; padding:5px 10px; display:inline-block;">태그 4개 겹침</div>
+                <div style="font-size:18px; font-weight:700; color:#2e241d; margin-top:10px;">마지막 늑대</div>
+                <div style="font-size:13px; color:#9a8b7c; margin-top:4px;">전민식</div>
+                <div style="font-size:13px; color:#3c3229; line-height:1.7; margin-top:12px;">좋아하는 <b>판타지</b>에 <b>역사</b>가 살짝 섞였어요</div>
+                <div style="display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;">
+                  <span style="background:#fdf0cd; color:#8a7550; font-size:11px; border-radius:999px; padding:5px 9px;">판타지 ✓</span>
+                  <span style="background:#fdf0cd; color:#8a7550; font-size:11px; border-radius:999px; padding:5px 9px;">우정 ✓</span>
+                  <span style="background:#e6eefb; color:#4a6b9c; font-size:11px; font-weight:700; border-radius:999px; padding:5px 9px;">역사 NEW</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#fdf0cd; border-radius:14px; padding:18px 22px; display:flex; align-items:center; gap:14px;">
+            <span style="flex:1; font-size:14px; color:#7a6320;">난이도는 학년(초5) 기준으로 맞췄어요 · 너무 쉬우면 조절할 수 있어요</span>
+            <span style="background:#fffdf9; border:1px solid #eddfc6; border-radius:10px; padding:10px 16px; font-size:13px; font-weight:700; color:#2e241d;">난이도 조절</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-12" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">12.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">나의 책나무 · 장르 도장판</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#fdf6ec; display:flex;">
+        <div style="width:76px; flex:none; background:#2b211b; display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:14px;">
+          <div style="width:44px; height:44px; border-radius:14px; background:#ff6b4a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;">⌄</div>
+          <div style="height:6px;"></div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">⌂</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">✎</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">◈</div>
+          <div style="width:44px; height:44px; border-radius:14px; background:#3b2e26; display:flex; align-items:center; justify-content:center; color:#fdf6ec; font-size:19px;">☺</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">▤</div>
+          <div style="flex:1;"></div>
+          <div style="width:40px; height:40px; border-radius:50%; background:#ffd866; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#5d4a1c;">민</div>
+        </div>
+        <div style="flex:1; padding:28px 32px; display:grid; grid-template-columns:1fr 1fr; gap:26px; min-width:0;">
+          <div style="display:flex; flex-direction:column; min-width:0;">
+            <div style="font-size:22px; font-weight:700; color:#2e241d;">민경이의 책나무</div>
+            <div style="font-size:13px; color:#9a8b7c; margin-top:5px;">책을 완독할 때마다 잎이 하나씩 자라요 🌱</div>
+            <div style="height:14px;"></div>
+            <div style="flex:1; background:#fffdf9; border:1px solid #f0e4d3; border-radius:16px; padding:18px; position:relative; min-height:0; display:flex; flex-direction:column;">
+              <div style="align-self:flex-start; background:#e2f4e9; color:#3f7f5c; font-size:11px; font-weight:700; border-radius:999px; padding:6px 12px;">3단계 · 무성한 나무</div>
+              <div style="flex:1; display:flex; align-items:flex-end; justify-content:center; padding-bottom:8px;">
+                <div style="width:250px; height:250px; position:relative;">
+                  <div style="position:absolute; left:112px; bottom:0; width:26px; height:74px; border-radius:4px; background:#a9825a;"></div>
+                  <div style="position:absolute; left:96px; bottom:64px; width:46px; height:46px; border-radius:50%; background:#63c99a;"></div>
+                  <div style="position:absolute; left:52px; bottom:78px; width:40px; height:40px; border-radius:50%; background:#3fa778;"></div>
+                  <div style="position:absolute; left:146px; bottom:80px; width:40px; height:40px; border-radius:50%; background:#3fa778;"></div>
+                  <div style="position:absolute; left:76px; bottom:120px; width:44px; height:44px; border-radius:50%; background:#63c99a;"></div>
+                  <div style="position:absolute; left:124px; bottom:124px; width:42px; height:42px; border-radius:50%; background:#3fa778;"></div>
+                  <div style="position:absolute; left:100px; bottom:166px; width:40px; height:40px; border-radius:50%; background:#63c99a;"></div>
+                  <div style="position:absolute; left:60px; bottom:154px; width:34px; height:34px; border-radius:50%; background:#3fa778;"></div>
+                  <div style="position:absolute; left:150px; bottom:152px; width:34px; height:34px; border-radius:50%; background:#63c99a;"></div>
+                  <div style="position:absolute; left:26px; bottom:112px; width:26px; height:26px; border-radius:50%; background:#ffd866;"></div>
+                  <div style="position:absolute; left:186px; bottom:118px; width:24px; height:24px; border-radius:50%; background:#ff9d85;"></div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:12px; color:#9a8b7c;">🌿 잎 1장 = 완독 1권 · 지금까지 12장</span>
+                <span style="font-size:12px; font-weight:700; color:#e0563a;">다음 단계까지 3권</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; min-width:0;">
+            <div style="font-size:22px; font-weight:700; color:#2e241d;">장르 도장판</div>
+            <div style="font-size:13px; color:#9a8b7c; margin-top:5px;">한 장르를 3권 읽으면 도장이 채워져요</div>
+            <div style="height:14px;"></div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+              <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:16px; padding:18px; text-align:center;">
+                <div style="width:52px; height:52px; margin:0 auto; border-radius:50%; background:#ffe3d9; display:flex; align-items:center; justify-content:center; color:#e0563a; font-size:22px;">✓</div>
+                <div style="font-size:14px; font-weight:700; color:#2e241d; margin-top:12px;">성장소설</div>
+                <div style="font-size:12px; color:#9a8b7c; margin-top:3px;">4/3 완료</div>
+              </div>
+              <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:16px; padding:18px; text-align:center;">
+                <div style="width:52px; height:52px; margin:0 auto; border-radius:50%; background:#e6eefb; display:flex; align-items:center; justify-content:center; color:#4a6b9c; font-size:22px;">✓</div>
+                <div style="font-size:14px; font-weight:700; color:#2e241d; margin-top:12px;">SF</div>
+                <div style="font-size:12px; color:#9a8b7c; margin-top:3px;">3/3 완료</div>
+              </div>
+              <div style="background:#f6f0e4; border-radius:16px; padding:18px; text-align:center;">
+                <div style="width:52px; height:52px; margin:0 auto; border-radius:50%; background:#ece2d1; display:flex; align-items:center; justify-content:center; color:#a99a89; font-size:20px;">🔒</div>
+                <div style="font-size:14px; font-weight:700; color:#a99a89; margin-top:12px;">판타지</div>
+                <div style="font-size:12px; color:#b3a494; margin-top:3px;">1/3</div>
+              </div>
+              <div style="background:#f6f0e4; border-radius:16px; padding:18px; text-align:center;">
+                <div style="width:52px; height:52px; margin:0 auto; border-radius:50%; background:#ece2d1; display:flex; align-items:center; justify-content:center; color:#a99a89; font-size:20px;">🔒</div>
+                <div style="font-size:14px; font-weight:700; color:#a99a89; margin-top:12px;">추리</div>
+                <div style="font-size:12px; color:#b3a494; margin-top:3px;">0/3</div>
+              </div>
+              <div style="background:#f6f0e4; border-radius:16px; padding:18px; text-align:center;">
+                <div style="width:52px; height:52px; margin:0 auto; border-radius:50%; background:#ece2d1; display:flex; align-items:center; justify-content:center; color:#a99a89; font-size:20px;">🔒</div>
+                <div style="font-size:14px; font-weight:700; color:#a99a89; margin-top:12px;">동화</div>
+                <div style="font-size:12px; color:#b3a494; margin-top:3px;">2/3</div>
+              </div>
+              <div style="background:#f6f0e4; border-radius:16px; padding:18px; text-align:center;">
+                <div style="width:52px; height:52px; margin:0 auto; border-radius:50%; background:#ece2d1; display:flex; align-items:center; justify-content:center; color:#a99a89; font-size:20px;">🔒</div>
+                <div style="font-size:14px; font-weight:700; color:#a99a89; margin-top:12px;">과학</div>
+                <div style="font-size:12px; color:#b3a494; margin-top:3px;">0/3</div>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <div style="background:#fdf0cd; border-radius:14px; padding:16px 18px; font-size:13px; color:#7a6320; line-height:1.6;">도장이 완성된 장르는 추천에서 난이도를 한 칸 올려요 · 포인트는 숫자, 도장판은 눈에 보이는 성장</div>
+            <div style="height:14px;"></div>
+            <div style="background:#ff6b4a; border-radius:14px; padding:18px; text-align:center; font-size:16px; font-weight:700; color:#fff;">다음 책 읽으러 가기</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="tablet-app-13" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">13.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">챌린지 · 반 목표 &amp; 시즌 테마</span>
+      </div>
+      <div style="width:1024px; height:768px; border-radius:20px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#fdf6ec; display:flex;">
+        <div style="width:76px; flex:none; background:#2b211b; display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:14px;">
+          <div style="width:44px; height:44px; border-radius:14px; background:#ff6b4a; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;">⌄</div>
+          <div style="height:6px;"></div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">⌂</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">✎</div>
+          <div style="width:44px; height:44px; border-radius:14px; background:#3b2e26; display:flex; align-items:center; justify-content:center; color:#fdf6ec; font-size:19px;">◈</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">☺</div>
+          <div style="width:44px; height:44px; border-radius:14px; display:flex; align-items:center; justify-content:center; color:#8b7a6c; font-size:19px;">▤</div>
+          <div style="flex:1;"></div>
+          <div style="width:40px; height:40px; border-radius:50%; background:#ffd866; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#5d4a1c;">민</div>
+        </div>
+        <div style="flex:1; padding:28px 32px; display:flex; flex-direction:column; gap:18px; min-width:0;">
+          <div>
+            <div style="font-size:22px; font-weight:700; color:#2e241d;">챌린지</div>
+            <div style="font-size:13px; color:#9a8b7c; margin-top:5px;">혼자보다 같이, 지금이 아니면 못 얻는 배지도 있어요</div>
+          </div>
+          <div style="background:#2b211b; border-radius:16px; padding:24px 26px;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between;">
+              <span style="font-size:17px; font-weight:700; color:#fdf6ec;">👥 5학년 2반 함께 읽기</span>
+              <span style="font-size:15px; font-weight:700; color:#ffd866;">134 / 200권</span>
+            </div>
+            <div style="height:14px;"></div>
+            <div style="height:12px; border-radius:999px; background:#463830;"><div style="width:67%; height:12px; border-radius:999px; background:#ff6b4a;"></div></div>
+            <div style="height:14px;"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="display:flex; align-items:center;">
+                <div style="width:30px; height:30px; border-radius:50%; background:#ffd866; border:2px solid #2b211b; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#5d4a1c;">민</div>
+                <div style="width:30px; height:30px; border-radius:50%; background:#8fc9ec; border:2px solid #2b211b; margin-left:-9px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#274a68;">재</div>
+                <div style="width:30px; height:30px; border-radius:50%; background:#63c99a; border:2px solid #2b211b; margin-left:-9px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#1d5c45;">슬</div>
+                <span style="font-size:12px; color:#b3a494; margin-left:10px;">+21명 참여 중</span>
+              </div>
+              <span style="font-size:13px; color:#ffd866;">🎉 목표 달성하면 학급 파티!</span>
+            </div>
+          </div>
+          <div style="flex:1; background:#fffdf9; border:1px solid #f0e4d3; border-radius:16px; padding:24px; min-height:0; display:flex; flex-direction:column;">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <span style="font-size:17px; font-weight:700; color:#2e241d;">🍂 가을 독서 원정대</span>
+              <span style="background:#fdf0cd; color:#8a7550; font-size:12px; font-weight:700; border-radius:999px; padding:6px 12px;">10.1 ~ 10.31 한정</span>
+            </div>
+            <div style="height:16px;"></div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+              <div style="background:#fdf0cd; border-radius:14px; padding:18px; text-align:center;">
+                <div style="width:64px; height:84px; margin:0 auto; border-radius:8px; background:linear-gradient(160deg,#b489d6,#9a6cc4);"></div>
+                <div style="font-size:14px; font-weight:700; color:#2e241d; margin-top:12px;">소나기</div>
+                <div style="font-size:12px; color:#3f7f5c; margin-top:4px;">✓ 완독</div>
+              </div>
+              <div style="background:#fdf0cd; border-radius:14px; padding:18px; text-align:center;">
+                <div style="width:64px; height:84px; margin:0 auto; border-radius:8px; background:linear-gradient(160deg,#63c99a,#3fa778);"></div>
+                <div style="font-size:14px; font-weight:700; color:#2e241d; margin-top:12px;">아몬드</div>
+                <div style="font-size:12px; color:#3f7f5c; margin-top:4px;">✓ 완독</div>
+              </div>
+              <div style="background:#f2ece0; border-radius:14px; padding:18px; text-align:center;">
+                <div style="width:64px; height:84px; margin:0 auto; border-radius:8px; background:linear-gradient(160deg,#a8c4dd,#8fb0cc); opacity:.55;"></div>
+                <div style="font-size:14px; font-weight:700; color:#a99a89; margin-top:12px;">완전한 어제</div>
+                <div style="font-size:12px; color:#b3a494; margin-top:4px;">🔒 잠김</div>
+              </div>
+            </div>
+            <div style="flex:1;"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:20px;">
+              <span style="font-size:13px; color:#8a7c6d;">3권 중 2권 완독 — 1권만 더 읽으면 원정대 배지 획득!</span>
+              <span style="background:#ff6b4a; color:#fff; border-radius:12px; padding:14px 22px; font-size:15px; font-weight:700;">남은 책 읽으러 가기</span>
+            </div>
+          </div>
+          <div style="background:#fdf0cd; border-radius:14px; padding:16px 20px; font-size:13px; color:#7a6320; line-height:1.6;">개인 순위 대신 반 대 반으로만 겨뤄요 · AI 검증을 통과한 완독만 집계됩니다</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

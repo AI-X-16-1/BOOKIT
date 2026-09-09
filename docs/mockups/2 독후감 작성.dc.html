@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #17161a; }
+  a { color: #ff8f75; text-decoration: none; }
+  a:hover { color: #ffb8a6; }
+</style>
+</helmet>
+
+<section style="display:flex; flex-direction:column; gap:56px; padding:80px; font-family:'Noto Sans KR',sans-serif;">
+  <div style="display:flex; flex-direction:column; gap:12px; max-width:900px;">
+    <div style="font-size:13px; letter-spacing:.18em; font-family:ui-monospace,monospace; color:#8f8a82;">MOBILE · 430 × 932</div>
+    <div style="font-size:38px; font-weight:700; color:#f4f2ee;">2. 독후감 작성</div>
+    <div style="font-size:17px; line-height:1.7; color:#a9a49c;">책을 열고 읽은 뒤, 글쓰기 도우미의 질문을 받아 독후감을 쓰고 빈틈 분석까지 이어지는 흐름입니다.</div>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(3, 430px); column-gap:80px; row-gap:120px; justify-content:start;">
+    <div id="flow2-writing-1" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">1.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">책 열기 · 외부 도서관 이동</span>
+      </div>
+      <div style="width:430px; height:932px; border-radius:38px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#2e241d; display:flex; flex-direction:column; justify-content:flex-end;">
+        <div style="background:#fdf6ec; border-radius:26px 26px 0 0; padding:28px 24px 34px; position:relative;">
+          <div style="width:44px; height:5px; border-radius:999px; background:#e6d8c3; margin:0 auto 22px;"></div>
+          <div style="position:absolute; right:24px; top:26px; color:#9a8b7c; font-size:16px;">✕</div>
+          <div style="display:flex; gap:16px; align-items:flex-start;">
+            <div style="width:64px; height:64px; border-radius:12px; background:linear-gradient(160deg,#ff8a6b,#f5674a); flex:none;"></div>
+            <div>
+              <div style="font-size:21px; font-weight:700; color:#2e241d;">완득이</div>
+              <div style="font-size:14px; color:#9a8b7c; margin-top:4px;">김려령 · 창비</div>
+              <div style="display:inline-block; margin-top:10px; background:#e2f4e9; color:#3f7f5c; font-size:12px; font-weight:700; border-radius:999px; padding:6px 12px;">포인트로 무료 열람 가능</div>
+            </div>
+          </div>
+          <div style="height:22px;"></div>
+          <div style="background:#fffdf9; border-radius:16px; padding:20px;">
+            <div style="font-size:17px; font-weight:700; color:#2e241d;">국회전자도서관으로 이동해요</div>
+            <div style="font-size:15px; color:#8a7c6d; line-height:1.75; margin-top:9px;">책잇 안에서는 아직 못 읽고, 국회도서관 사이트에서 계속 읽는 방식이에요. 다 읽고 독후감 쓰러 다시 돌아오면 돼요!</div>
+          </div>
+          <div style="height:18px;"></div>
+          <div style="display:flex; align-items:center; gap:8px; font-size:13px; color:#9a8b7c;"><span>ⓘ</span><span>국회도서관 회원 로그인이 필요할 수 있어요</span></div>
+          <div style="height:18px;"></div>
+          <div style="background:#2e241d; border-radius:14px; padding:20px; text-align:center; color:#fdf6ec; font-size:17px; font-weight:700;">국회도서관에서 열기 ↗</div>
+          <div style="height:16px;"></div>
+          <div style="text-align:center; font-size:15px; color:#a99a89;">그냥 책잇에 남아있을래요</div>
+        </div>
+      </div>
+    </div>
+    <div id="flow2-writing-2" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">2.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">독후감 쓰기</span>
+      </div>
+      <div style="width:430px; height:932px; border-radius:38px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#fdf6ec; display:flex; flex-direction:column;">
+        <div style="padding:52px 22px 0; display:flex; align-items:center; gap:12px;">
+          <div style="width:36px; height:36px; border-radius:9px; background:linear-gradient(160deg,#63c99a,#3fa778);"></div>
+          <div style="flex:1;">
+            <div style="font-size:17px; font-weight:700; color:#2e241d;">아몬드 · 독후감</div>
+            <div style="font-size:13px; color:#9a8b7c; margin-top:2px;">손원평</div>
+          </div>
+          <div style="font-size:13px; color:#a99a89;">312자</div>
+        </div>
+        <div style="padding:18px 22px 0;">
+          <div style="background:#fdf0cd; border-left:3px solid #ffd866; border-radius:12px; padding:16px;">
+            <div style="font-size:14px; font-weight:700; color:#7a6320;">✎ 글쓰기 도우미</div>
+            <div style="font-size:14px; color:#8a7550; margin-top:6px; line-height:1.6;">가장 인상 깊었던 장면은? 그 장면에서 인물의 감정은 어떻게 바뀌었어?</div>
+          </div>
+        </div>
+        <div style="padding:16px 22px 0; flex:1; min-height:0; display:flex;">
+          <div style="flex:1; background:#fffdf9; border:1px solid #f0e4d3; border-radius:14px; padding:20px; font-size:15px; line-height:2; color:#3c3229; overflow:hidden;">
+            이 책에서 가장 기억에 남는 부분은 곤이와 윤재가 다시 만나는 장면이다. 나는 처음에 윤재가 감정을 잘 느끼지 못한다는 설정이 단순히 특이한 캐릭터를 위한 장치라고 생각했는데, 읽다 보니 그게 오히려 다른 사람들의 감정을 더 정확히 관찰하게 만드는 이유가 된다는 걸 알게 됐다. <span style="font-weight:700; border-bottom:2px solid #ff6b4a;">주인공은 결국 변화했다.</span><span style="color:#ff6b4a;">|</span>
+          </div>
+        </div>
+        <div style="padding:16px 22px 26px;">
+          <div style="background:#ff6b4a; border-radius:14px; padding:19px; text-align:center; font-size:17px; font-weight:700; color:#fff;">이해도 확인 받기</div>
+          <div style="text-align:center; font-size:13px; color:#a99a89; margin-top:12px;">초고 자동 저장됨</div>
+        </div>
+      </div>
+    </div>
+    <div id="flow2-writing-3" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">3.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">빈틈 분석 결과</span>
+      </div>
+      <div style="width:430px; height:932px; border-radius:38px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#fdf6ec; display:flex; flex-direction:column; padding:52px 22px 26px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:36px; height:36px; border-radius:9px; background:linear-gradient(160deg,#63c99a,#3fa778);"></div>
+          <div style="flex:1;">
+            <div style="font-size:17px; font-weight:700; color:#2e241d;">빈틈 분석 결과</div>
+            <div style="font-size:13px; color:#9a8b7c; margin-top:2px;">아몬드 · 독후감</div>
+          </div>
+          <div style="background:#e6eefb; color:#4a6b9c; font-size:11px; font-weight:700; border-radius:999px; padding:6px 11px;">3곳</div>
+        </div>
+        <div style="height:16px;"></div>
+        <div style="background:#fffdf9; border:1px solid #f0e4d3; border-radius:14px; padding:18px; font-size:15px; line-height:2; color:#3c3229;">
+          이 책에서 가장 기억에 남는 부분은 곤이와 윤재가 다시 만나는 장면이다. <span style="background:#ffe3d9; border-bottom:2px solid #ff6b4a;">주인공은 결국 변화했다.</span> <span style="background:#fdf0cd; border-bottom:2px solid #ffd866;">그리고 여러 사건이 있었다.</span> 그래서 이 책은 <span style="background:#fdf0cd; border-bottom:2px solid #ffd866;">감동적이었다.</span>
+        </div>
+        <div style="height:16px;"></div>
+        <div style="background:#fff2ec; border-radius:14px; padding:16px; border-left:3px solid #ff6b4a;">
+          <div style="font-size:13px; font-weight:700; color:#b5502f;">01 · 근거 없이 단정</div>
+          <div style="font-size:14px; color:#7a6a5a; margin-top:6px; line-height:1.6;">"주인공은 결국 변화했다."<br>어느 장면을 근거로 했는지 없어요</div>
+        </div>
+        <div style="height:10px;"></div>
+        <div style="background:#fdf0cd; border-radius:14px; padding:16px; border-left:3px solid #ffd866;">
+          <div style="font-size:13px; font-weight:700; color:#7a6320;">02 · 뭉뚱그린 문장</div>
+          <div style="font-size:14px; color:#8a7550; margin-top:6px; line-height:1.6;">"여러 사건이 있었다."<br>어떤 사건인지 특정되지 않았어요</div>
+        </div>
+        <div style="height:10px;"></div>
+        <div style="background:#fdf0cd; border-radius:14px; padding:16px; border-left:3px solid #ffd866;">
+          <div style="font-size:13px; font-weight:700; color:#7a6320;">03 · 감상만 남음</div>
+          <div style="font-size:14px; color:#8a7550; margin-top:6px; line-height:1.6;">"감동적이었다."<br>인물·장면 연결이 없어요</div>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="background:#ff6b4a; border-radius:14px; padding:19px; text-align:center; font-size:17px; font-weight:700; color:#fff;">질문 받고 답하기</div>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

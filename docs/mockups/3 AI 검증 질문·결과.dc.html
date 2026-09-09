@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #17161a; }
+  a { color: #ff8f75; text-decoration: none; }
+  a:hover { color: #ffb8a6; }
+</style>
+</helmet>
+
+<section style="display:flex; flex-direction:column; gap:56px; padding:80px; font-family:'Noto Sans KR',sans-serif;">
+  <div style="display:flex; flex-direction:column; gap:12px; max-width:900px;">
+    <div style="font-size:13px; letter-spacing:.18em; font-family:ui-monospace,monospace; color:#8f8a82;">MOBILE · 430 × 932</div>
+    <div style="font-size:38px; font-weight:700; color:#f4f2ee;">3. AI 검증 질문 & 결과</div>
+    <div style="font-size:17px; line-height:1.7; color:#a9a49c;">학생이 쓴 문장을 인용한 해석·근거형 질문 1개를 매 제출마다 새로 만들고, 30초~1분 안에 답하면 정합성·구체성·문체 급변 여부로 통과를 판정합니다.</div>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(3, 430px); column-gap:80px; row-gap:120px; justify-content:start;">
+    <div id="flow3-ai-check-1" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">1.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">AI 꼬리질문 (제한 시간)</span>
+      </div>
+      <div style="width:430px; height:932px; border-radius:38px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.45); background:#2b211b; display:flex; flex-direction:column; padding:52px 22px 26px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <span style="font-size:19px; font-weight:700; color:#fdf6ec;">책잇 AI가 물어봐</span>
+          <span style="font-size:17px; font-weight:700; color:#ffd866;">00:47</span>
+        </div>
+        <div style="height:12px;"></div>
+        <div style="height:4px; background:#463830; border-radius:999px;"><div style="width:55%; height:4px; background:#ff6b4a; border-radius:999px;"></div></div>
+        <div style="height:22px;"></div>
+        <div style="background:#3a2d25; border-radius:12px; padding:16px;">
+          <div style="font-size:12px; color:#a4917f;">네가 쓴 문장</div>
+          <div style="font-size:15px; color:#f0e6da; margin-top:7px;">"주인공은 결국 변화했다."</div>
+        </div>
+        <div style="height:14px;"></div>
+        <div style="background:#fffdf9; border-radius:12px; padding:20px; font-size:17px; line-height:1.65; color:#2e241d;">구체적으로 어떤 장면에서 그 변화가 가장 잘 드러났다고 생각해?</div>
+        <div style="height:14px;"></div>
+        <div style="flex:1; background:#3a2d25; border-radius:12px; padding:18px; font-size:16px; line-height:1.75; color:#e8dccd;">곤이가 다시 나타났을 때, 윤재가 예전처럼 아무렇지 않게<span style="color:#ff8f75;">|</span></div>
+        <div style="height:14px;"></div>
+        <div style="font-size:12px; color:#a4917f; text-align:center;">질문은 제출할 때마다 새로 만들어져요</div>
+        <div style="height:12px;"></div>
+        <div style="background:#ff6b4a; border-radius:14px; padding:19px; text-align:center; font-size:17px; font-weight:700; color:#fff;">답변 제출</div>
+      </div>
+    </div>
+    <div id="flow3-ai-check-2" style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; align-items:baseline; gap:10px;">
+        <span style="font-size:20px; font-weight:700; color:#ff8f75; font-family:ui-monospace,monospace;">2.</span>
+        <span style="font-size:20px; font-weight:700; color:#f4f2ee;">통과 결과 · 포인트 지급</span>
+      </div>
+      <div style="width:430px; height:932px; border-radius:38px; overflow:hidden; position:relative; box-shadow:0 20px 50px rgba(0,0,0,.45); background-color:#fdf6ec; background-image:repeating-linear-gradient(#fdf6ec 0 31px,#f4e5d1 31px 32px); display:flex; align-items:center; padding:0 22px;">
+        <div style="position:absolute; left:48px; top:130px; color:#ffc93c; font-size:20px;">★</div>
+        <div style="position:absolute; right:56px; bottom:150px; color:#4a9fd8; font-size:20px;">★</div>
+        <div style="position:relative; width:100%; background:#fffdf9; border-radius:24px; padding:32px 26px; box-shadow:0 14px 38px rgba(90,66,40,.12);">
+          <div style="display:flex; gap:13px; align-items:center;">
+            <div style="width:44px; height:44px; border-radius:10px; background:linear-gradient(160deg,#63c99a,#3fa778);"></div>
+            <div>
+              <div style="font-size:13px; color:#9a8b7c;">아몬드 · 독후감</div>
+              <div style="font-size:16px; font-weight:700; color:#2e241d; margin-top:3px;">AI 이해도 확인 결과</div>
+            </div>
+          </div>
+          <div style="height:26px;"></div>
+          <div style="position:absolute; right:-18px; top:-22px; width:82px; height:82px; border-radius:50%; background:#ffd866; border:3px dashed #fff8e2; display:flex; flex-direction:column; align-items:center; justify-content:center; transform:rotate(-8deg); box-shadow:0 8px 20px rgba(90,66,40,.18);">
+            <span style="font-size:16px; color:#7a6320;">★</span>
+            <span style="font-size:13px; font-weight:700; color:#5d4a1c;">완독</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:16px;">
+            <div style="width:56px; height:56px; border-radius:50%; background:#3fa778; display:flex; align-items:center; justify-content:center; color:#fff; font-size:26px;">✓</div>
+            <div style="font-size:28px; font-weight:700; color:#2e241d;">완독! 통과했어요</div>
+          </div>
+          <div style="height:24px;"></div>
+          <div style="background:#fdf0cd; border-radius:14px; padding:18px;">
+            <div style="font-size:14px; font-weight:700; color:#7a6320;">✎ 책잇 AI 피드백</div>
+            <div style="font-size:15px; color:#8a7550; line-height:1.7; margin-top:7px;">장면을 직접 근거로 들어서 구체적으로 설명했어요. 좋은 해석이에요!</div>
+          </div>
+          <div style="height:14px;"></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div style="background:#f6f0e4; border-radius:12px; padding:14px;"><div style="font-size:12px; color:#9a8b7c;">정합성</div><div style="font-size:20px; font-weight:700; color:#2e241d; margin-top:4px;">높음</div></div>
+            <div style="background:#f6f0e4; border-radius:12px; padding:14px;"><div style="font-size:12px; color:#9a8b7c;">구체성</div><div style="font-size:20px; font-weight:700; color:#2e241d; margin-top:4px;">보통</div></div>
+          </div>
+          <div style="height:14px;"></div>
+          <div style="background:#2e241d; border-radius:14px; padding:20px; display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:17px; font-weight:700; color:#fdf6ec;">🔖 책갈피 획득</span>
+            <span style="font-size:26px; font-weight:700; color:#ff8f75;">+50</span>
+          </div>
+          <div style="height:12px;"></div>
+          <div style="text-align:center; font-size:14px; color:#8a7c6d;">7일째 연속으로 통과하고 있어요 🔥</div>
+          <div style="height:16px;"></div>
+          <div style="display:flex; gap:10px;">
+            <div style="flex:1; background:#ff6b4a; border-radius:14px; padding:19px; text-align:center; font-size:17px; font-weight:700; color:#fff;">다음 책 보러가기</div>
+            <div style="background:#2e241d; border-radius:14px; padding:19px 18px; display:flex; align-items:center; gap:7px; font-size:15px; font-weight:700; color:#fdf6ec;"><span>⤳</span><span>공유</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+</body>
+</html>
