@@ -25,8 +25,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env
-.env*.local
+# env — .env*.local 만 막으면 정작 .env 가 커밋된다 (CLAUDE.md §10)
+.env*
+!.env.example
 
 # vercel
 .vercel

@@ -1,26 +1,21 @@
 @import "tailwindcss";
+@import "../shared/styles/tokens.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * 브랜드 팔레트는 고정 크림톤이다.
+ * prefers-color-scheme 다크 대응을 넣지 않는다 — 검증 화면의 어두운 패널은
+ * 테마가 아니라 "지금 확인받는 중"이라는 신호다 (CLAUDE.md §7).
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-cream);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  /* 본문 최소 16px (CLAUDE.md §8) */
+  font-size: 16px;
+  line-height: 1.6;
 }
