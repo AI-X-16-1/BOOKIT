@@ -1,0 +1,30 @@
+#!/bin/sh
+#
+# main 직접 push 차단 (CLAUDE.md §10 — "No direct pushes to main, PR only").
+#
+# 활성화: npm install 이 package.json 의 prepare 스크립트로
+#   git config core.hooksPath .githooks
+# 를 자동 실행한다. 수동으로 켜려면 위 명령을 직접 돌리면 된다.
+#
+# git 은 push 되는 ref 목록을 stdin 으로 넘긴다:
+#   <local ref> <local sha> <remote ref> <remote sha>
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master)
+      echo ""
+      echo "  ✕ $remote_ref 에 직접 push 할 수 없어요."
+      echo ""
+      echo "    브랜치를 만들고 PR 을 올려주세요:"
+      echo "      git switch -c feat/<module>-<short>"
+      echo "      git push -u origin HEAD"
+      echo ""
+      echo "    모듈 이름은 CLAUDE.md §3 참고 (ai, reader, auth, teacher, books,"
+      echo "    review, verification, rewards, growth, ranking, guardian)."
+      echo ""
+      exit 1
+      ;;
+  esac
+done
+
+exit 0

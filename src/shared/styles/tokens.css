@@ -1,0 +1,134 @@
+/*
+ * 책잇 디자인 토큰 — docs/design-tokens.md 에서 그대로 옮긴 값.
+ * 승인된 목업(1~6)에서 추출됐다. 여기에 없는 색을 새로 만들지 말 것 — 김민경에게 문의.
+ *
+ * Tailwind v4 (CSS-first). tailwind.config.ts 는 존재하지 않으며 만들지 않는다.
+ * :root 는 원문 이름 그대로 두고, @theme 이 Tailwind 유틸리티를 생성한다.
+ */
+
+:root {
+  /* surface */
+  --bg-cream:        #FDF6EC;  /* app background */
+  --bg-rule:         #F4E5D1;  /* notebook line */
+  --surface-card:    #FFFDF9;
+  --surface-sunken:  #F6F0E4;
+
+  /* ink */
+  --ink:             #2E241D;
+  --ink-soft:        #3C3229;
+  --text-muted:      #9A8B7C;
+  --text-faint:      #A99A89;
+  --text-on-dark:    #FDF6EC;
+  --text-on-dark-2:  #B3A494;
+
+  /* dark panel — verification only */
+  --panel:           #2B211B;
+  --panel-inner:     #3A2D25;
+  --panel-line:      #463830;
+
+  /* accent */
+  --coral:           #FF6B4A;
+  --coral-light:     #FF8F75;
+  --coral-bg:        #FFF2EC;
+  --coral-bg-2:      #FFE3D9;
+
+  --yellow:          #FFD866;
+  --yellow-bg:       #FDF0CD;
+  --yellow-text:     #7A6320;
+  --yellow-text-2:   #8A7550;
+
+  --green:           #3FA778;
+  --green-bg:        #E2F4E9;
+  --green-text:      #3F7F5C;
+
+  --blue:            #7CBBE6;
+  --blue-bg:         #E6EEFB;
+  --blue-text:       #4A6B9C;
+
+  --border:          #ECDFCD;
+  --border-soft:     #F0E4D3;
+
+  /*
+   * 확인 필요 (→ 김민경)
+   * 아래 3개는 승인된 목업에는 쓰였지만 docs/design-tokens.md 목록에는 없다.
+   * 임의로 만든 색이 아니라 목업에서 그대로 뽑은 값이다.
+   * design-tokens.md 에 정식 등재하거나, 기존 토큰으로 대체할지 결정 바람.
+   */
+  --nav-inactive:    #8B7A6C;  /* 탭바·아이콘 레일 비활성 — 목업 4 L88, 목업 6 L118 */
+  --sheet-handle:    #E6D8C3;  /* 바텀시트 드래그 핸들 — 목업 2 L37 */
+  --border-strong:   #EDDFC6;  /* 아웃라인 버튼 테두리 — 목업 4 L84 */
+}
+
+/*
+ * Tailwind 유틸리티 생성.
+ * `--color-cream` → `bg-cream` / `text-cream` / `border-cream`.
+ * 원문 이름의 `bg-` 접두는 뗐다 — 안 그러면 `bg-bg-cream` 이 된다.
+ */
+@theme {
+  /* surface */
+  --color-cream:        var(--bg-cream);
+  --color-rule:         var(--bg-rule);
+  --color-card:         var(--surface-card);
+  --color-sunken:       var(--surface-sunken);
+
+  /* ink */
+  --color-ink:          var(--ink);
+  --color-ink-soft:     var(--ink-soft);
+  --color-muted:        var(--text-muted);
+  --color-faint:        var(--text-faint);
+  --color-on-dark:      var(--text-on-dark);
+  --color-on-dark-2:    var(--text-on-dark-2);
+
+  /* dark panel — 검증 화면 전용 */
+  --color-panel:        var(--panel);
+  --color-panel-inner:  var(--panel-inner);
+  --color-panel-line:   var(--panel-line);
+
+  /* accent */
+  --color-coral:        var(--coral);
+  --color-coral-light:  var(--coral-light);
+  --color-coral-bg:     var(--coral-bg);
+  --color-coral-bg-2:   var(--coral-bg-2);
+
+  --color-yellow:       var(--yellow);
+  --color-yellow-bg:    var(--yellow-bg);
+  --color-yellow-text:  var(--yellow-text);
+  --color-yellow-text-2: var(--yellow-text-2);
+
+  --color-green:        var(--green);
+  --color-green-bg:     var(--green-bg);
+  --color-green-text:   var(--green-text);
+
+  --color-blue:         var(--blue);
+  --color-blue-bg:      var(--blue-bg);
+  --color-blue-text:    var(--blue-text);
+
+  --color-border:        var(--border);
+  --color-border-soft:   var(--border-soft);
+  --color-border-strong: var(--border-strong);
+  --color-nav-inactive:  var(--nav-inactive);
+  --color-sheet-handle:  var(--sheet-handle);
+
+  /* shape — docs/design-tokens.md "Shape" */
+  --radius-card:  16px;
+  --radius-btn:   14px;
+  --radius-input: 12px;
+  --radius-sheet: 26px;
+
+  --shadow-card: 0 12px 34px rgba(90, 66, 40, 0.10);
+
+  /* type */
+  --font-sans: var(--font-noto-sans-kr), "Noto Sans KR", system-ui, sans-serif;
+}
+
+/*
+ * 공책 배경 — 로그인 화면과 결과 화면에만 쓴다 (CLAUDE.md §7).
+ * 다른 화면에 바르지 말 것.
+ */
+@utility bg-notebook {
+  background-color: var(--bg-cream);
+  background-image: repeating-linear-gradient(
+    var(--bg-cream) 0 31px,
+    var(--bg-rule) 31px 32px
+  );
+}
