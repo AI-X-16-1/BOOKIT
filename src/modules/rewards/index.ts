@@ -15,5 +15,16 @@
  * 적립/차감은 verification·교환 행과 같은 트랜잭션 안에서 처리한다.
  * 같은 verification.id 로 두 번 적립되지 않게 (reason, ref_id) 유니크 인덱스가 막아준다.
  * UI 문구에서는 항상 "책갈피"라고 부른다 — "포인트"라고 쓰지 않는다 (CLAUDE.md §9).
+ *
+ * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
  */
-export {};
+
+export { MeScreen } from "./components/MeScreen";
+export {
+  EXCHANGE_COST,
+  EXCHANGE_LABEL,
+  REASON_LABEL,
+  balanceOf,
+  exchange,
+  getPoints,
+} from "./mock";
