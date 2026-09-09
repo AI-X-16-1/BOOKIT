@@ -70,6 +70,7 @@
   --ink-warm:        #8A7C6D;  /* 결과 화면 보조 문구 — 목업 3 L86, 목업 2 L50 */
   --green-light:     #63C99A;  /* 표지 자리표시자 그라데이션 시작 — 목업 2 L68 */
   --coral-deep:      #E0563A;  /* 강조 링크·사전 하이라이트 단어 — 목업 4 L38, 목업 6 L393 */
+  --rank-bar:        #C9BDA9;  /* 교사 대시보드 순위 막대(우리 반 아님) — 목업 5 L80 */
 }
 
 /*
@@ -132,6 +133,7 @@
   --color-ink-warm:      var(--ink-warm);
   --color-green-light:   var(--green-light);
   --color-coral-deep:    var(--coral-deep);
+  --color-rank-bar:      var(--rank-bar);
 
   /* shape — docs/design-tokens.md "Shape" */
   --radius-card:  16px;
