@@ -324,7 +324,7 @@ begin
 end $$;
 
 -- ── 5. 나머지 학생들의 통과 이력 (반 랭킹용) ─────────
--- v_teacher_class_ranking 은 class_members 를 타고 passed 인 verifications 를 센다.
+-- 반 랭킹 뷰는 class_members 를 타고 passed 인 verifications 를 센다.
 -- 반별 목표치를 정해두고 학생들에게 라운드로빈으로 뿌린다.
 -- 2반은 데모 학생이 이미 9개를 채웠으므로 그만큼 뺀다 → 2반이 1위로 보인다.
 
@@ -504,7 +504,16 @@ select '반 개수 (5)', count(*)::text from classes
 union all
 select '저작권 만료 도서 (4)', count(*)::text from books where is_public_domain;
 
--- 반 랭킹 — 2반이 1위여야 한다
-select label, verified_count
-  from v_teacher_class_ranking
- order by verified_count desc;
+-- 반 랭킹 — 2반이 1위여야 한다.
+--
+-- 랭킹 뷰를 쓰지 않고 기본 테이블에서 직접 집계한다.
+-- 뷰 이름이 바뀌어도(v_teacher_class_ranking → v_class_ranking) 이 시드가 깨지지 않게
+-- 하려는 것이다. 뷰 자체의 동작 확인은 뷰를 소유한 쪽 테스트가 맡는다.
+select
+  c.school_name || ' ' || c.grade_level || '학년 ' || c.class_no || '반' as label,
+  count(v.id) filter (where v.passed) as verified_count
+from classes c
+left join class_members cm on cm.class_id = c.id
+left join verifications v  on v.student_id = cm.student_id
+group by c.id, c.school_name, c.grade_level, c.class_no
+order by verified_count desc;
