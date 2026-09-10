@@ -31,3 +31,6 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# supabase CLI 임시 파일
+supabase/.temp/
