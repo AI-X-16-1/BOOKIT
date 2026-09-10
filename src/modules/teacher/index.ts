@@ -15,5 +15,9 @@
  * rows[] 에는 독후감 본문이 절대 들어가지 않는다 (CLAUDE.md §5).
  * 조회는 reviews 테이블 직접이 아니라 v_teacher_* 뷰를 경유한다.
  * 모바일 레이아웃은 만들지 않는다 (CLAUDE.md §8).
+ *
+ * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
  */
-export {};
+
+export { TeacherDashboard } from "./components/TeacherDashboard";
+export { WEEKLY_CONTRIB, getClass, getRanking, getStudents } from "./mock";

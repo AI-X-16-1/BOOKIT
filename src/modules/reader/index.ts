@@ -13,5 +13,9 @@
  *
  * 본문은 18px / line-height 2 (CLAUDE.md §8).
  * 사전은 768px 미만에서 바텀시트, 이상에서 사이드 패널.
+ *
+ * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
  */
-export {};
+
+export { LibraryScreen } from "./components/LibraryScreen";
+export { KNOWN_WORDS, TEXTS, getChapter, lookup, type DemoText } from "./mock";

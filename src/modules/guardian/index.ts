@@ -15,5 +15,9 @@
  * 브라우저에서 직접 쿼리하지 않는다 (docs/spec.md §3).
  * 보호자가 보는 것: 완독 여부, 책갈피, 이해도 점수, 책 목록.
  * 독후감 본문은 절대 노출하지 않는다 (CLAUDE.md §5).
+ *
+ * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
  */
-export {};
+
+export { GuardianView } from "./components/GuardianView";
+export { DEMO_TOKEN, getGuardianSummary } from "./mock";
