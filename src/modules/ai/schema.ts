@@ -53,11 +53,43 @@ export const gradeSchema: z.ZodType<GradeResult> = z.object({
 });
 
 /**
- * 프롬프트 #5 장르 태그 정규화. 사용자에게 안 보이는 배치 작업이라
- * 공유 타입이 없다. 고정 태그 목록 대조는 호출부에서 한다.
+ * 앱이 쓰는 고정 장르 태그 (docs/prompts.md §5).
+ *
+ * ai 모듈이 이 목록의 주인이다. 여기 없는 값이 books.tags 에 들어가면
+ * 문민재의 장르 도장판(genre_stamps.genre)이 모르는 장르를 받게 된다.
+ * DB 는 text[] 라 제약이 없으므로 이 상수가 사실상의 계약이다.
+ * 다른 모듈은 @/modules/ai 에서 가져다 쓴다.
+ */
+export const GENRE_TAGS = [
+  "성장소설",
+  "판타지",
+  "SF",
+  "추리",
+  "동화",
+  "역사",
+  "과학",
+  "모험",
+  "우정",
+  "인물심리",
+  "가족",
+  "사회",
+  "자연",
+  "예술",
+  "고전",
+] as const;
+
+export type GenreTag = (typeof GENRE_TAGS)[number];
+
+/**
+ * 프롬프트 #5 장르 태그 정규화. 사용자에게 안 보이는 배치 작업이라 공유 타입이 없다.
+ *
+ * enum 으로 두면 JSON Schema 로 변환될 때 값 목록이 그대로 넘어가, 벤더가
+ * 없는 태그를 만들지 못하게 막는다. 그래도 코드에서 한 번 더 거른다 (CLAUDE.md §6).
+ * 개수 상한(4개)은 스키마로 막지 않는다 — 5개 왔다고 통째로 버리고 재시도하면
+ * 지연만 늘어난다. 잘라 쓰는 쪽이 낫다.
  */
 export const genreTagsSchema = z.object({
-  tags: z.array(z.string()),
+  tags: z.array(z.enum(GENRE_TAGS)),
 });
 
 export type GenreTagsResult = z.infer<typeof genreTagsSchema>;

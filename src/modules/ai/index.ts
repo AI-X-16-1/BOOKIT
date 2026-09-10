@@ -20,13 +20,18 @@
  * 프롬프트 원문은 docs/prompts.md, 타입은 @/shared/types 의 ai.ts 참고.
  * 모든 프롬프트 출력은 strict JSON이며, 형태를 신뢰하지 말고 방어적으로 파싱할 것.
  *
- * 구현 완료: writingHelper(#1), analyzeGaps(#2), buildQuestion(#3), grade(#4)
- * 미구현:   장르 태그 정규화 (배치 작업, docs/prompts.md §5)
+ * 구현 완료: writingHelper(#1), analyzeGaps(#2), buildQuestion(#3), grade(#4),
+ *            normalizeGenreTags(프롬프트 #5)
+ *
+ * GENRE_TAGS 는 이 모듈이 주인이다. books.tags 와 genre_stamps.genre 가 같은
+ * 어휘를 쓰므로, 태그를 다루는 모듈은 여기서 가져다 쓴다 (직접 문자열을 적지 말 것).
  */
 export { writingHelper } from "./server/writing-helper";
 export { analyzeGaps } from "./server/gaps";
 export { buildQuestion } from "./server/question";
 export { grade, isPass, readThreshold } from "./server/grade";
-export type { PassThreshold } from "./server/prompts";
+export { normalizeGenreTags } from "./server/genre-tags";
+export { GENRE_TAGS, type GenreTag } from "./schema";
+export type { BookClassification, PassThreshold } from "./server/prompts";
 export { LlmError, type LlmErrorKind } from "./server/llm";
 export type { PromptContext } from "./server/prompts";

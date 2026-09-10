@@ -180,3 +180,43 @@ export function gradingUser(
 학생 답변:
 """${answer}"""`;
 }
+
+/* ── 프롬프트 #5 장르 태그 정규화 ──────────────────── */
+
+/**
+ * 배치 작업이라 학생 화면에 뜨지 않는다. 그래서 반말 규칙이 적용되지 않는 유일한
+ * 프롬프트다. 고정 태그 목록은 schema.ts 의 GENRE_TAGS 가 주인이다 —
+ * 목록을 여기 한 번 더 적으면 두 곳이 어긋난다.
+ */
+export function genreTagsSystem(tags: readonly string[]): string {
+  return `너는 도서의 분류 정보를 앱의 고정 태그로 정규화한다.
+
+쓸 수 있는 태그는 아래 ${tags.length}개뿐이다.
+${tags.join(", ")}
+
+규칙:
+- 최대 4개. 없는 태그를 만들지 마라.
+- 확신이 없으면 적게 골라라. 억지로 4개를 채우지 마라.
+- 원문 분류가 애매하면 제목과 책소개에서 판단해라.
+- 맞는 태그가 하나도 없으면 빈 배열을 돌려줘라.`;
+}
+
+export interface BookClassification {
+  title: string;
+  author?: string;
+  /** 알라딘 categoryName 등 원문 분류 문자열 */
+  categories?: string[];
+  /** 국립중앙도서관 KDC 코드 */
+  kdc?: string;
+  /** 책소개 텍스트. 분류가 애매할 때 정확도를 올려 준다 */
+  description?: string;
+}
+
+export function genreTagsUser(book: BookClassification): string {
+  const lines = [`제목: ${book.title}`];
+  if (book.author) lines.push(`저자: ${book.author}`);
+  if (book.categories?.length) lines.push(`분류: ${book.categories.join(" / ")}`);
+  if (book.kdc) lines.push(`KDC: ${book.kdc}`);
+  if (book.description) lines.push(`책소개: ${book.description.slice(0, 500)}`);
+  return lines.join("\n");
+}
