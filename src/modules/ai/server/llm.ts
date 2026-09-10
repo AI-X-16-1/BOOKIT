@@ -8,35 +8,36 @@
  * - 클라이언트에서 절대 호출하지 않는다. `server-only` 가 빌드 타임에 막는다.
  * - API 키는 서버 환경변수에만 둔다. NEXT_PUBLIC_ 접두사를 붙이지 않는다.
  *
- * 벤더는 Anthropic 하나로 고정한다(1일차 결정, .env.example 참고).
- * 모델 문자열은 LLM_MODEL 로 빼 두었다 — 대회 제출서에 들어가는 값이라 코드에 박지 않는다.
+ * 벤더 차이는 providers.ts 가 흡수한다. 이 파일은 검증·복구·재질문만 본다.
+ * 프로덕션은 LLM_PROVIDER 하나로 고정한다 (plan-ko.md §5-2).
+ * 모델 문자열은 LLM_MODEL 로 뺐다 — 제출 서류에 들어가는 값이라 코드에 박지 않는다.
  */
 import "server-only";
 
-import Anthropic from "@anthropic-ai/sdk";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { z } from "zod";
 
-/** LLM_MODEL 이 비어 있을 때 쓰는 값. */
-const DEFAULT_MODEL = "claude-opus-5";
+import {
+  call,
+  ProviderCallError,
+  type Effort,
+  type Provider,
+} from "./providers";
+
+export type { Effort, Provider };
 
 /** 형식이 어긋났을 때 다시 물어보는 횟수 포함 총 시도 횟수. */
 const MAX_ATTEMPTS = 2;
 
-/**
- * 사고 깊이. 낮출수록 싸고 빠르다.
- * 데모 직전 지연이 문제가 되면 LLM_EFFORT 로 통째로 낮출 수 있다.
- */
-export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+const PROVIDERS: readonly Provider[] = ["gemini", "anthropic"];
 
 export type LlmErrorKind =
   /** 환경변수가 없거나 지원하지 않는 벤더 — 배포 설정 문제다. */
   | "not_configured"
-  /** 모델이 응답 자체를 거부했다. */
+  /** 모델이 응답 자체를 거부했다. 재질문해도 소용없다. */
   | "refusal"
   /** 두 번 물어봤는데도 계약에 맞는 JSON 이 안 나왔다. */
   | "invalid_output"
-  /** 429. 호출부에서 잠시 뒤 재시도하거나 사용자에게 안내한다. */
+  /** 429. 무료 티어는 분당 한도가 낮다 — 호출부에서 안내가 필요하다. */
   | "rate_limited"
   /** 그 밖의 API·네트워크 실패. */
   | "upstream";
@@ -52,7 +53,8 @@ export class LlmError extends Error {
   }
 }
 
-interface LlmConfig {
+export interface LlmConfig {
+  provider: Provider;
   apiKey: string;
   model: string;
   effort: Effort | undefined;
@@ -62,14 +64,15 @@ interface LlmConfig {
  * 환경변수는 모듈 스코프가 아니라 호출 시점에 읽는다.
  * 모듈 스코프에서 읽으면 키 없는 CI 빌드가 깨진다(.github/workflows/ci.yml 참고).
  */
-function readConfig(): LlmConfig {
-  const provider = process.env.LLM_PROVIDER?.trim() || "anthropic";
-  if (provider !== "anthropic") {
+export function readConfig(): LlmConfig {
+  const raw = process.env.LLM_PROVIDER?.trim() || "gemini";
+  if (!PROVIDERS.includes(raw as Provider)) {
     throw new LlmError(
       "not_configured",
-      `LLM_PROVIDER=${provider} 는 지원하지 않는다. 벤더는 anthropic 하나로 고정이다 (CLAUDE.md §1).`,
+      `LLM_PROVIDER=${raw} 는 지원하지 않는다. ${PROVIDERS.join(" | ")} 중 하나여야 한다.`,
     );
   }
+  const provider = raw as Provider;
 
   const apiKey = process.env.LLM_API_KEY?.trim();
   if (!apiKey) {
@@ -79,27 +82,16 @@ function readConfig(): LlmConfig {
     );
   }
 
-  const effort = process.env.LLM_EFFORT?.trim() as Effort | undefined;
-
-  return {
-    apiKey,
-    model: process.env.LLM_MODEL?.trim() || DEFAULT_MODEL,
-    effort: effort || undefined,
-  };
-}
-
-let cachedClient: { apiKey: string; client: Anthropic } | null = null;
-
-function getClient(apiKey: string): Anthropic {
-  if (cachedClient?.apiKey !== apiKey) {
-    cachedClient = {
-      apiKey,
-      // 429·5xx·연결 실패는 SDK 가 알아서 재시도한다.
-      // 여기서 세는 MAX_ATTEMPTS 는 "형식이 틀렸을 때 다시 묻는" 횟수라 층이 다르다.
-      client: new Anthropic({ apiKey, maxRetries: 2 }),
-    };
+  const model = process.env.LLM_MODEL?.trim();
+  if (!model) {
+    throw new LlmError(
+      "not_configured",
+      "LLM_MODEL 이 비어 있다. `npm run llm:models` 로 쓸 수 있는 모델을 확인해라.",
+    );
   }
-  return cachedClient.client;
+
+  const effort = process.env.LLM_EFFORT?.trim() as Effort | undefined;
+  return { provider, apiKey, model, effort: effort || undefined };
 }
 
 export interface CallJsonOptions<T> {
@@ -118,12 +110,14 @@ export interface CallJsonOptions<T> {
  * 프롬프트를 던지고 계약에 맞는 JSON 하나를 받아온다.
  *
  * 방어는 3겹이다.
- * 1. output_config.format 으로 서버가 스키마를 강제한다.
- * 2. 그래도 parsed_output 이 비면 본문 텍스트에서 JSON 을 건져 직접 검증한다.
+ * 1. 벤더에 JSON Schema 를 넘겨 출력 형식을 강제한다.
+ * 2. 그래도 안 맞으면 본문 텍스트에서 JSON 을 건져 직접 검증한다.
  * 3. 그것도 실패하면 무엇이 틀렸는지 알려주고 한 번 더 묻는다.
  *
  * 세 겹을 다 통과하지 못하면 LlmError 를 던진다. 반쯤 맞는 값을 돌려주지 않는다 —
  * 호출부가 빈 껍데기를 화면에 그리는 것보다 명시적으로 실패하는 편이 낫다.
+ *
+ * 벤더가 스키마를 강제했더라도 zod 로 다시 검증한다. 형태를 신뢰하지 않는다 (CLAUDE.md §6).
  */
 export async function callJson<T>(opts: CallJsonOptions<T>): Promise<T> {
   const {
@@ -136,9 +130,7 @@ export async function callJson<T>(opts: CallJsonOptions<T>): Promise<T> {
   } = opts;
 
   const config = readConfig();
-  const client = getClient(config.apiKey);
   const effort = config.effort ?? opts.effort ?? "medium";
-  const format = zodOutputFormat(schema);
 
   let lastProblem = "";
 
@@ -148,46 +140,42 @@ export async function callJson<T>(opts: CallJsonOptions<T>): Promise<T> {
         ? user
         : `${user}\n\n(직전 응답이 형식을 어겼다: ${lastProblem}\n설명이나 코드펜스 없이 JSON 객체 하나만 출력해라.)`;
 
-    let message;
+    let response;
     try {
-      message = await client.messages.parse(
-        {
-          model: config.model,
-          max_tokens: maxTokens,
-          system,
-          messages: [{ role: "user", content }],
-          output_config: { effort, format },
-        },
-        { timeout: timeoutMs },
-      );
+      response = await call(config.provider, config.apiKey, {
+        model: config.model,
+        system,
+        user: content,
+        schema: schema as z.ZodType<unknown>,
+        maxTokens,
+        timeoutMs,
+        effort,
+      });
     } catch (error) {
       throw toLlmError(error, label);
     }
 
-    if (message.stop_reason === "refusal") {
+    if (response.stop === "refusal") {
       throw new LlmError(
         "refusal",
-        `[${label}] 모델이 응답을 거부했다 (${message.stop_details?.category ?? "unknown"}).`,
+        `[${label}] 모델이 응답을 거부했다 (${response.detail ?? "unknown"}).`,
       );
     }
 
-    const parsed = message.parsed_output;
-    if (parsed != null) {
-      return parsed;
-    }
+    const candidate =
+      response.parsed !== undefined
+        ? response.parsed
+        : salvageJson(response.text);
 
-    // 구조화 출력이 비었다 — 본문에서 직접 건져 본다.
-    const salvaged = salvageJson(textOf(message));
-    const result = schema.safeParse(salvaged);
+    const result = schema.safeParse(candidate);
     if (result.success) {
-      console.warn(`[ai:${label}] 구조화 출력이 비어 본문에서 JSON 을 복구했다.`);
       return result.data;
     }
 
     lastProblem =
-      message.stop_reason === "max_tokens"
+      response.stop === "max_tokens"
         ? `max_tokens(${maxTokens}) 에 걸려 응답이 잘렸다`
-        : describeFailure(salvaged, result.error);
+        : describeFailure(candidate, result.error);
 
     if (attempt < MAX_ATTEMPTS) {
       console.warn(`[ai:${label}] 형식 위반으로 재시도한다: ${lastProblem}`);
@@ -198,13 +186,6 @@ export async function callJson<T>(opts: CallJsonOptions<T>): Promise<T> {
     "invalid_output",
     `[${label}] ${MAX_ATTEMPTS}번 시도했지만 계약에 맞는 JSON 을 받지 못했다: ${lastProblem}`,
   );
-}
-
-function textOf(message: { content: Anthropic.ContentBlock[] }): string {
-  return message.content
-    .filter((block): block is Anthropic.TextBlock => block.type === "text")
-    .map((block) => block.text)
-    .join("\n");
 }
 
 /**
@@ -223,8 +204,8 @@ function salvageJson(text: string): unknown {
   }
 }
 
-function describeFailure(salvaged: unknown, error: z.ZodError): string {
-  if (salvaged === undefined) return "JSON 객체를 찾지 못했다";
+function describeFailure(candidate: unknown, error: z.ZodError): string {
+  if (candidate === undefined) return "JSON 객체를 찾지 못했다";
   return error.issues
     .slice(0, 3)
     .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
@@ -234,22 +215,24 @@ function describeFailure(salvaged: unknown, error: z.ZodError): string {
 function toLlmError(error: unknown, label: string): LlmError {
   if (error instanceof LlmError) return error;
 
-  if (error instanceof Anthropic.RateLimitError) {
-    return new LlmError("rate_limited", `[${label}] 요청이 몰렸다 (429).`, {
-      cause: error,
-    });
-  }
-  if (error instanceof Anthropic.AuthenticationError) {
-    return new LlmError(
-      "not_configured",
-      `[${label}] LLM_API_KEY 가 유효하지 않다 (401).`,
-      { cause: error },
-    );
-  }
-  if (error instanceof Anthropic.APIError) {
+  if (error instanceof ProviderCallError) {
+    if (error.status === 429) {
+      return new LlmError(
+        "rate_limited",
+        `[${label}] 요청 한도에 걸렸다 (429). 무료 티어는 분당 한도가 낮다.`,
+        { cause: error },
+      );
+    }
+    if (error.status === 401 || error.status === 403) {
+      return new LlmError(
+        "not_configured",
+        `[${label}] LLM_API_KEY 가 유효하지 않다 (${error.status}).`,
+        { cause: error },
+      );
+    }
     return new LlmError(
       "upstream",
-      `[${label}] LLM 호출 실패 (${error.status}): ${error.message}`,
+      `[${label}] LLM 호출 실패 (${error.status ?? "network"}): ${error.message}`,
       { cause: error },
     );
   }
