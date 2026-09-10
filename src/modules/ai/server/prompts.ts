@@ -100,3 +100,49 @@ export function questionUser(
 독후감 전문(맥락 참고용):
 """${review}"""${avoid}`;
 }
+
+/* ── AI #4 채점 ────────────────────────────────────── */
+
+/**
+ * 통과 기준. PASS_THRESHOLD 환경변수로 데모 직전까지 조정한다 (docs/prompts.md §4).
+ *
+ * 판정은 모델이 하고 통과 여부는 코드가 정한다. 모델에게 임계값까지 맡기면
+ * 기준을 바꿀 때마다 프롬프트가 바뀌고, 같은 답변이 다르게 채점될 수 있다.
+ * 3축은 주관적 판단이라 모델이 낫고, 임계값 적용은 규칙이라 코드가 낫다.
+ */
+export type PassThreshold = "moderate" | "strict";
+
+export const GRADING_SYSTEM = `너는 학생의 답변을 채점한다. 정답 여부가 아니라 독후감과의 정합성을 본다.
+
+세 가지를 판정하라.
+
+1. logic_consistency — 답변이 독후감의 주장과 어긋나지 않는가. pass / weak / fail
+2. specificity — 장면이나 인물을 특정했는가. 뭉뚱그렸으면 weak. pass / weak / fail
+3. style_consistency — 독후감과 답변의 문체·어휘 수준이 비슷한가. 갑자기 성인 문체로 바뀌면 shifted. same / shifted
+
+규칙:
+- 짧다고 감점하지 마라. 한 문장이어도 장면을 특정했으면 pass다.
+- 맞춤법·띄어쓰기는 보지 마라.
+- feedback은 학생에게 보여줄 문장이다. 반말로 두 문장 이내.
+  통과면 무엇을 잘했는지 구체적으로, 미통과면 무엇을 더하면 되는지 알려줘라.
+  절대 나무라지 마라.
+- passed 는 네가 정하지 말고 세 축 판정에만 집중해라. 통과 여부는 서버가 정한다.`;
+
+export function gradingUser(
+  review: string,
+  question: string,
+  answer: string,
+  book?: BookContext,
+  context?: PromptContext,
+): string {
+  const bookLine = book ? `책: ${book.title}\n` : "";
+
+  return `${gradeLine(context)}${bookLine}
+독후감:
+"""${review}"""
+
+질문: ${question}
+
+학생 답변:
+"""${answer}"""`;
+}
