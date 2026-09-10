@@ -22,6 +22,8 @@ export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
 
 export interface ProviderRequest {
   model: string;
+  /** model 이 계속 실패할 때 순서대로 넘어갈 대체 모델. */
+  fallbackModels: string[];
   system: string;
   user: string;
   schema: z.ZodType<unknown>;
@@ -188,14 +190,55 @@ async function callAnthropic(
 
 /* ── 디스패치 ──────────────────────────────────────── */
 
-export function call(
+/** 잠깐 뒤 다시 하면 되는 상태 코드. 408 은 우리가 붙인 타임아웃이다. */
+const TRANSIENT_STATUS = new Set([408, 500, 502, 503, 504]);
+
+/** 재시도 간격. 총 대기가 1.6초를 넘지 않게 짧게 잡는다 — 학생이 로딩 화면을 보고 있다. */
+const RETRY_DELAYS_MS = [400, 1200];
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 한 번 호출한다. 일시적 실패는 물러섰다가 다시, 그래도 안 되면 대체 모델로 넘어간다.
+ *
+ * 무료 티어에서 최신 모델은 503(과부하)이 실제로 난다. 심사 기간 내내 링크가
+ * 살아 있어야 하므로(plan-ko.md §5-3) 한 번 실패했다고 화면을 죽이지 않는다.
+ */
+export async function call(
   provider: Provider,
   apiKey: string,
   req: ProviderRequest,
 ): Promise<ProviderResponse> {
-  return provider === "gemini"
-    ? callGemini(apiKey, req)
-    : callAnthropic(apiKey, req);
+  const models = [req.model, ...req.fallbackModels];
+  let lastError: unknown;
+
+  for (const model of models) {
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+      try {
+        const request = { ...req, model };
+        return provider === "gemini"
+          ? await callGemini(apiKey, request)
+          : await callAnthropic(apiKey, request);
+      } catch (error) {
+        lastError = error;
+
+        const transient =
+          error instanceof ProviderCallError &&
+          (error.status === undefined || TRANSIENT_STATUS.has(error.status));
+        if (!transient) throw error;
+
+        if (attempt < RETRY_DELAYS_MS.length) {
+          await sleep(RETRY_DELAYS_MS[attempt]);
+        }
+      }
+    }
+
+    if (model !== models[models.length - 1]) {
+      console.warn(`[ai] ${model} 이 계속 실패한다. 대체 모델로 넘어간다.`);
+    }
+  }
+
+  throw lastError;
 }
 
 /** 발급받은 키로 실제 쓸 수 있는 모델 목록. LLM_MODEL 값을 정할 때 쓴다. */

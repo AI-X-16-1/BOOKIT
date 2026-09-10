@@ -66,7 +66,8 @@ main().catch((error: unknown) => {
     if (error.kind === "not_configured") {
       console.error("  .env.local 에 LLM_API_KEY 를 채우고 다시 실행해라.");
     }
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
   throw error;
 });

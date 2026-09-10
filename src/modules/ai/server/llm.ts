@@ -57,6 +57,8 @@ export interface LlmConfig {
   provider: Provider;
   apiKey: string;
   model: string;
+  /** model 이 과부하일 때 순서대로 넘어갈 대체 모델. */
+  fallbackModels: string[];
   effort: Effort | undefined;
 }
 
@@ -90,8 +92,13 @@ export function readConfig(): LlmConfig {
     );
   }
 
+  const fallbackModels = (process.env.LLM_MODEL_FALLBACK ?? "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter((name) => name && name !== model);
+
   const effort = process.env.LLM_EFFORT?.trim() as Effort | undefined;
-  return { provider, apiKey, model, effort: effort || undefined };
+  return { provider, apiKey, model, fallbackModels, effort: effort || undefined };
 }
 
 export interface CallJsonOptions<T> {
@@ -144,6 +151,7 @@ export async function callJson<T>(opts: CallJsonOptions<T>): Promise<T> {
     try {
       response = await call(config.provider, config.apiKey, {
         model: config.model,
+        fallbackModels: config.fallbackModels,
         system,
         user: content,
         schema: schema as z.ZodType<unknown>,
