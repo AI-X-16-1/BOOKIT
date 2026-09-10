@@ -165,6 +165,94 @@ check('generate_join_code() 결과는 알파벳 규칙을 지킨다',
   /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/.test(
     (await db.query('select generate_join_code() as code')).rows[0].code));
 
+// ── record_verification_result (0008) ────────────────
+// 채점 결과 + 책갈피 적립 + 독후감 상태를 한 트랜잭션으로 남기는 함수.
+// 여기서 지키려는 것은 두 가지다: 학생이 직접 부를 수 없어야 하고, 같은 시도로
+// 두 번 적립되지 않아야 한다 (docs/spec.md §4).
+
+const V_OPEN = 'f0000000-0000-0000-0000-00000000000b'; // S1 의 채점 전 시도
+const V_S3   = 'f0000000-0000-0000-0000-00000000000c'; // S3 의 채점 전 시도
+
+await db.exec(`
+  insert into reviews (id, student_id, book_id, body, status) values
+    ('d0000000-0000-0000-0000-00000000000b','${S1}','b0000000-0000-0000-0000-000000000001','S1 의 두 번째 독후감','questioning'),
+    ('d0000000-0000-0000-0000-00000000000d','${S3}','b0000000-0000-0000-0000-000000000001','S3 의 두 번째 독후감','questioning');
+  insert into review_gaps (id, review_id, ord, quote, gap_type, reason) values
+    ('e0000000-0000-0000-0000-00000000000b','d0000000-0000-0000-0000-00000000000b',1,'재미있었다','feeling_only','감상만 남음'),
+    ('e0000000-0000-0000-0000-00000000000d','d0000000-0000-0000-0000-00000000000d',1,'재미있었다','feeling_only','감상만 남음');
+  insert into verifications (id, review_id, student_id, attempt_no, gap_id, question) values
+    ('${V_OPEN}','d0000000-0000-0000-0000-00000000000b','${S1}',1,'e0000000-0000-0000-0000-00000000000b','왜 그렇게 생각했어?'),
+    ('${V_S3}','d0000000-0000-0000-0000-00000000000d','${S3}',1,'e0000000-0000-0000-0000-00000000000d','왜 그렇게 생각했어?');
+`);
+
+const record = (uid, vid, student, passed, role = 'service_role') => as(
+  uid,
+  `select points_awarded from record_verification_result(
+     '${vid}'::uuid, '${student}'::uuid, '답변 원문',
+     'pass'::score_axis, 'pass'::score_axis, 'same'::style_axis,
+     ${passed}, '잘했어!', 50)`,
+  role,
+);
+
+// 학생 역할로 직접 부를 수 있으면 자기 시도를 스스로 통과시키고 책갈피까지 정할 수 있다.
+let studentCallBlocked = false;
+try {
+  await record(S1, V_OPEN, S1, true, 'authenticated');
+} catch {
+  studentCallBlocked = true;
+}
+check('학생(authenticated) 은 record_verification_result 를 실행할 수 없다', studentCallBlocked);
+
+const awarded = await record(null, V_OPEN, S1, true);
+check('통과 채점이 points_awarded 를 돌려준다', Number(awarded.rows[0]?.points_awarded) === 50,
+  `points_awarded=${awarded.rows[0]?.points_awarded}`);
+
+const ledger = await db.query(
+  `select delta, reason from points_ledger where ref_id = $1`, [V_OPEN]);
+check('통과하면 원장에 +50 이 한 줄 남는다',
+  ledger.rows.length === 1 && Number(ledger.rows[0].delta) === 50
+    && ledger.rows[0].reason === 'verification_pass',
+  JSON.stringify(ledger.rows));
+
+const passedReview = await db.query(
+  `select status from reviews where id = 'd0000000-0000-0000-0000-00000000000b'`);
+check('통과하면 독후감 상태가 passed 로 바뀐다',
+  passedReview.rows[0]?.status === 'passed', passedReview.rows[0]?.status);
+
+// 버튼 두 번 누르기. answered_at 이 이미 차 있으므로 두 번째는 P0002 로 막힌다.
+let secondCall = null;
+try {
+  await record(null, V_OPEN, S1, true);
+} catch (e) {
+  secondCall = e.code ?? e.message;
+}
+// P0002 는 modules/verification 의 answer.ts 가 "이미 채점했어" 로 바꿔 주는 코드다.
+// 여기서 코드가 바뀌면 화면에 "잠깐 문제가 생겼어" 가 뜬다.
+check('같은 시도를 두 번 채점하면 P0002 로 막힌다 (이중 적립 방지)',
+  secondCall === 'P0002', String(secondCall));
+check('두 번 시도해도 원장은 한 줄뿐이다',
+  (await db.query(`select 1 from points_ledger where ref_id = $1`, [V_OPEN])).rows.length === 1);
+
+// p_student_id 가 다르면 함수 안의 소유권 조건에서 걸린다.
+let otherStudentBlocked = false;
+try {
+  await record(null, V_S3, S1, true);
+} catch {
+  otherStudentBlocked = true;
+}
+check('남의 시도는 채점되지 않는다 (p_student_id 불일치)', otherStudentBlocked);
+
+// 실패는 verifications 행만 남기고 원장에는 아무것도 쓰지 않는다 (CLAUDE.md §4).
+await record(null, V_S3, S3, false);
+check('실패 채점은 원장에 행을 남기지 않는다',
+  (await db.query(`select 1 from points_ledger where ref_id = $1`, [V_S3])).rows.length === 0);
+check('실패 채점은 points_awarded 가 0 이다',
+  Number((await db.query(`select points_awarded from verifications where id = $1`, [V_S3]))
+    .rows[0]?.points_awarded) === 0);
+check('실패하면 독후감 상태가 failed 로 바뀐다',
+  (await db.query(`select status from reviews where id = 'd0000000-0000-0000-0000-00000000000d'`))
+    .rows[0]?.status === 'failed');
+
 // ── 출력 ─────────────────────────────────────────────
 const failed = results.filter(r => !r.ok);
 for (const r of results) {
