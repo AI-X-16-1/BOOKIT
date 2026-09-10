@@ -18,9 +18,10 @@
  * 서버 전용(본문 조회·사전 호출)은 "@/modules/reader/server" 에 있다 —
  * server-only 를 import 하므로 한 배럴에 묶으면 클라이언트 빌드가 깨진다.
  *
- * ⚠️ 아래 mock export 는 임시다. LibraryScreen 을 실제 라우트에 붙이면
- *    mock.ts 와 함께 지운다. 라우트는 이미 있다 (src/app/api/reader, src/app/api/dict).
+ * 사전은 실제 API 에 붙었다. 책 목록과 본문은 아직 mock 이다 —
+ * book_contents 에 시드가 들어오면 GET /api/reader/:bookId 로 바꾼다.
  */
 
 export { LibraryScreen } from "./components/LibraryScreen";
-export { KNOWN_WORDS, TEXTS, type DemoText } from "./mock";
+export { fetchDictEntry } from "./api";
+export { TEXTS, type DemoText } from "./mock";

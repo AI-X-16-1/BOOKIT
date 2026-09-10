@@ -72,11 +72,46 @@ export async function lookup(word: string): Promise<DictResponse> {
   }
 
   const entry = pickEntry(parseItems(xml), query);
-  if (!entry) {
-    throw new DictError("not_found", `'${query}'${topic(query)} 사전에 없는 말이야.`);
+  if (entry) {
+    return { word: entry.word, definition: entry.definition, source: SOURCE };
   }
 
-  return { word: entry.word, definition: entry.definition, source: SOURCE };
+  // 조사가 붙은 채로 눌렀을 수 있다. 어간을 잘라 한 번 더 찾아본다.
+  const stem = stripParticle(query);
+  if (stem) return lookup(stem);
+
+  throw new DictError("not_found", `'${query}'${topic(query)} 사전에 없는 말이야.`);
+}
+
+/**
+ * 낱말 끝의 조사를 떼어낸다. 못 떼면 null.
+ *
+ * 아이는 본문에서 "제비가" 를 누르지 "제비" 를 누르지 않는다. 그런데 사전 표제어는
+ * "제비" 다. 형태소 분석기를 붙이는 게 정석이지만 이 규모에 들일 것이 아니고,
+ * 체언 + 조사만 걸러도 아이가 누르는 낱말의 대부분이 잡힌다.
+ *
+ * 용언 활용("겨뤘다" → "겨루다")은 다루지 않는다. 규칙이 훨씬 복잡하고
+ * 잘못 자르면 엉뚱한 낱말의 뜻이 뜬다 — 못 찾았다고 하는 편이 낫다.
+ *
+ * 긴 조사부터 본다. "에서" 를 "서" 로 먼저 자르면 안 된다.
+ */
+const PARTICLES = [
+  "에게서", "한테서", "으로서", "으로써", "이라고", "라고는",
+  "에서", "에게", "한테", "께서", "부터", "까지", "처럼", "보다",
+  "마다", "조차", "라도", "이나", "으로", "이란", "이라",
+  "은", "는", "이", "가", "을", "를", "의", "에", "와", "과",
+  "도", "만", "로", "나", "야", "여",
+];
+
+export function stripParticle(word: string): string | null {
+  for (const particle of PARTICLES) {
+    if (!word.endsWith(particle)) continue;
+
+    const stem = word.slice(0, -particle.length);
+    // 한 글자 어간은 조사를 잘못 뗀 것일 때가 많다 — "우리" 에서 "리" 를 떼는 식.
+    if (stem.length >= 2) return stem;
+  }
+  return null;
 }
 
 interface DictEntry {

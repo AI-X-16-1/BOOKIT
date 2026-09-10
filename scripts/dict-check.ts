@@ -6,7 +6,7 @@
  *   1. 동음이의어·활용형에서 엉뚱한 단어의 뜻이 붙지 않는가
  *   2. 사전에 없는 말(고유명사 등)을 not_found 로 깔끔히 처리하는가
  */
-import { DictError, lookup } from "@/modules/reader/server/dict";
+import { DictError, lookup, stripParticle } from "@/modules/reader/server/dict";
 
 /** 책잇 서재 본문에서 아이가 누를 법한 말들 + 함정 케이스 */
 const WORDS = [
@@ -16,6 +16,12 @@ const WORDS = [
   "겨루다", // 토끼와 거북이 본문
   "처마",
   "정성껏",
+  // 조사가 붙은 채로 누른 경우 — 어간을 잘라 찾아야 한다
+  "제비가",
+  "흥부는",
+  "다리를",
+  "마을에",
+  "그늘에서",
   "잎싹", // 고유명사 — 없어야 정상
   "ㅁㄴㅇㄹ", // 쓰레기 입력 — not_found 로 떨어져야 한다
   "", // 빈 입력
@@ -29,13 +35,18 @@ async function main() {
     try {
       const result = await lookup(word);
       const ms = Date.now() - startedAt;
-      const exact = result.word === word;
+
+      // 조사를 뗀 경우 표제어가 검색어와 다른 것이 정상이다.
+      const stem = stripParticle(word);
+      const ok = result.word === word || result.word === stem;
+
       console.log(
-        `${exact ? "✓" : "✕"} ${label.padEnd(10)} ${String(ms).padStart(5)}ms  ` +
-          `[${result.word}] ${result.definition.slice(0, 52)}`,
+        `${ok ? "✓" : "✕"} ${label.padEnd(10)} ${String(ms).padStart(5)}ms  ` +
+          `[${result.word}]${result.word === stem ? " ←조사 제거" : ""} ` +
+          `${result.definition.slice(0, 46)}`,
       );
-      if (!exact) {
-        console.log(`     ⚠ 검색어와 표제어가 다르다 — 엉뚱한 뜻일 수 있다`);
+      if (!ok) {
+        console.log(`     ⚠ 검색어와도 어간과도 다르다 — 엉뚱한 뜻일 수 있다`);
       }
     } catch (error) {
       const ms = Date.now() - startedAt;
