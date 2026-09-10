@@ -2,15 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { GradeLevel } from "@/shared/types";
+import { ApiClientError, apiPost } from "@/shared/api/client";
+import type {
+  GradeLevel,
+  StudentOnboardingResponse,
+  TeacherOnboardingResponse,
+} from "@/shared/types";
 import { Button, Chip, cn } from "@/shared/ui";
-import {
-  DEMO_JOIN_CODE,
-  GRADES,
-  createClass,
-  gradeLabel,
-  joinAsStudent,
-} from "../mock";
+import { GRADES, gradeLabel } from "../grades";
 
 /**
  * 온보딩. 목업 1 #2 (L60-96).
@@ -20,7 +19,12 @@ import {
  * CLAUDE.md §4 는 이를 금지한다. 아무나 남의 반 데이터를 읽게 되기 때문이다.
  * 학생은 교사가 만든 6자리 코드로만 들어오고, 반은 교사만 만들 수 있다.
  */
-export function OnboardingScreen() {
+export interface OnboardingScreenProps {
+  /** 구글에서 온 이름. profiles.display_name */
+  displayName: string;
+}
+
+export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
   const router = useRouter();
   const [role, setRole] = useState<"student" | "teacher">("student");
   const [grade, setGrade] = useState<GradeLevel>(5);
@@ -35,11 +39,18 @@ export function OnboardingScreen() {
     setBusy(true);
     setError(null);
     try {
-      await joinAsStudent(grade, code);
-      router.push("/home");
-    } catch {
-      setError("그런 코드는 없어. 선생님께 다시 물어볼까?");
-    } finally {
+      await apiPost<StudentOnboardingResponse>("/api/onboarding/student", {
+        grade_level: grade,
+        join_code: code,
+      });
+      // replace 로 보낸다 — 뒤로 가기로 온보딩에 되돌아오지 않게
+      router.replace("/home");
+    } catch (cause) {
+      setError(
+        cause instanceof ApiClientError
+          ? cause.message
+          : "잠깐 문제가 생겼어. 다시 해볼까?",
+      );
       setBusy(false);
     }
   };
@@ -47,19 +58,33 @@ export function OnboardingScreen() {
   const submitTeacher = async () => {
     setBusy(true);
     setError(null);
-    const r = await createClass(school, grade, classNo);
-    setIssued(r.join_code);
-    setBusy(false);
+    try {
+      const result = await apiPost<TeacherOnboardingResponse>(
+        "/api/onboarding/teacher",
+        { school_name: school, grade_level: grade, class_no: classNo },
+      );
+      setIssued(result.join_code);
+    } catch (cause) {
+      setError(
+        cause instanceof ApiClientError
+          ? cause.message
+          : "잠깐 문제가 생겼어. 다시 해볼까요?",
+      );
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
     <div className="flex min-h-dvh flex-col px-6 pt-[52px] pb-8">
       <div className="flex items-center gap-3.5">
         <div className="flex h-13 w-13 flex-none items-center justify-center rounded-full bg-yellow text-[19px] font-bold text-stamp-text">
-          민
+          {displayName.slice(0, 1)}
         </div>
         <div>
-          <div className="text-[23px] font-bold text-ink">반가워요, 민서님!</div>
+          <div className="text-[23px] font-bold text-ink">
+            반가워요, {displayName}님!
+          </div>
           <div className="mt-1 text-sm text-muted">
             학년·반은 추천과 랭킹에 쓰여요
           </div>
@@ -125,10 +150,6 @@ export function OnboardingScreen() {
           <p className="mt-2 text-[13px] text-faint">
             학교·반을 직접 적지 않아. 코드로만 들어와야 다른 반 기록이 섞이지
             않거든.
-          </p>
-          <p className="mt-1.5 text-[13px] text-muted">
-            데모용 코드:{" "}
-            <span className="font-bold text-coral">{DEMO_JOIN_CODE}</span>
           </p>
         </>
       ) : (
