@@ -14,8 +14,13 @@
  * 본문은 18px / line-height 2 (CLAUDE.md §8).
  * 사전은 768px 미만에서 바텀시트, 이상에서 사이드 패널.
  *
- * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
+ * 이 배럴은 클라이언트에서 import 해도 안전한 것만 담는다.
+ * 서버 전용(본문 조회·사전 호출)은 "@/modules/reader/server" 에 있다 —
+ * server-only 를 import 하므로 한 배럴에 묶으면 클라이언트 빌드가 깨진다.
+ *
+ * ⚠️ 아래 mock export 는 임시다. LibraryScreen 을 실제 라우트에 붙이면
+ *    mock.ts 와 함께 지운다. 라우트는 이미 있다 (src/app/api/reader, src/app/api/dict).
  */
 
 export { LibraryScreen } from "./components/LibraryScreen";
-export { KNOWN_WORDS, TEXTS, getChapter, lookup, type DemoText } from "./mock";
+export { KNOWN_WORDS, TEXTS, type DemoText } from "./mock";

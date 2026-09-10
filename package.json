@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "prepare": "git config core.hooksPath .githooks || true",
-    "test:rls": "node supabase/tests/rls.test.mjs"
+    "test:rls": "node supabase/tests/rls.test.mjs",
+    "reader:dict": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/dict-check.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -29,6 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }
