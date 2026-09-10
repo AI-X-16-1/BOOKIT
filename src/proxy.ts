@@ -1,6 +1,8 @@
 /**
  * 세션 갱신 + 역할 분기.
  *
+ * Next 16 에서 middleware.ts 는 proxy.ts 로 이름이 바뀌었다 (옛 이름은 빌드 시 경고).
+ *
  * 소유: 김민경 (CLAUDE.md §3 — auth).
  *
  * 얇게 유지한다. 상태 해석은 modules/auth 의 resolveAccess,
@@ -14,7 +16,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isPublicPath, redirectTargetFor, resolveAccess } from "@/modules/auth";
 import { updateSession } from "@/shared/supabase/middleware";
 
-export async function middleware(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { response, user, supabase } = await updateSession(request);
   const { pathname } = request.nextUrl;
 

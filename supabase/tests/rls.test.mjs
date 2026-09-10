@@ -144,6 +144,27 @@ check('barrier 있음 → 사용자 함수가 자기 반 학생만 본다',
 check('barrier 없는 대조군은 실제로 샌다 (이 검사가 실패하면 위 검사는 무의미)',
   noBarrier.length > withBarrier.length, `대조군이 본 것: ${noBarrier.join(' ')}`);
 
+// ── join_code 알파벳 (0006) ──────────────────────────
+// 헷갈리는 0/O/1/I 는 코드에 쓰지 않는다. 함수 안에만 있던 규칙을 테이블 제약으로 못박았다.
+
+async function insertCode(code) {
+  try {
+    await db.exec(`insert into classes (teacher_id, school_name, grade_level, class_no, join_code)
+                   values ('${T1}', '한빛초', 5, 9, '${code}');`);
+    await db.exec(`delete from classes where join_code = '${code}';`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+check('허용 알파벳 코드는 들어간다', await insertCode('HBCLSB'));
+check('0 이 든 코드는 거부된다 (예전 시드의 HB5002)', !(await insertCode('HB5002')));
+check('O·I 가 든 코드는 거부된다', !(await insertCode('HBCLSO')));
+check('generate_join_code() 결과는 알파벳 규칙을 지킨다',
+  /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/.test(
+    (await db.query('select generate_join_code() as code')).rows[0].code));
+
 // ── 출력 ─────────────────────────────────────────────
 const failed = results.filter(r => !r.ok);
 for (const r of results) {
