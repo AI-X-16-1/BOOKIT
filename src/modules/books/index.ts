@@ -15,5 +15,9 @@
  *
  * 표지는 알라딘 API의 image URL을 쓴다 — 목업의 그라데이션은 자리표시자다 (CLAUDE.md §10).
  * 시간이 부족하면 장르 인접 추천은 같은 태그 단순 목록으로 축소 (CLAUDE.md §11).
+ *
+ * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
  */
-export {};
+
+export { HomeScreen } from "./components/HomeScreen";
+export { BOOKS, COVER, searchBooks, type CoverTone, type DemoBook } from "./mock";

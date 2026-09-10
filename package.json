@@ -9,12 +9,15 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "prepare": "git config core.hooksPath .githooks || true",
+    "test:rls": "node supabase/tests/rls.test.mjs",
     "ai:smoke": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-smoke.ts",
     "llm:models": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/llm-models.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
     "@google/genai": "^2.21.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.116.0",
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -22,6 +25,7 @@
     "zod": "^4.6.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

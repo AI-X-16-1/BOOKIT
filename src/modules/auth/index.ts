@@ -14,5 +14,16 @@
  *
  * 학교/학급 자유 입력은 허용하지 않는다 — 6자리 join_code로만 가입 (CLAUDE.md §4).
  * Supabase 클라이언트 생성도 이 오너 소관 (src/shared/supabase/).
+ *
+ * ⚠️ 아래 mock export 는 임시다. 실제 Supabase Auth 가 붙으면 mock.ts 와 함께 지운다.
  */
-export {};
+
+export { LoginScreen } from "./components/LoginScreen";
+export { OnboardingScreen } from "./components/OnboardingScreen";
+export {
+  DEMO_JOIN_CODE,
+  GRADES,
+  createClass,
+  gradeLabel,
+  joinAsStudent,
+} from "./mock";

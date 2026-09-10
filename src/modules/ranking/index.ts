@@ -13,5 +13,9 @@
  *
  * AI 검증을 통과한 완독만 집계한다. 개인 순위는 노출하지 않는다 — 반 단위만 (docs/plan.md §4).
  * 시간이 부족하면 챌린지를 가장 먼저 잘라낸다 (CLAUDE.md §11).
+ *
+ * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
  */
-export {};
+
+export { ChallengeScreen } from "./components/ChallengeScreen";
+export { getChallenges, getClassRanking } from "./mock";

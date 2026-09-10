@@ -12,5 +12,15 @@
  *
  * 장르 도장은 완독 3권당 1개 (docs/spec.md §2).
  * 시간이 부족하면 레벨/뱃지 → 책나무·도장판 순으로 잘라낸다 (CLAUDE.md §11).
+ *
+ * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
  */
-export {};
+
+export { GrowthSection } from "./components/GrowthSection";
+export {
+  BADGES,
+  LEVEL,
+  READING_PROFILE,
+  TREE_STAGES,
+  getGrowth,
+} from "./mock";
