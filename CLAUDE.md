@@ -15,7 +15,7 @@ Contest: 원티드 AI Championship 2026. Submit by 2026-09-20. Deployed link mus
 | DB | Supabase PostgreSQL (RLS always on) |
 | Auth | Supabase Auth, Google OAuth only |
 | Serverless | Vercel Route Handlers only. NO Supabase Edge Functions |
-| LLM | Google Gemini, `gemini-3.5-flash` (free tier). One vendor only, server-side only |
+| LLM | Google Gemini, `gemini-3.5-flash-lite` (free tier). One vendor only, server-side only |
 | Deploy | Vercel |
 | Storage | Not used. No file uploads anywhere |
 | Package manager | pnpm |

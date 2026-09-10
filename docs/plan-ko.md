@@ -203,7 +203,7 @@
 | 데이터베이스 | Supabase PostgreSQL | RLS로 역할별 데이터 격리 |
 | 인증 | Supabase Auth (구글 OAuth) | 1일차 최우선 |
 | 서버리스 | **Vercel Route Handler로 통일** | Supabase Edge Functions 미사용 |
-| LLM | **Google Gemini** — `gemini-3.5-flash` | 무료 티어. 제출 서류 기재값이자 `LLM_MODEL` 값 |
+| LLM | **Google Gemini** — `gemini-3.5-flash-lite` | 무료 티어. 제출 서류 기재값이자 `LLM_MODEL` 값 |
 | 배포 | Vercel | 프리뷰 배포를 통합 검증에 활용 |
 | 스토리지 | 사용하지 않음 | 표지는 알라딘 이미지 URL, 원문은 DB 텍스트 |
 
@@ -213,7 +213,9 @@
 
 **LLM 벤더는 하나로 고정한다.** 모델명을 제출 서류에 적어야 하고, 두 벤더에 프롬프트를 각각 튜닝할 여유가 없다. 벤더는 `LLM_PROVIDER` 환경변수로 하나만 살아난다.
 
-대회 기간 모델은 `gemini-3.5-flash`다. 무료 티어에서 최신 모델(`gemini-3.8-flash`, `3.7-flash`)은 503 과부하가 실측되어 채택하지 않았다. 과부하에 대비해 `LLM_MODEL_FALLBACK`으로 대체 모델 체인을 둔다.
+대회 기간 모델은 `gemini-3.5-flash-lite`다. 최신 모델(`gemini-3.8-flash`, `3.7-flash`)은 503 과부하가, `gemini-3.5-flash`는 무료 티어 하루 20건 한도가 실측되어 둘 다 쓸 수 없었다. 과부하와 한도에 대비해 `LLM_MODEL_FALLBACK`으로 대체 모델 체인을 둔다.
+
+채점 기준은 독후감 20건으로 검증했다(`npm run ai:calibrate`, docs/prompts.md "Test set"). 대필 판별 5/5, 채점 기대 일치 18/18, "진짜 읽었지만 뭉뚱그린" 무리 실패 0/6. `PASS_THRESHOLD`는 `moderate`로 둔다 — 표본에서 `strict`와 결과가 같았으므로 관대한 쪽을 택했다.
 
 **Storage는 쓰지 않는다.** 아이가 파일을 올리는 기능이 없으므로, 업로드 경로를 만들지 않는 편이 미성년자 서비스 안전 측면에서도 낫다.
 
