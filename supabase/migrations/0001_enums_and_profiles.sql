@@ -124,7 +124,9 @@ create policy profiles_select_own on profiles
 
 -- 교사는 자기 반 학생의 이름·학년만 필요하다.
 -- 컬럼 제한은 RLS 로 표현할 수 없어서, 실제 조회는 0003 의 뷰를 쓴다.
--- 이 정책은 그 뷰(security invoker)가 통과하기 위한 최소 권한이다.
+-- 그 뷰는 security definer 라 이 정책 없이도 돈다 (github issue #3).
+-- 이 정책은 교사가 profiles 를 직접 조회할 때를 위한 최소 권한이다.
+-- profiles 에는 학생 자유 서술 컬럼이 없어서 행 단위로 열어도 CLAUDE.md §5 에 걸리지 않는다.
 create policy profiles_select_my_students on profiles
   for select using (is_teacher_of(id));
 
