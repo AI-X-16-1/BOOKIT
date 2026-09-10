@@ -27,3 +27,14 @@ export {
   gradeLabel,
   joinAsStudent,
 } from "./mock";
+
+export {
+  resolveAccess,
+  type AccessState,
+} from "./server/session";
+
+export {
+  AUTH_PATHS,
+  isPublicPath,
+  redirectTargetFor,
+} from "./server/routing";
