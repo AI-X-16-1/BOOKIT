@@ -19,5 +19,11 @@
  *
  * 프롬프트 원문은 docs/prompts.md, 타입은 @/shared/types 의 ai.ts 참고.
  * 모든 프롬프트 출력은 strict JSON이며, 형태를 신뢰하지 말고 방어적으로 파싱할 것.
+ *
+ * 구현 완료: analyzeGaps(#2), buildQuestion(#3)
+ * 미구현:   writingHelper(#1), grade(#4)
  */
-export {};
+export { analyzeGaps } from "./server/gaps";
+export { buildQuestion } from "./server/question";
+export { LlmError, type LlmErrorKind } from "./server/llm";
+export type { PromptContext } from "./server/prompts";

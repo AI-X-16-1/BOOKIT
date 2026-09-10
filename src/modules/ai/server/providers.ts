@@ -90,6 +90,8 @@ async function callGemini(
         systemInstruction: req.system,
         responseMimeType: "application/json",
         responseJsonSchema: toGeminiSchema(req.schema),
+        // ⚠️ Gemini 의 maxOutputTokens 는 사고(thinking) 토큰까지 포함한다.
+        // 실제 답이 한 문장이어도 여유 있게 잡아야 MAX_TOKENS 로 잘리지 않는다.
         maxOutputTokens: req.maxTokens,
         abortSignal: controller.signal,
       },
@@ -190,8 +192,17 @@ async function callAnthropic(
 
 /* ── 디스패치 ──────────────────────────────────────── */
 
-/** 잠깐 뒤 다시 하면 되는 상태 코드. 408 은 우리가 붙인 타임아웃이다. */
+/** 같은 모델로 잠깐 뒤 다시 하면 되는 상태 코드. 408 은 우리가 붙인 타임아웃이다. */
 const TRANSIENT_STATUS = new Set([408, 500, 502, 503, 504]);
+
+/**
+ * 한도 초과. 같은 모델로 다시 해도 소용없으니 곧장 대체 모델로 넘어간다.
+ *
+ * Gemini 무료 티어의 한도는 모델 단위다 —
+ * quotaId 가 GenerateRequestsPerDayPerProjectPerModel-FreeTier 다.
+ * 그래서 모델을 갈아타면 남은 한도가 새로 생긴다.
+ */
+const QUOTA_STATUS = 429;
 
 /** 재시도 간격. 총 대기가 1.6초를 넘지 않게 짧게 잡는다 — 학생이 로딩 화면을 보고 있다. */
 const RETRY_DELAYS_MS = [400, 1200];
@@ -213,7 +224,9 @@ export async function call(
   let lastError: unknown;
 
   for (const model of models) {
-    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
+    let moveOn = false;
+
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length && !moveOn; attempt += 1) {
       try {
         const request = { ...req, model };
         return provider === "gemini"
@@ -221,10 +234,17 @@ export async function call(
           : await callAnthropic(apiKey, request);
       } catch (error) {
         lastError = error;
+        if (!(error instanceof ProviderCallError)) throw error;
+
+        if (error.status === QUOTA_STATUS) {
+          // 한도는 기다린다고 풀리지 않는다. 남은 한도가 있는 모델로 바로 넘어간다.
+          console.warn(`[ai] ${model} 한도 초과(429).`);
+          moveOn = true;
+          continue;
+        }
 
         const transient =
-          error instanceof ProviderCallError &&
-          (error.status === undefined || TRANSIENT_STATUS.has(error.status));
+          error.status === undefined || TRANSIENT_STATUS.has(error.status);
         if (!transient) throw error;
 
         if (attempt < RETRY_DELAYS_MS.length) {
@@ -234,7 +254,7 @@ export async function call(
     }
 
     if (model !== models[models.length - 1]) {
-      console.warn(`[ai] ${model} 이 계속 실패한다. 대체 모델로 넘어간다.`);
+      console.warn(`[ai] 대체 모델로 넘어간다.`);
     }
   }
 
