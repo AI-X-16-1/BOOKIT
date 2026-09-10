@@ -10,6 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "prepare": "git config core.hooksPath .githooks || true",
     "test:rls": "node supabase/tests/rls.test.mjs",
+    "check:supabase": "node scripts/check-supabase.mjs",
     "ai:smoke": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-smoke.ts",
     "llm:models": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/llm-models.ts"
   },
