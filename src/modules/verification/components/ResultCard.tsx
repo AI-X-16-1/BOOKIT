@@ -2,7 +2,7 @@
 
 import type { AnswerResponse } from "@/shared/types";
 import { Button } from "@/shared/ui";
-import { axisLabel } from "../mock";
+import { axisLabel } from "./labels";
 
 /**
  * 채점 결과. 목업 3 #2 (docs/mockups/3 AI 검증 질문·결과.dc.html L61-95).
@@ -19,6 +19,8 @@ export interface ResultCardProps {
   onRetry: () => void;
   onDone: () => void;
   retrying?: boolean;
+  /** 재시도 질문을 못 받아 왔을 때. 아이가 그대로 읽는 문장이다 */
+  error?: string | null;
 }
 
 export function ResultCard({
@@ -28,6 +30,7 @@ export function ResultCard({
   onRetry,
   onDone,
   retrying = false,
+  error = null,
 }: ResultCardProps) {
   const { passed, scores, feedback, points } = result;
 
@@ -115,10 +118,16 @@ export function ResultCard({
                   +{points}
                 </span>
               </div>
-              <p className="mt-3 text-center text-sm text-ink-warm">
-                {streakDays}일째 연속으로 통과하고 있어요 🔥
-              </p>
+              {streakDays > 0 && (
+                <p className="mt-3 text-center text-sm text-ink-warm">
+                  {streakDays}일째 연속으로 통과하고 있어요 🔥
+                </p>
+              )}
             </>
+          )}
+
+          {error && (
+            <p className="mt-3 text-center text-sm text-coral-text">{error}</p>
           )}
 
           <div className="mt-4 flex gap-2.5">
