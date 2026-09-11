@@ -24,10 +24,6 @@
  *    server/ 아래는 전부 server-only 를 import 한다 — 한 배럴로 묶는 순간
  *    클라이언트 번들에 섞여 빌드가 깨진다. shared/supabase 가 배럴을 쪼갠 이유와 같다.
  *    Route Handler 는 "@/modules/verification/server" 를 직접 import 한다.
- *
- * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
- *    지금은 WriteFlow 가 아직 목으로 돌고 있어 남겨 둔다 — 화면 연결은
- *    review 모듈의 /api/reviews/:id/submit 이 붙는 PR 에서 함께 걷어낸다.
  */
 
 export {
@@ -38,7 +34,7 @@ export {
 export { GapAnalysisPanel } from "./components/GapAnalysisPanel";
 export { QuestionPanel } from "./components/QuestionPanel";
 export { ResultCard } from "./components/ResultCard";
-export { GAP_LABEL, GAP_TONE, axisLabel } from "./mock";
+export { GAP_LABEL, GAP_TONE, axisLabel } from "./components/labels";
 
 /** 요청 본문 스키마. 서버 전용이 아니라 라우트와 화면 양쪽에서 쓸 수 있다 */
 export { answerSchema } from "./schema";

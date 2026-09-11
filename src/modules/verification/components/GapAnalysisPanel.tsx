@@ -2,7 +2,7 @@
 
 import type { ReviewGapView } from "@/shared/types";
 import { Button, Card, Chip } from "@/shared/ui";
-import { GAP_LABEL, GAP_TONE } from "../mock";
+import { GAP_LABEL, GAP_TONE } from "./labels";
 
 /**
  * 빈틈 분석 결과. 목업 2 #3 (docs/mockups/2 독후감 작성.dc.html L97-127).
@@ -16,6 +16,8 @@ export interface GapAnalysisPanelProps {
   gaps: ReviewGapView[];
   onNext: () => void;
   loading?: boolean;
+  /** 질문을 못 받아 왔거나 답이 채점까지 못 갔을 때. 아이가 그대로 읽는 문장이다 */
+  error?: string | null;
 }
 
 /** 본문에서 각 빈틈 인용문을 찾아 하이라이트한 조각으로 쪼갠다. */
@@ -51,6 +53,7 @@ export function GapAnalysisPanel({
   gaps,
   onNext,
   loading = false,
+  error = null,
 }: GapAnalysisPanelProps) {
   const parts = highlight(reviewBody, gaps);
 
@@ -110,6 +113,9 @@ export function GapAnalysisPanel({
       <div className="flex-1" />
 
       <div className="pt-4">
+        {error && (
+          <p className="mb-3 text-center text-sm text-coral-text">{error}</p>
+        )}
         <Button onClick={onNext} disabled={loading}>
           {loading ? "질문을 만들고 있어…" : "질문 받고 답하기"}
         </Button>
