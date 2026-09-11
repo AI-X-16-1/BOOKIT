@@ -43,8 +43,10 @@ export const config = {
   /**
    * 정적 파일과 OAuth 콜백, Route Handler 는 제외한다.
    * 콜백(/auth/...)은 스스로 쿠키를 심어야 하고, API 는 스스로 인증한다.
+   * PWA 파일(sw.js·offline.html·icons/)도 로그인 전에 받을 수 있어야 한다 —
+   * 여기서 걸리면 서비스 워커가 /login 리다이렉트를 받아 등록에 실패한다.
    */
   matcher: [
-    "/((?!_next/static|_next/image|api/|auth/|favicon.ico|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt)$).*)",
+    "/((?!_next/static|_next/image|api/|auth/|icons/|favicon.ico|manifest.webmanifest|sw.js|offline.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt)$).*)",
   ],
 };
