@@ -25,7 +25,7 @@ export const gradeLabel = (g: GradeLevel) =>
   g <= 6 ? `초등학교 ${g}학년` : `중학교 ${g - 6}학년`;
 
 /** 데모용 유효 코드. 실제로는 classes.join_code 를 조회한다. */
-const VALID_CODE = "HB5002";
+const VALID_CODE = "HB5CLB";
 
 /**
  * POST /api/onboarding/student
