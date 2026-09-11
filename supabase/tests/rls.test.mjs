@@ -144,6 +144,39 @@ check('barrier 있음 → 사용자 함수가 자기 반 학생만 본다',
 check('barrier 없는 대조군은 실제로 샌다 (이 검사가 실패하면 위 검사는 무의미)',
   noBarrier.length > withBarrier.length, `대조군이 본 것: ${noBarrier.join(' ')}`);
 
+// ── 진도뷰 class_id · streak (0007) ──────────────────
+// streaks 는 학생 본인만 읽는다 (0004). 교사에게는 뷰로만 나가야 한다.
+
+const progressCols = (await db.query(
+  `select column_name from information_schema.columns where table_name = 'v_teacher_student_progress'`
+)).rows.map(r => r.column_name);
+
+check('진도뷰에 class_id 와 streak 이 있다',
+  progressCols.includes('class_id') && progressCols.includes('streak'),
+  progressCols.join(', '));
+
+check('§5 진도뷰에 자유 서술 컬럼이 없다',
+  !progressCols.some(c => ['body', 'answer', 'quote', 'reason', 'feedback', 'question'].includes(c)),
+  progressCols.join(', '));
+
+await db.exec(`insert into streaks (student_id, current_days, longest_days, last_passed_on)
+               values ('${S1}', 7, 9, current_date)
+               on conflict (student_id) do update set current_days = 7;`);
+
+const prog = await as(T1, 'select name, streak, class_id from v_teacher_student_progress');
+const s1row = prog.rows.find(r => r.name === '학생S1');
+const s2row = prog.rows.find(r => r.name === '학생S2');
+
+check('교사 진도뷰에 streak 이 실린다', Number(s1row?.streak) === 7, `streak=${s1row?.streak}`);
+check('streaks 행이 없는 학생의 streak 은 0 (null 아님)',
+  Number(s2row?.streak) === 0 && s2row?.streak !== null, `streak=${s2row?.streak}`);
+check('진도뷰 행마다 class_id 가 붙는다',
+  prog.rows.length > 0 && prog.rows.every(r => r.class_id), JSON.stringify(prog.rows.map(r => r.class_id)));
+check('streak 이 붙어도 학생은 여전히 진도뷰를 못 본다',
+  (await as(S1, 'select * from v_teacher_student_progress')).rows.length === 0);
+check('학생은 남의 streaks 행을 직접 못 읽는다',
+  (await as(S1, `select * from streaks where student_id <> '${S1}'`)).rows.length === 0);
+
 // ── join_code 알파벳 (0006) ──────────────────────────
 // 헷갈리는 0/O/1/I 는 코드에 쓰지 않는다. 함수 안에만 있던 규칙을 테이블 제약으로 못박았다.
 

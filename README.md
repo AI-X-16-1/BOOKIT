@@ -22,7 +22,7 @@
 | DB | Supabase PostgreSQL |
 | 인증 | Supabase Auth — 구글 로그인만 |
 | 서버리스 | Vercel Route Handler **만** 사용 (Edge Functions 미사용) |
-| LLM | 1개 벤더로 통일, 서버에서만 호출 |
+| LLM | Google Gemini `gemini-3.5-flash-lite` — 1개 벤더로 통일, 서버에서만 호출 |
 | 배포 | Vercel |
 | 스토리지 | 사용 안 함 (업로드 기능 없음) |
 | 패키지 매니저 | pnpm |
