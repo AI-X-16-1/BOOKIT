@@ -22,10 +22,10 @@ export async function getClass(): Promise<TeacherClassResponse> {
       school_name: "한빛초",
       grade_level: 5,
       class_no: 2,
-      join_code: "HB5CLB",
+      join_code: "HBCLSB",
       created_at: "2026-07-10T00:00:00Z",
     },
-    join_code: "HB5CLB",
+    join_code: "HBCLSB",
     stats: { student_count: 24, completed_count: 148, avg_score: 91 },
   };
 }

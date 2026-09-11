@@ -130,8 +130,9 @@ begin
     insert into classes (id, teacher_id, school_name, grade_level, class_no,
                          join_code, created_at)
     values (v_class_id, v_teacher_id, '한빛초', 5, v_class_no,
-            -- 참여 코드 규칙(spec §1): 0/O/1/I 제외. 1반 HB5CLA … 5반 HB5CLE
-            'HB5CL' || chr(64 + v_class_no),
+            -- 코드 알파벳에는 0/O/1/I 가 없다 (0006 의 check 제약).
+            -- 반 번호는 숫자 대신 글자로 붙인다: 1반 → HBCLSA … 5반 → HBCLSE
+            'HBCLS' || chr(64 + v_class_no),
             now() - interval '60 days');
   end loop;
 end $$;
