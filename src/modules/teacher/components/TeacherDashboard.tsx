@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ApiClientError } from "@/shared/api/client";
 import type {
   TeacherClassResponse,
   TeacherRankingResponse,
   TeacherStudentsResponse,
 } from "@/shared/types";
+import { apiGet } from "@/shared/api/client";
 import { Card, Chip } from "@/shared/ui";
-import { WEEKLY_CONTRIB, getClass, getRanking, getStudents } from "../mock";
 
 /**
  * 교사 대시보드. 목업 5 #1 (docs/mockups/5 관리자 대시보드 (웹).dc.html L47-112).
@@ -22,14 +23,33 @@ export function TeacherDashboard() {
   const [rank, setRank] = useState<TeacherRankingResponse | null>(null);
   const [students, setStudents] = useState<TeacherStudentsResponse | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    getClass().then(setCls);
-    getRanking().then(setRank);
-    getStudents().then(setStudents);
+    Promise.all([
+      apiGet<TeacherClassResponse>("/api/teacher/class"),
+      apiGet<TeacherRankingResponse>("/api/teacher/ranking"),
+      apiGet<TeacherStudentsResponse>("/api/teacher/students"),
+    ])
+      .then(([c, r, s]) => {
+        setCls(c);
+        setRank(r);
+        setStudents(s);
+      })
+      .catch((cause: unknown) => {
+        setError(
+          cause instanceof ApiClientError
+            ? cause.message
+            : "대시보드를 불러오지 못했어요.",
+        );
+      });
   }, []);
 
   const top = rank?.rows[0]?.verified_count ?? 1;
-  const mine = rank?.rows.find((r) => r.class_id === "d2");
+  const myClassId = cls?.class.id;
+  const mine = rank?.rows.find((r) => r.class_id === myClassId);
+  // 이번 주 기여는 따로 집계하지 않는다. 이미 받아 온 진도에서 상위 3명만 뽑는다
+  const contributors = (students?.rows ?? []).slice(0, 3);
 
   return (
     <>
@@ -47,6 +67,11 @@ export function TeacherDashboard() {
       </div>
 
       <div className="hidden min-h-dvh flex-col gap-[18px] px-8 py-7 lg:flex">
+        {error && (
+          <div className="rounded-card bg-coral-bg p-4 text-[15px] font-bold text-coral">
+            {error}
+          </div>
+        )}
         <div className="flex items-end justify-between gap-5">
           <div>
             <h1 className="text-[22px] font-bold text-ink">한빛초 반 대항전</h1>
@@ -91,7 +116,7 @@ export function TeacherDashboard() {
             <div className="text-[13px] text-muted">반 순위</div>
             <div className="mt-2">
               {rank?.rows.map((row) => {
-                const isMine = row.class_id === "d2";
+                const isMine = row.class_id === myClassId;
                 return (
                   <div
                     key={row.class_id}
@@ -129,27 +154,33 @@ export function TeacherDashboard() {
 
           <div className="flex flex-col gap-4">
             <div className="rounded-card bg-yellow-bg p-[22px]">
-              <div className="text-[13px] text-yellow-text-2">
-                우리 반 이번 주 기여
-              </div>
+              <div className="text-[13px] text-yellow-text-2">우리 반 기여</div>
               <div className="mt-3">
-                {WEEKLY_CONTRIB.map((s, i) => (
-                  <div key={s.name} className="flex items-center gap-2.5 py-2">
+                {contributors.map((row, i) => (
+                  <div
+                    key={row.student_id}
+                    className="flex items-center gap-2.5 py-2"
+                  >
                     <div
                       className={`flex h-[26px] w-[26px] flex-none items-center justify-center rounded-full text-[11px] font-bold ${i === 0 ? "bg-yellow text-stamp-text" : "bg-sheet-handle text-yellow-text"}`}
                     >
-                      {s.name[0]}
+                      {row.name.slice(0, 1)}
                     </div>
                     <span
                       className={`flex-1 text-sm ${i === 0 ? "font-bold text-ink" : "text-ink-soft"}`}
                     >
-                      {s.name}
+                      {row.name}
                     </span>
                     <span className="text-[13px] text-yellow-text">
-                      {s.points}
+                      {row.passed_count}건
                     </span>
                   </div>
                 ))}
+                {contributors.length === 0 && (
+                  <p className="py-2 text-[13px] text-yellow-text">
+                    아직 통과한 독후감이 없어요
+                  </p>
+                )}
               </div>
             </div>
 
