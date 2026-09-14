@@ -60,7 +60,7 @@ async function gradeAxes(
     label: "grading",
     schema: gradeSchema,
     system: GRADING_SYSTEM,
-    user: gradingUser(review.body, question, answer, review.book, {
+    user: gradingUser(review.body, gap.quote, question, answer, review.book, {
       gradeLevel: review.gradeLevel,
     }),
     maxTokens: 2048,

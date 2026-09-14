@@ -24,9 +24,9 @@ import {
 /**
  * 답변을 채점한다.
  *
- * gap 은 프롬프트에 직접 쓰이지 않지만 계약(shared/types 의 Grade)에 들어 있어
- * 그대로 받는다. 채점은 독후감 전체와 답변을 대조하는 일이라 빈틈 하나에
- * 매이지 않는 편이 낫다.
+ * gap.quote 는 질문이 어느 문장을 두고 물었는지 채점 모델에 알려준다. 질문에는
+ * 학생 문장을 옮겨 적지 않으므로(issue #27) 이게 없으면 질문의 "그렇게"가 무엇을
+ * 가리키는지 모른다. 판정 자체는 독후감 전체와 답변을 대조한다.
  */
 export async function grade(
   review: string,
@@ -53,7 +53,7 @@ export async function grade(
     label: "grading",
     schema: gradeSchema,
     system: GRADING_SYSTEM,
-    user: gradingUser(review, question, trimmed, book, context),
+    user: gradingUser(review, gap.quote, question, trimmed, book, context),
     // 3축 판정 + 피드백 두 문장 + 사고 토큰 (providers.ts 참고).
     maxTokens: 2048,
   });

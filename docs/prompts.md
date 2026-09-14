@@ -76,21 +76,31 @@ Takes one gap and turns it into the follow-up question. This is what makes ghost
 
 독후감 전문: """{review_body}"""
 
-이 문장을 인용해서, 왜 그렇게 생각했는지 되묻는 질문 한 개를 만들어라.
+주어진 학생 문장에 대해, 왜 그렇게 생각했는지 되묻는 질문 한 개를 만들어라.
+
+화면에는 그 문장이 "네가 쓴 문장" 칸에 먼저 따로 보이고, 네 질문은 바로 아래에 붙는다.
+그러니 질문 안에 학생 문장을 다시 옮겨 적지 마라.
 
 규칙:
-- 인용은 반드시 주어진 그 문장이어야 한다. 독후감의 다른 문장을 인용하지 마라.
+- 학생 문장을 통째로 되풀이하거나 인용하지 마라. "그렇게", "그 문장에서"처럼 가리키면 된다.
+  핵심 낱말 한두 개를 짚는 것은 괜찮다.
+  나쁜 예: "…라고 생각한다라고 했는데, 왜 그렇게 생각했어?"
+  좋은 예: "'용감했다'고 본 까닭이 책의 어느 장면에 있어?"
+- 반드시 주어진 그 문장에 대해 물어라. 독후감의 다른 문장으로 옮겨 가지 마라.
+- 학생이 쓰지 않은 감정·판단을 질문에 넣지 마라. 학생이 "그 선택이 옳았다"고만 썼으면
+  "왜 화가 났어?"라고 묻지 마라. 학생이 쓴 말의 범위 안에서만 물어라.
 - 독후감 전문은 맥락 파악용이다. 독후감에 이미 쓰여 있는 내용을 그대로 되풀이하면
   답이 되는 질문은 만들지 마라. 이미 쓴 것보다 한 걸음 더 들어가게 물어라.
 - 해석·근거형 질문만. "어느 장면에서", "왜 그렇게 느꼈는지"를 묻는다.
 - 등장인물 이름이나 지엽적 사실을 묻지 마라. 읽었어도 잊을 수 있다.
 - "만약 ~라면" 가정형을 묻지 마라. 채점 기준을 세울 수 없다.
-- 인용은 자연스럽게 이어 붙여라. "~다라고 했는데" 처럼 조사를 겹쳐 쓰지 마라.
 - 반말로 한 문장. 30초 안에 답할 수 있는 크기여야 한다.
 - 답을 유도하거나 힌트를 주지 마라.
 
 출력: {"question": "..."}
 ```
+
+**The question does not repeat the quote.** The question screen already shows `quote` in its own "네가 쓴 문장" box right above the question (`POST /api/reviews/:id/question → { question, quote }`). Quoting it again showed the sentence twice and produced doubled particles like "…생각한다라고 했는데" in 7 of 10 test questions (issue #27). `buildQuestion` regenerates once if the question still echoes 12+ characters of the quote, and keeps the second result either way — an awkward question beats no question.
 
 Generate this **immediately after review submission**, while the gap-analysis screen is showing. The countdown starts only when the question is on screen.
 
@@ -107,6 +117,7 @@ Not right-or-wrong. Three axes.
 학년: {grade_level}학년 / 책: {title}
 
 독후감: """{review_body}"""
+질문한 문장 (학생이 쓴 문장): "{gap.quote}"
 질문: {question}
 학생 답변: """{answer}"""
 

@@ -16,7 +16,8 @@
     "llm:models": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/llm-models.ts",
     "ai:gaps": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-gaps.ts",
     "ai:tags": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-tags.ts",
-    "ai:calibrate": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-calibrate.ts"
+    "ai:calibrate": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-calibrate.ts",
+    "ai:question": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-question.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
