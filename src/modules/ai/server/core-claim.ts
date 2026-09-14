@@ -39,8 +39,9 @@ export async function pickCoreClaim(
     schema: coreClaimSchema,
     system: CORE_CLAIM_SYSTEM,
     user: coreClaimUser(trimmed, book, context),
-    // 문장 하나 + 사유 하나지만 Gemini 는 사고 토큰이 같이 잡힌다 (gaps.ts 참고).
-    maxTokens: 2048,
+    // 문장 하나 + 사유 하나지만 Gemini 는 사고 토큰이 같이 잡힌다. flash 에서 2048 은
+    // 질문·채점이 실제로 잘렸다 (#36) — 같은 이유로 4096.
+    maxTokens: 4096,
   });
 
   const quote = resolveQuote(trimmed, raw.quote);
