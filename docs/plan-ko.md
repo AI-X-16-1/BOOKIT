@@ -203,7 +203,7 @@
 | 데이터베이스 | Supabase PostgreSQL | RLS로 역할별 데이터 격리 |
 | 인증 | Supabase Auth (구글 OAuth) | 1일차 최우선 |
 | 서버리스 | **Vercel Route Handler로 통일** | Supabase Edge Functions 미사용 |
-| LLM | **Google Gemini** — `gemini-3.5-flash-lite` | 무료 티어. 제출 서류 기재값이자 `LLM_MODEL` 값 |
+| LLM | **Google Gemini** — `gemini-3.5-flash` | 유료 티어. 제출 서류 기재값이자 `LLM_MODEL` 값 |
 | 배포 | Vercel | 프리뷰 배포를 통합 검증에 활용 |
 | 스토리지 | 사용하지 않음 | 표지는 알라딘 이미지 URL, 원문은 DB 텍스트 |
 
@@ -213,7 +213,7 @@
 
 **LLM 벤더는 하나로 고정한다.** 모델명을 제출 서류에 적어야 하고, 두 벤더에 프롬프트를 각각 튜닝할 여유가 없다. 벤더는 `LLM_PROVIDER` 환경변수로 하나만 살아난다.
 
-대회 기간 모델은 `gemini-3.5-flash-lite`다. 최신 모델(`gemini-3.8-flash`, `3.7-flash`)은 503 과부하가, `gemini-3.5-flash`는 무료 티어 하루 20건 한도가 실측되어 둘 다 쓸 수 없었다. 과부하와 한도에 대비해 `LLM_MODEL_FALLBACK`으로 대체 모델 체인을 둔다.
+대회 기간 모델은 `gemini-3.5-flash`다. 최신 모델(`gemini-3.8-flash`, `3.7-flash`)은 503 과부하가 실측되어 쓸 수 없었고, `gemini-3.5-flash`는 무료 티어에서 하루 20건 한도에 걸려 유료 티어로 전환했다. 과부하에 대비해 `LLM_MODEL_FALLBACK`으로 `gemini-3.5-flash-lite` → `gemini-3.6-flash` 대체 체인을 둔다.
 
 채점 기준은 독후감 20건으로 검증했다(`npm run ai:calibrate`, docs/prompts.md "Test set"). 대필 판별 5/5, 채점 기대 일치 18/18, "진짜 읽었지만 뭉뚱그린" 무리 실패 0/6. `PASS_THRESHOLD`는 `moderate`로 둔다 — 표본에서 `strict`와 결과가 같았으므로 관대한 쪽을 택했다.
 
@@ -280,7 +280,7 @@
 
 독후감 1건 처리(4단계 AI 호출) 기준 입력 약 3,300토큰·출력 약 900토큰.
 
-아래 표는 **양산 단계에서 경량 모델 유료 티어를 쓴다는 전제**의 추정치다. 대회 기간에는 Gemini 무료 티어(`gemini-3.5-flash`)로 운영하므로 AI 비용이 발생하지 않는다.
+아래 표는 **양산 단계에서 경량 모델 유료 티어를 쓴다는 전제**의 추정치다. 대회 기간에는 Gemini 유료 티어(`gemini-3.5-flash`)로 운영하며, 심사 기간 트래픽 규모에서는 비용이 미미하다.
 
 | 단계 | 시점 | 사용자 | 월간 처리 | AI + 서버 (월, 약) |
 |---|---|---|---|---|
