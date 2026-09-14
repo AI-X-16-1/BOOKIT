@@ -103,31 +103,39 @@ export function GrowthSection() {
         <div className="text-[15px] font-bold text-ink">장르 도장판</div>
         <p className="mt-1 text-[13px] text-muted">같은 장르 3권이면 도장 하나</p>
         <div className="mt-3 flex flex-col gap-2.5">
-          {g?.stamps.map((s) => (
-            <div key={s.genre} className="flex items-center gap-3">
-              <span className="w-20 flex-none text-sm text-ink-soft">
-                {s.genre}
-              </span>
-              <div className="flex flex-1 gap-1">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <span
-                    key={i}
-                    className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${
-                      i < s.completed_count % 3 || s.stamps > 0
-                        ? "bg-yellow text-stamp-text"
-                        : "bg-sunken text-faint"
-                    }`}
-                  >
-                    ★
-                  </span>
-                ))}
+          {g?.stamps.map((s) => {
+            // 3의 배수(도장을 막 받은 시점)는 꽉 채우고, 그 외엔 진행 중인 만큼만 채운다.
+            // % 3 만 쓰면 딱 3의 배수일 때 0/3(빈 원)으로 보여 "방금 도장 받음"이 사라진다.
+            const filled =
+              s.completed_count > 0 && s.completed_count % 3 === 0
+                ? 3
+                : s.completed_count % 3;
+            return (
+              <div key={s.genre} className="flex items-center gap-3">
+                <span className="w-20 flex-none text-sm text-ink-soft">
+                  {s.genre}
+                </span>
+                <div className="flex flex-1 gap-1">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${
+                        i < filled
+                          ? "bg-yellow text-stamp-text"
+                          : "bg-sunken text-faint"
+                      }`}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <span className="flex-none text-[13px] text-muted">
+                  {s.completed_count}권
+                </span>
+                {s.stamps > 0 && <Chip tone="yellow">도장 {s.stamps}</Chip>}
               </div>
-              <span className="flex-none text-[13px] text-muted">
-                {s.completed_count}권
-              </span>
-              {s.stamps > 0 && <Chip tone="yellow">도장 {s.stamps}</Chip>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
 

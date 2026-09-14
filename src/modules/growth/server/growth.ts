@@ -12,8 +12,8 @@
  * 마지막 단계에서 멈춘다.
  *
  * streaks·genre_stamps 는 이 파일이 쓰지 않는다 — points_ledger 에 verification_pass
- * 행이 쌓일 때 트리거(0010, 초안)가 올린다. 같은 날 여러 번 통과해도 스트릭은
- * 매번 늘고, 책의 태그 전부에 도장 진행도가 붙는다 (문민재 결정).
+ * 행이 쌓일 때 트리거(0011, 초안)가 올린다. 스트릭은 하루 1회(KST 기준)만 올리고,
+ * 책의 태그 전부에 도장 진행도가 붙는다.
  */
 import type { BookitClient } from "@/shared/supabase";
 import type { GrowthResponse, GrowthStampView } from "@/shared/types";
