@@ -350,6 +350,7 @@ git commit -m "feat(books): 임시 응답 봉투 헬퍼 추가"
 - Create: `src/modules/books/server/source.ts`
 - Test: `src/modules/books/server/source.test.ts`
 - Modify: `src/modules/books/mock.ts:22-27` (mock 도서 5권에 테스트용 `isbn13` 채우기 — 지금 전부 `null`이라 검색→적재 흐름을 mock으로 테스트할 방법이 없다)
+- Modify: `src/modules/books/mock.ts:6` (`import { delay } from "@/modules/review"` 제거 — 구현 중 발견: `review/index.ts`가 `delay` 옆에 `"use client"` 컴포넌트(`WriteFlow` 등)를 같이 export해서, `mock.ts`를 import하는 순간 `next/link` 등 클라이언트 전용 코드까지 전부 로드된다. Next 번들러 안에서는 무해하지만, `--conditions=react-server`로 plain node에서 돌리면 `react.react-server.js`에 `createContext`가 없어서 크래시한다. `source.ts`가 `mockSource`를 위해 `BOOKS`를 가져오면서 처음 이 경로를 건드리게 됨. 고치는 법: `delay`를 review 모듈에서 import하지 말고, `mock.ts` 안에 한 줄로 직접 정의한다 — `const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));` (review 모듈의 것과 동일한 구현, cross-module 의존 자체가 불필요했다).
 
 **Interfaces:**
 - Consumes: `BOOKS` from `../mock`
