@@ -44,7 +44,8 @@ export async function normalizeGenreTags(
     user: genreTagsUser(book),
     // 사용자가 기다리지 않는 배치 작업이라 싸게 간다.
     effort: "low",
-    maxTokens: 1024,
+    // 사고 토큰이 maxOutputTokens 에 함께 잡힌다 (providers.ts, issue #36).
+    maxTokens: 2048,
   });
 
   return { tags: sanitize(tags) };

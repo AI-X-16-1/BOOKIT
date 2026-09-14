@@ -63,7 +63,7 @@ async function gradeAxes(
     user: gradingUser(review.body, question, answer, review.book, {
       gradeLevel: review.gradeLevel,
     }),
-    maxTokens: 2048,
+    maxTokens: 4096,
   });
 }
 

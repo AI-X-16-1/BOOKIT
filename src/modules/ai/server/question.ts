@@ -34,9 +34,9 @@ export async function buildQuestion(
       schema: questionSchema,
       system: QUESTION_SYSTEM,
       user: questionUser(gap, review, book, context),
-      // 질문 자체는 한 문장이지만 512 로는 잘린다 — Gemini 는 사고(thinking) 토큰이
-      // maxOutputTokens 에 함께 잡힌다 (providers.ts 참고).
-      maxTokens: 2048,
+      // 질문 자체는 한 문장이지만 Gemini 는 사고(thinking) 토큰이 maxOutputTokens 에
+      // 함께 잡힌다. flash 기본값에서 사고만 최대 1483 토큰을 썼다 (issue #36).
+      maxTokens: 4096,
     });
 
     const asked = question.trim();

@@ -12,13 +12,29 @@
 import "server-only";
 
 import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
 
 export type Provider = "gemini" | "anthropic";
 
-/** 사고 깊이. anthropic 전용 — gemini 는 모델 기본값을 쓴다. */
+/** 사고 깊이. anthropic 전용 — gemini 는 thinkingLevel 을 쓴다. */
 export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+
+/**
+ * gemini 사고 수준. 비우면 모델 기본값이다.
+ *
+ * flash 는 기본값에서 사고 토큰을 입력마다 크게 다르게 써서(질문 한 번에 최대 1483)
+ * maxTokens 를 넘기고, 지연도 LOW 의 두 배쯤이다. 측정은 issue #36.
+ */
+export const THINKING_LEVELS = ["minimal", "low", "medium", "high"] as const;
+export type ThinkingLevelName = (typeof THINKING_LEVELS)[number];
+
+const GEMINI_THINKING: Record<ThinkingLevelName, ThinkingLevel> = {
+  minimal: ThinkingLevel.MINIMAL,
+  low: ThinkingLevel.LOW,
+  medium: ThinkingLevel.MEDIUM,
+  high: ThinkingLevel.HIGH,
+};
 
 export interface ProviderRequest {
   model: string;
@@ -30,6 +46,7 @@ export interface ProviderRequest {
   maxTokens: number;
   timeoutMs: number;
   effort: Effort;
+  thinkingLevel?: ThinkingLevelName;
 }
 
 export interface ProviderResponse {
@@ -93,6 +110,10 @@ async function callGemini(
         // ⚠️ Gemini 의 maxOutputTokens 는 사고(thinking) 토큰까지 포함한다.
         // 실제 답이 한 문장이어도 여유 있게 잡아야 MAX_TOKENS 로 잘리지 않는다.
         maxOutputTokens: req.maxTokens,
+        // 비우면 thinkingConfig 자체를 안 보낸다 — 모델 기본값 그대로다.
+        ...(req.thinkingLevel && {
+          thinkingConfig: { thinkingLevel: GEMINI_THINKING[req.thinkingLevel] },
+        }),
         abortSignal: controller.signal,
       },
     });
