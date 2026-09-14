@@ -37,7 +37,7 @@ export type LlmErrorKind =
   | "refusal"
   /** 두 번 물어봤는데도 계약에 맞는 JSON 이 안 나왔다. */
   | "invalid_output"
-  /** 429. 무료 티어는 분당 한도가 낮다 — 호출부에서 안내가 필요하다. */
+  /** 429. 키의 분당·일일 한도를 넘었다 — 호출부에서 안내가 필요하다. */
   | "rate_limited"
   /** 그 밖의 API·네트워크 실패. */
   | "upstream";
@@ -227,7 +227,7 @@ function toLlmError(error: unknown, label: string): LlmError {
     if (error.status === 429) {
       return new LlmError(
         "rate_limited",
-        `[${label}] 요청 한도에 걸렸다 (429). 무료 티어는 분당 한도가 낮다.`,
+        `[${label}] 요청 한도에 걸렸다 (429). 키의 요금제와 분당 한도를 확인한다.`,
         { cause: error },
       );
     }
