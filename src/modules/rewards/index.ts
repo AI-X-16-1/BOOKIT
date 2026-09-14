@@ -12,19 +12,20 @@
  *   POST /api/points/exchange { kind }  → { balance, voucher_url }
  *
  * points_ledger 는 append-only다. 잔액 컬럼은 존재하지 않는다 — sum(delta)로 계산 (CLAUDE.md §4).
- * 적립/차감은 verification·교환 행과 같은 트랜잭션 안에서 처리한다.
- * 같은 verification.id 로 두 번 적립되지 않게 (reason, ref_id) 유니크 인덱스가 막아준다.
+ * 적립은 verification 모듈이 record_verification_result RPC 로 한다 (0008).
+ * 차감(교환)은 exchange_points RPC(0009, 초안)가 잔액 확인과 한 트랜잭션으로 한다.
  * UI 문구에서는 항상 "책갈피"라고 부른다 — "포인트"라고 쓰지 않는다 (CLAUDE.md §9).
  *
- * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
+ * ⚠️ 서버 로직은 여기서 re-export 하지 않는다. Route Handler 는
+ *    "@/modules/rewards/server" 를 직접 import 한다 (verification 모듈과 같은 이유).
  */
 
 export { MeScreen } from "./components/MeScreen";
+
+/** 요청 본문 스키마 + 표시 상수. 서버 전용이 아니라 화면과 라우트 양쪽에서 쓴다 */
 export {
+  exchangeSchema,
   EXCHANGE_COST,
   EXCHANGE_LABEL,
   REASON_LABEL,
-  balanceOf,
-  exchange,
-  getPoints,
-} from "./mock";
+} from "./schema";
