@@ -6,7 +6,7 @@
  * 클라이언트 번들에 섞이는 순간 빌드가 깨진다.
  * src/shared/supabase 가 같은 이유로 배럴을 나눠 뒀다.
  *
- * 라우트 핸들러는 여기서, 화면은 "@/modules/reader" 에서 가져간다.
+ * 라우트 핸들러와 서버 컴포넌트는 여기서, 화면은 "@/modules/reader" 에서 가져간다.
  */
 export {
   getChapter,
@@ -14,4 +14,5 @@ export {
   ChapterError,
   type ChapterErrorKind,
 } from "./chapter";
+export { listShelf } from "./shelf";
 export { lookup, DictError, type DictErrorKind } from "./dict";
