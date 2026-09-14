@@ -25,16 +25,16 @@ export class ApiClientError extends Error {
 
 async function request<T>(
   path: string,
-  method: "POST" | "PATCH",
-  body: unknown,
+  method: "GET" | "POST" | "PATCH",
+  body?: unknown,
 ): Promise<T> {
   let payload: ApiResponse<T>;
 
   try {
     const response = await fetch(path, {
       method,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      headers: body === undefined ? undefined : { "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
     });
     payload = (await response.json()) as ApiResponse<T>;
   } catch (cause) {
@@ -48,6 +48,9 @@ async function request<T>(
   }
   return payload.data;
 }
+
+export const apiGet = <T>(path: string): Promise<T> =>
+  request<T>(path, "GET");
 
 export const apiPost = <T>(path: string, body: unknown): Promise<T> =>
   request<T>(path, "POST", body);

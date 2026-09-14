@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ApiClientError, apiPost } from "@/shared/api/client";
 import type {
   AnswerResponse,
   QuestionResponse,
@@ -9,18 +10,19 @@ import type {
 import { GapAnalysisPanel } from "./GapAnalysisPanel";
 import { QuestionPanel } from "./QuestionPanel";
 import { ResultCard } from "./ResultCard";
-import { requestQuestion, submitAnswer } from "../mock";
 
 /**
  * 빈틈 분석 → 질문 → 채점 → 재시도.
  *
- * 실제 구현에서는 질문을 독후감 제출 직후(빈틈 분석 화면을 보는 동안) 미리 만들어 두고,
- * 카운트다운은 질문이 화면에 뜬 뒤에 시작한다 (CLAUDE.md §6).
- * 여기서는 목이라 "질문 받고 답하기"를 누를 때 만든다.
+ * 질문은 빈틈 분석 화면이 뜨자마자 뒤에서 미리 만든다 (CLAUDE.md §6).
+ * "질문 받고 답하기"를 누르면 같은 라우트를 한 번 더 부르는데, 이때 서버는 새로 만들지 않고
+ * 미리 만든 질문의 asked_at 만 지금으로 다시 찍는다 (server/question 의 restamp).
+ * 그래서 빈틈 화면을 오래 봐도 제한 시간이 깎이지 않고, 카운트다운은 질문이 뜬 뒤 시작한다.
  */
 export type VerificationStage = "gaps" | "question" | "result";
 
 export interface VerificationFlowProps {
+  reviewId: string;
   bookTitle: string;
   reviewBody: string;
   gaps: ReviewGapView[];
@@ -28,7 +30,14 @@ export interface VerificationFlowProps {
   onDone: () => void;
 }
 
+function messageOf(cause: unknown): string {
+  return cause instanceof ApiClientError
+    ? cause.message
+    : "잠깐 문제가 생겼어. 다시 해볼까?";
+}
+
 export function VerificationFlow({
+  reviewId,
   bookTitle,
   reviewBody,
   gaps,
@@ -40,24 +49,70 @@ export function VerificationFlow({
   const [result, setResult] = useState<AnswerResponse | null>(null);
   const [attempt, setAttempt] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  /** 재시도는 attempt 를 올려 **다른 빈틈**에서 새 질문을 받는다 (CLAUDE.md §6). */
-  const ask = async (nextAttempt: number) => {
+  const prepared = useRef<Promise<unknown>>(Promise.resolve());
+  const preparedFor = useRef<string | null>(null);
+
+  // 빈틈 화면을 보는 동안 질문을 미리 만든다. 실패해도 여기서는 넘긴다 —
+  // 버튼을 누를 때 한 번 더 부르므로 그때 다시 만들어지거나 오류 문구가 뜬다.
+  // StrictMode 의 이중 실행으로 두 번 만들러 가지 않게 id 로 한 번만 부른다.
+  useEffect(() => {
+    if (preparedFor.current === reviewId) return;
+    preparedFor.current = reviewId;
+    prepared.current = apiPost<QuestionResponse>(`/api/reviews/${reviewId}/question`, {}).catch(
+      () => null,
+    );
+  }, [reviewId]);
+
+  const run = async (task: () => Promise<void>) => {
     setBusy(true);
-    const q = await requestQuestion(gaps, nextAttempt);
-    setQuestion(q);
+    setError(null);
+    try {
+      await task();
+    } catch (cause) {
+      setError(messageOf(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const show = (next: QuestionResponse, nextAttempt: number) => {
+    setQuestion(next);
     setAttempt(nextAttempt);
-    setBusy(false);
     setStage("question");
   };
 
-  const answer = async (text: string) => {
-    setBusy(true);
-    const r = await submitAnswer(text, reviewBody);
-    setResult(r);
-    setBusy(false);
-    setStage("result");
-  };
+  const ask = () =>
+    run(async () => {
+      await prepared.current;
+      // 이 응답이 도착한 순간이 서버의 asked_at 이다
+      show(await apiPost<QuestionResponse>(`/api/reviews/${reviewId}/question`, {}), attempt);
+    });
+
+  const answer = (text: string) =>
+    run(async () => {
+      if (!question) return;
+      try {
+        const graded = await apiPost<AnswerResponse>(
+          `/api/verifications/${question.verification_id}/answer`,
+          { answer: text },
+        );
+        setResult(graded);
+        setStage("result");
+      } catch (cause) {
+        // 답이 채점까지 가지 못했다. 빈틈 화면으로 돌아가 다시 받게 한다 —
+        // 답하지 않은 질문이면 서버가 같은 질문을 이어서 준다
+        setStage("gaps");
+        throw cause;
+      }
+    });
+
+  /** 재시도는 서버가 **다른 빈틈**에서 새 질문을 만든다 (CLAUDE.md §6). */
+  const retry = () =>
+    run(async () => {
+      show(await apiPost<QuestionResponse>(`/api/reviews/${reviewId}/retry`, {}), attempt + 1);
+    });
 
   if (stage === "question" && question) {
     return (
@@ -79,7 +134,8 @@ export function VerificationFlow({
         result={result}
         streakDays={streakDays}
         retrying={busy}
-        onRetry={() => ask(attempt + 1)}
+        error={error}
+        onRetry={retry}
         onDone={onDone}
       />
     );
@@ -91,7 +147,8 @@ export function VerificationFlow({
       reviewBody={reviewBody}
       gaps={gaps}
       loading={busy}
-      onNext={() => ask(1)}
+      error={error}
+      onNext={ask}
     />
   );
 }

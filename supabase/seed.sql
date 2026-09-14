@@ -31,24 +31,25 @@ begin;
 -- verifications.gap_id 가 on delete restrict 라 cascade 순서에 기대면 막힌다.
 -- 의존 순서대로 명시적으로 지운다.
 
-create temporary table _demo_users on commit drop as
-  select id from auth.users where email like '%@bookit.demo';
-
-delete from verifications      where student_id in (select id from _demo_users);
+-- 데모 계정은 전부 @bookit.demo 메일이다. 중간 테이블 없이 서브쿼리로 고른다 (SQL Editor 호환).
+delete from verifications      where student_id in (select id from auth.users where email like '%@bookit.demo');
 delete from review_gaps        where review_id in (
-  select id from reviews where student_id in (select id from _demo_users));
-delete from reviews            where student_id in (select id from _demo_users);
-delete from points_ledger      where student_id in (select id from _demo_users);
-delete from streaks            where student_id in (select id from _demo_users);
-delete from genre_stamps       where student_id in (select id from _demo_users);
-delete from guardian_links     where student_id in (select id from _demo_users);
-delete from challenge_progress where student_id in (select id from _demo_users);
+  select id from reviews where student_id in (select id from auth.users where email like '%@bookit.demo'));
+delete from reviews            where student_id in (select id from auth.users where email like '%@bookit.demo');
+delete from points_ledger      where student_id in (select id from auth.users where email like '%@bookit.demo');
+delete from streaks            where student_id in (select id from auth.users where email like '%@bookit.demo');
+delete from genre_stamps       where student_id in (select id from auth.users where email like '%@bookit.demo');
+delete from guardian_links     where student_id in (select id from auth.users where email like '%@bookit.demo');
+delete from challenge_progress where student_id in (select id from auth.users where email like '%@bookit.demo');
 delete from challenges         where class_id in (
-  select id from classes where teacher_id in (select id from _demo_users));
-delete from class_members      where student_id in (select id from _demo_users);
-delete from classes            where teacher_id in (select id from _demo_users);
-delete from profiles           where id in (select id from _demo_users);
-delete from auth.users         where id in (select id from _demo_users);
+  select id from classes where teacher_id in (select id from auth.users where email like '%@bookit.demo'));
+-- 고정 id 로 넣는 행은 id 로도 지운다 (시즌 챌린지는 class_id 가 null 이라 위 조건에 안 걸린다).
+delete from challenges         where id::text like '0000e0%';
+delete from classes            where id::text like '0000d0%';
+delete from class_members      where student_id in (select id from auth.users where email like '%@bookit.demo');
+delete from classes            where teacher_id in (select id from auth.users where email like '%@bookit.demo');
+delete from profiles           where id in (select id from auth.users where email like '%@bookit.demo');
+delete from auth.users         where id in (select id from auth.users where email like '%@bookit.demo');
 
 delete from book_contents where book_id in (
   select id from books where id::text like '0000b0%');
@@ -2853,7 +2854,7 @@ begin
         1, v_gap,
         '"인상 깊었다"고 했는데, 어느 장면이 그랬어?',
         '주인공이 마지막에 결정을 내리는 장면이요.',
-        'pass', case when k % 3 = 0 then 'weak' else 'pass' end, 'same',
+        'pass', (case when k % 3 = 0 then 'weak' else 'pass' end)::score_axis, 'same',
         true, '좋아! 장면을 딱 집어줘서 잘 전해졌어.', 50,
         now() - ((k % 30) || ' days')::interval,
         now() - ((k % 30) || ' days')::interval + interval '41 seconds'
