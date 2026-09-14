@@ -22,7 +22,7 @@
 | DB | Supabase PostgreSQL |
 | 인증 | Supabase Auth — 구글 로그인만 |
 | 서버리스 | Vercel Route Handler **만** 사용 (Edge Functions 미사용) |
-| LLM | 1개 벤더로 통일, 서버에서만 호출 |
+| LLM | Google Gemini `gemini-3.5-flash` — 1개 벤더로 통일, 서버에서만 호출 |
 | 배포 | Vercel |
 | 스토리지 | 사용 안 함 (업로드 기능 없음) |
 | 패키지 매니저 | pnpm |
@@ -38,6 +38,30 @@ pnpm dev
 ```
 
 필요한 환경변수는 `.env.example`에 전부 적혀 있습니다. 변수를 추가했다면 `.env.example`도 같이 갱신해주세요. `.env.local`은 절대 커밋하지 않습니다.
+
+---
+
+## Supabase · 구글 로그인 설정 (최초 1회)
+
+프로젝트를 아직 안 만들었다면 이 순서대로 합니다. 4번까지 끝나야 로그인이 돕니다.
+
+1. **Supabase 프로젝트 생성** — 리전은 `Northeast Asia (Seoul)`. 대시보드 Settings → API 에서 `Project URL`, `anon key`, `service_role key` 를 `.env.local` 에 옮겨 적습니다.
+
+2. **구글 OAuth 클라이언트 발급** — [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → 사용자 인증 정보 → OAuth 클라이언트 ID (웹 애플리케이션).
+   승인된 리디렉션 URI 에 **Supabase 주소**를 넣습니다 (우리 앱 주소가 아닙니다):
+   ```
+   https://<project-ref>.supabase.co/auth/v1/callback
+   ```
+
+3. **Supabase 에 구글 연결** — Authentication → Providers → Google 을 켜고 2번의 Client ID / Secret 을 붙여 넣습니다.
+
+4. **리디렉션 주소 등록** — Authentication → URL Configuration:
+   - Site URL: `http://localhost:3000` (배포 후에는 Vercel 주소)
+   - Redirect URLs: `http://localhost:3000/auth/callback` 과 배포 주소의 `/auth/callback` 을 둘 다 등록
+
+5. **스키마·시드 적용** — SQL Editor 에서 `supabase/migrations/` 의 파일을 번호 순서대로 실행한 뒤 `supabase/seed.sql` 을 실행합니다. (`supabase link` 후 `supabase db push` 도 같은 결과입니다.)
+
+로그인 흐름은 이렇습니다: 로그인 화면 → 구글 → Supabase(`/auth/v1/callback`) → 우리 앱(`/auth/callback`, 여기서 세션 쿠키를 심습니다) → `/` → 미들웨어가 학생/교사/온보딩으로 나눠 보냅니다.
 
 ---
 

@@ -33,6 +33,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # RLS 정책과 교사 뷰 회귀 테스트. pglite 라 DB 서비스가 필요 없다.
+      - name: RLS tests
+        run: npm run test:rls
+
       - name: Build
         run: npm run build
         # 빌드 시점에 읽히는 값들. 실제 비밀은 Vercel 에만 있고 CI 에는 넣지 않는다.

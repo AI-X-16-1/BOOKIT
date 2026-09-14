@@ -2,20 +2,17 @@
 
 import { useEffect, useState } from "react";
 import type { ChallengesResponse, ClassRankingResponse } from "@/shared/types";
+import { apiGet } from "@/shared/api/client";
 import { Card, Chip } from "@/shared/ui";
-import { getChallenges, getClassRanking } from "../mock";
 
-/**
- * 챌린지 + 반 랭킹. 목업 4 #3 (L263-300).
- * ⚠️ 목 데이터로 도는 화면이다.
- */
+/** 챌린지 + 반 랭킹. 목업 4 #3 (L263-300). */
 export function ChallengeScreen() {
   const [ch, setCh] = useState<ChallengesResponse | null>(null);
   const [rank, setRank] = useState<ClassRankingResponse | null>(null);
 
   useEffect(() => {
-    getChallenges().then(setCh);
-    getClassRanking().then(setRank);
+    apiGet<ChallengesResponse>("/api/challenges").then(setCh).catch(() => {});
+    apiGet<ClassRankingResponse>("/api/ranking/class").then(setRank).catch(() => {});
   }, []);
 
   const goal = ch?.class_goal;

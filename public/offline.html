@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>책잇 — 연결이 끊겼어</title>
+    <style>
+      /* 서비스 워커가 직접 내보내는 정적 파일이라 앱 CSS 를 쓸 수 없다.
+         값은 docs/design-tokens.md 와 같게 맞춰 둔다. */
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fdf6ec;
+        color: #2e241d;
+        font-family: "Noto Sans KR", system-ui, sans-serif;
+        text-align: center;
+        padding: 24px;
+      }
+      .card {
+        background: #fffdf9;
+        border: 1px solid #ecdfcd;
+        border-radius: 16px;
+        padding: 32px 28px;
+        max-width: 340px;
+      }
+      h1 { font-size: 20px; margin: 0 0 10px; }
+      p { font-size: 15px; line-height: 1.7; color: #9a8b7c; margin: 0; }
+      button {
+        margin-top: 22px;
+        min-height: 48px;
+        width: 100%;
+        border: 0;
+        border-radius: 14px;
+        background: #ff6b4a;
+        color: #fff;
+        font-size: 17px;
+        font-weight: 700;
+        font-family: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>인터넷이 끊겼어</h1>
+      <p>와이파이나 데이터를 확인하고<br />다시 열어볼까?</p>
+      <button type="button" onclick="location.reload()">다시 시도</button>
+    </div>
+  </body>
+</html>

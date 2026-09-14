@@ -15,6 +15,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { User } from "@supabase/supabase-js";
 
+import type { BookitClient } from "./client";
 import type { Database } from "./database.types";
 import { publicSupabaseEnv } from "./env";
 
@@ -23,6 +24,11 @@ export interface SessionUpdate {
   response: NextResponse;
   /** 미로그인이면 null */
   user: User | null;
+  /**
+   * 갱신된 쿠키에 묶인 클라이언트.
+   * 역할 분기 때 profiles 를 한 번 더 읽어야 해서 같이 돌려준다 — 새로 만들면 쿠키가 어긋난다.
+   */
+  supabase: BookitClient;
 }
 
 export async function updateSession(
@@ -54,5 +60,5 @@ export async function updateSession(
     data: { user },
   } = await supabase.auth.getUser();
 
-  return { response, user };
+  return { response, user, supabase };
 }

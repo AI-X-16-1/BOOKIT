@@ -21,6 +21,11 @@ Called before the student starts writing. One question, nothing else.
 - 줄거리 요약을 요구하지 마라. 장면과 감정을 떠올리게 하라.
 - 정답이 있는 질문을 하지 마라.
 - 학년에 맞는 쉬운 어휘를 써라.
+- 등장인물 이름이나 특정 장면을 네 입으로 말하지 마라. 하나도 쓰지 마라.
+  "장면과 감정을 떠올리게 하라"는 것은 학생이 스스로 떠올리게 하라는 뜻이지
+  네가 장면을 짚어주라는 뜻이 아니다.
+  이름을 잘못 대면 학생은 자기가 잘못 읽었다고 생각한다. 책을 읽은 학생이라면
+  누구나 자기 기억으로 답할 수 있는 질문을 해라.
 
 출력: {"question": "..."}
 ```
@@ -66,15 +71,21 @@ Takes one gap and turns it into the follow-up question. This is what makes ghost
 너는 학생이 쓴 독후감을 읽고 되묻는 역할이다.
 학년: {grade_level}학년 / 책: {title}
 
-학생이 쓴 문장: "{gap.quote}"
+반드시 이 문장에 대해 물어라: "{gap.quote}"
 이 문장의 문제: {gap.reason}
+
+독후감 전문: """{review_body}"""
 
 이 문장을 인용해서, 왜 그렇게 생각했는지 되묻는 질문 한 개를 만들어라.
 
 규칙:
+- 인용은 반드시 주어진 그 문장이어야 한다. 독후감의 다른 문장을 인용하지 마라.
+- 독후감 전문은 맥락 파악용이다. 독후감에 이미 쓰여 있는 내용을 그대로 되풀이하면
+  답이 되는 질문은 만들지 마라. 이미 쓴 것보다 한 걸음 더 들어가게 물어라.
 - 해석·근거형 질문만. "어느 장면에서", "왜 그렇게 느꼈는지"를 묻는다.
 - 등장인물 이름이나 지엽적 사실을 묻지 마라. 읽었어도 잊을 수 있다.
 - "만약 ~라면" 가정형을 묻지 마라. 채점 기준을 세울 수 없다.
+- 인용은 자연스럽게 이어 붙여라. "~다라고 했는데" 처럼 조사를 겹쳐 쓰지 마라.
 - 반말로 한 문장. 30초 안에 답할 수 있는 크기여야 한다.
 - 답을 유도하거나 힌트를 주지 마라.
 
@@ -103,7 +114,15 @@ Not right-or-wrong. Three axes.
 
 1. logic_consistency — 답변이 독후감의 주장과 어긋나지 않는가. pass / weak / fail
 2. specificity — 장면이나 인물을 특정했는가. 뭉뚱그렸으면 weak. pass / weak / fail
-3. style_consistency — 독후감과 답변의 문체·어휘 수준이 비슷한가. 갑자기 성인 문체로 바뀌면 shifted. same / shifted
+3. style_consistency — 독후감과 답변의 어휘 수준·사고의 복잡도가 비슷한가. same / shifted
+
+style_consistency 는 방향과 무관하다. 둘 중 하나라도 해당하면 shifted 다.
+- 답변이 갑자기 성인 문체로 올라간 경우 (독후감은 아이 글, 답변만 대신 쓴 경우)
+- 독후감이 학년에 비해 지나치게 성숙한데 답변은 그렇지 않은 경우 (독후감을 대신 써준 경우)
+
+단, 문어체(독후감)와 구어체(답변)의 차이는 shifted 가 아니다. 독후감은 쓴 글이고
+답변은 급하게 친 말이라 말투가 다른 것이 자연스럽다. 보는 것은 어휘 수준과
+사고의 복잡도지 말투가 아니다. 답변이 짧거나 맞춤법이 틀린 것도 shifted 가 아니다.
 
 통과 기준({threshold}):
 - moderate: logic_consistency가 fail이 아니고, specificity가 pass면 통과
@@ -121,6 +140,11 @@ Not right-or-wrong. Three axes.
 ```
 
 `{threshold}` comes from the `PASS_THRESHOLD` env var so it can be tuned right before the demo.
+
+**통과 여부는 모델이 아니라 서버가 정한다.** 모델은 3축 판정만 한다 (`modules/ai/server/grade.ts` 의 `isPass`).
+임계값을 프롬프트에 넣으면 기준을 바꿀 때마다 프롬프트가 바뀌고 같은 답변이 다르게 채점된다.
+지금 구조에서는 `PASS_THRESHOLD` 를 바꿔도 모델 호출이 필요 없다.
+`style_consistency` 가 `shifted` 면 임계값과 무관하게 통과시키지 않는다.
 
 ---
 
