@@ -1,0 +1,93 @@
+// scripts/books-smoke.ts
+/**
+ * books 모듈 스모크 — `npm run books:smoke`
+ *
+ * 외부 키도 Supabase 연결도 없이, mock 소스 + 인메모리 포트로
+ * search → recommend → detail 흐름이 계약대로 도는지 확인한다.
+ * 실제 Supabase/국립중앙도서관 연결 확인은 이 스크립트의 범위가 아니다
+ * (scripts/check-supabase.mjs, README 참고).
+ */
+import { randomUUID } from "node:crypto";
+
+import type { Book } from "@/shared/types";
+import {
+  getBookById,
+  mockSource,
+  recommendBooks,
+  searchAndUpsertBooks,
+  type BookInsertRow,
+  type BooksAdminPort,
+  type BooksReadPort,
+} from "@/modules/books";
+
+class FakeBooksStore implements BooksAdminPort, BooksReadPort {
+  private rows = new Map<string, Book>();
+
+  async findByIsbn(isbn13: string): Promise<Book | null> {
+    return [...this.rows.values()].find((b) => b.isbn13 === isbn13) ?? null;
+  }
+
+  async insertBook(row: BookInsertRow): Promise<Book> {
+    const book: Book = {
+      id: randomUUID(),
+      isbn13: row.isbn13 ?? null,
+      title: row.title,
+      author: row.author,
+      publisher: row.publisher,
+      cover_url: row.cover_url ?? null,
+      tags: row.tags ?? [],
+      target_grade_min: row.target_grade_min ?? null,
+      target_grade_max: row.target_grade_max ?? null,
+      is_public_domain: row.is_public_domain ?? false,
+      library_url: row.library_url ?? null,
+      aladin_url: row.aladin_url ?? null,
+    };
+    this.rows.set(book.id, book);
+    return book;
+  }
+
+  async listByGrade(gradeLevel: number, limit: number): Promise<Book[]> {
+    return [...this.rows.values()]
+      .filter(
+        (b) =>
+          (b.target_grade_min === null || b.target_grade_min <= gradeLevel) &&
+          (b.target_grade_max === null || b.target_grade_max >= gradeLevel),
+      )
+      .sort((a, b) => a.title.localeCompare(b.title))
+      .slice(0, limit);
+  }
+
+  async getById(id: string): Promise<Book | null> {
+    return this.rows.get(id) ?? null;
+  }
+}
+
+async function main() {
+  const store = new FakeBooksStore();
+
+  console.log("1) 검색: '아몬드'");
+  const search1 = await searchAndUpsertBooks(store, mockSource, "아몬드");
+  console.log(search1);
+
+  console.log("\n2) 같은 검색 다시 (중복 insert 없이 기존 행을 반환해야 함)");
+  const search2 = await searchAndUpsertBooks(store, mockSource, "아몬드");
+  console.log(search2);
+  if (search1.ok && search2.ok) {
+    const same = search1.books[0]?.id === search2.books[0]?.id;
+    console.log(`   같은 id 재사용: ${same ? "OK" : "FAIL"}`);
+    if (!same) process.exitCode = 1;
+  }
+
+  console.log("\n3) 추천 (6학년)");
+  console.log(await recommendBooks(store, 6));
+
+  if (search1.ok && search1.books[0]) {
+    console.log("\n4) 상세 조회");
+    console.log(await getBookById(store, search1.books[0].id));
+  }
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

@@ -10,7 +10,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "prepare": "git config core.hooksPath .githooks || true",
     "test:rls": "node supabase/tests/rls.test.mjs",
-    "check:supabase": "node scripts/check-supabase.mjs"
+    "check:supabase": "node scripts/check-supabase.mjs",
+    "books:smoke": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/books-smoke.ts",
+    "test:books": "node --conditions=react-server --import tsx --test src/modules/books/schema.test.ts src/modules/books/server/tags.test.ts src/modules/books/server/response.test.ts src/modules/books/server/source.test.ts src/modules/books/server/search.test.ts src/modules/books/server/recommend.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -29,6 +31,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }
