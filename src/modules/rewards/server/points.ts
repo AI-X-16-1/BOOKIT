@@ -54,7 +54,7 @@ export async function getPoints(
 /**
  * POST /api/points/exchange
  *
- * exchange_points RPC(0009, 초안) 가 잔액 확인과 차감을 한 트랜잭션으로 처리한다.
+ * exchange_points RPC(0010, 초안) 가 잔액 확인과 차감을 한 트랜잭션으로 처리한다.
  * 학생 클라이언트가 points_ledger 에 직접 쓸 수 없어(0004) service role 로 부른다.
  * 함수 안에서 p_student_id 소유권을 다시 확인하므로 여기서는 인자만 넘긴다.
  */
@@ -72,7 +72,7 @@ export async function exchangePoints(
   });
 
   if (error) {
-    // 0009 의 check_violation(23514) = 잔액 부족. 그 외는 예상 못 한 실패다.
+    // 0010 의 check_violation(23514) = 잔액 부족. 그 외는 예상 못 한 실패다.
     if (error.code === "23514") {
       return failure("insufficient_points", "책갈피가 모자라. 조금만 더 모아볼까?", 400);
     }
@@ -98,9 +98,9 @@ interface ExchangeArgs {
 /**
  * ⚠️ 임시 캐스트.
  *
- * exchange_points 는 0009 초안이라 아직 shared/supabase/database.types.ts 의
+ * exchange_points 는 0010 초안이라 아직 shared/supabase/database.types.ts 의
  * Functions 에 없다. 그 파일은 김민경 소유라 이 세션에서 고치지 않는다 (CLAUDE.md §2).
- * 0009 가 머지되고 타입이 추가되면 이 함수를 지우고 supabase.rpc(...) 를 직접 부른다.
+ * 0010 가 머지되고 타입이 추가되면 이 함수를 지우고 supabase.rpc(...) 를 직접 부른다.
  * verification/server/answer.ts 의 recordResult 와 같은 이유, 같은 모양이다.
  */
 function callExchange(

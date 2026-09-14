@@ -13,7 +13,7 @@
  *
  * points_ledger 는 append-only다. 잔액 컬럼은 존재하지 않는다 — sum(delta)로 계산 (CLAUDE.md §4).
  * 적립은 verification 모듈이 record_verification_result RPC 로 한다 (0008).
- * 차감(교환)은 exchange_points RPC(0009, 초안)가 잔액 확인과 한 트랜잭션으로 한다.
+ * 차감(교환)은 exchange_points RPC(0010, 초안)가 잔액 확인과 한 트랜잭션으로 한다.
  * UI 문구에서는 항상 "책갈피"라고 부른다 — "포인트"라고 쓰지 않는다 (CLAUDE.md §9).
  *
  * ⚠️ 서버 로직은 여기서 re-export 하지 않는다. Route Handler 는

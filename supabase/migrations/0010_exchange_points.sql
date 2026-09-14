@@ -1,4 +1,4 @@
--- 0009 — 책갈피 교환(잔액 확인 + 차감)을 한 트랜잭션으로
+-- 0010 — 책갈피 교환(잔액 확인 + 차감)을 한 트랜잭션으로
 -- docs/spec.md §4, §5 (POST /api/points/exchange)
 --
 -- ⚠️ 초안이다. supabase/migrations 는 김민경 소유라 (CLAUDE.md §2) 머지 전 확인이 필요하다.
@@ -15,7 +15,9 @@
 -- 왜 authenticated 에게 주지 않는가:
 --   security definer 함수를 학생 역할에 열면 브라우저에서 비용을 조작해 호출할 수 있다.
 --   그래서 service_role 전용으로 두고, 인증된 Route Handler 만 호출한다.
---   소유권 확인은 함수 안에서 p_student_id 로 한 번 더 한다.
+--   함수 안에는 소유권 검사가 따로 없다 — 호출부(rewards/server/points.ts)가
+--   세션에서 얻은 user.id 를 p_student_id 로 그대로 넘기고, 이 함수는 service_role
+--   에게만 열려 있어 학생이 브라우저에서 남의 id 로 직접 부를 수 없다.
 --   비용(300/450)은 함수 인자로 받되, 호출부(rewards 모듈)의 상수가 유일한 출처다 —
 --   사용자 입력에서 바로 온 값이 아니다.
 

@@ -286,7 +286,7 @@ check('실패하면 독후감 상태가 failed 로 바뀐다',
   (await db.query(`select status from reviews where id = 'd0000000-0000-0000-0000-00000000000d'`))
     .rows[0]?.status === 'failed');
 
-// ── exchange_points (0009) ────────────────────────────
+// ── exchange_points (0010) ────────────────────────────
 // 책갈피 교환의 잔액 확인 + 차감을 한 트랜잭션으로 남기는 함수.
 // 여기서 지키려는 것: 학생이 직접 부를 수 없어야 하고, 잔액을 넘는 교환은 막혀야 한다
 // (docs/spec.md §4, §5).
