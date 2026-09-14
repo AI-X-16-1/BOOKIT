@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { GuardianSummaryResponse } from "@/shared/types";
+import { apiGet } from "@/shared/api/client";
 import { Card, Chip } from "@/shared/ui";
-import { getGuardianSummary } from "../mock";
 
 /**
  * 보호자 화면. 목업 5 #2 (L120-140).
@@ -16,10 +16,12 @@ export function GuardianView({ token }: { token: string }) {
   const [state, setState] = useState<"loading" | "ok" | "invalid">("loading");
 
   useEffect(() => {
-    getGuardianSummary(token).then((d) => {
-      setData(d);
-      setState(d ? "ok" : "invalid");
-    });
+    apiGet<GuardianSummaryResponse>(`/api/guardian/${token}`)
+      .then((d) => {
+        setData(d);
+        setState("ok");
+      })
+      .catch(() => setState("invalid"));
   }, [token]);
 
   if (state === "loading") {
