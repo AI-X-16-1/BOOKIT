@@ -767,7 +767,7 @@ function makeFakePort(): BooksAdminPort & { rows: Book[] } {
         isbn13: row.isbn13 ?? null,
         title: row.title,
         author: row.author,
-        publisher: row.publisher ?? null,
+        publisher: row.publisher,
         cover_url: row.cover_url ?? null,
         tags: row.tags ?? [],
         target_grade_min: row.target_grade_min ?? null,
@@ -894,7 +894,11 @@ export function rawHitToBookInsert(hit: IsbnHit): BookInsertRow {
     isbn13: hit.isbn13,
     title: hit.title,
     author: hit.author,
-    publisher: hit.publisher,
+    // Book.publisher는 non-null string인데 RawBookHit.publisher는 소스에 따라 null일 수
+    // 있다 — 빈 문자열로 대체한다 (DB 마이그레이션은 publisher를 nullable로 뒀는데 db.ts의
+    // 타입은 non-null이다; 이 불일치는 shared/ 소유자에게 확인 요청할 사항이지 여기서
+    // 고치지 않는다).
+    publisher: hit.publisher ?? "",
     cover_url: hit.coverUrl,
     tags: mapToGenreTags(hit.rawCategory, hit.kdc),
     target_grade_min: null,
@@ -985,7 +989,7 @@ function book(partial: Partial<Book>): Book {
     isbn13: null,
     title: "제목",
     author: "저자",
-    publisher: null,
+    publisher: "출판사",
     cover_url: null,
     tags: [],
     target_grade_min: null,
@@ -1129,8 +1133,9 @@ export {
   createSupabaseBooksReadPort,
   type BooksAdminPort,
   type BooksReadPort,
+  type BookInsertRow,
 } from "./server/db";
-export { getBookSource } from "./server/source";
+export { getBookSource, mockSource } from "./server/source";
 export { searchAndUpsertBooks, type SearchResult } from "./server/search";
 export { recommendBooks, type RecommendResult } from "./server/recommend";
 export { getBookById } from "./server/detail";
@@ -1326,11 +1331,15 @@ Expected: 모든 테스트 PASS (schema 4 + tags 4 + response 4 + source 5 + sea
 import { randomUUID } from "node:crypto";
 
 import type { Book } from "@/shared/types";
-import type { BookInsertRow, BooksAdminPort, BooksReadPort } from "@/modules/books";
-import { getBookById } from "@/modules/books/server/detail";
-import { recommendBooks } from "@/modules/books/server/recommend";
-import { searchAndUpsertBooks } from "@/modules/books/server/search";
-import { mockSource } from "@/modules/books/server/source";
+import {
+  getBookById,
+  mockSource,
+  recommendBooks,
+  searchAndUpsertBooks,
+  type BookInsertRow,
+  type BooksAdminPort,
+  type BooksReadPort,
+} from "@/modules/books";
 
 class FakeBooksStore implements BooksAdminPort, BooksReadPort {
   private rows = new Map<string, Book>();
@@ -1345,7 +1354,7 @@ class FakeBooksStore implements BooksAdminPort, BooksReadPort {
       isbn13: row.isbn13 ?? null,
       title: row.title,
       author: row.author,
-      publisher: row.publisher ?? null,
+      publisher: row.publisher,
       cover_url: row.cover_url ?? null,
       tags: row.tags ?? [],
       target_grade_min: row.target_grade_min ?? null,
