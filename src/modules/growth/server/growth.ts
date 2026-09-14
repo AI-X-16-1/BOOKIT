@@ -11,8 +11,9 @@
  * leaves = 완독(통과)한 독후감 수. tree_stage 는 LEAVES_PER_STAGE 마다 한 단계씩,
  * 마지막 단계에서 멈춘다.
  *
- * ⚠️ 남은 것: 통과 시점에 streaks·genre_stamps 를 실제로 올리는 쓰기 경로가 아직 없다
- * (0008 마이그레이션 주석). 지금은 시드값 그대로를 읽기만 한다 — 별도로 다룬다.
+ * streaks·genre_stamps 는 이 파일이 쓰지 않는다 — points_ledger 에 verification_pass
+ * 행이 쌓일 때 트리거(0010, 초안)가 올린다. 같은 날 여러 번 통과해도 스트릭은
+ * 매번 늘고, 책의 태그 전부에 도장 진행도가 붙는다 (문민재 결정).
  */
 import type { BookitClient } from "@/shared/supabase";
 import type { GrowthResponse, GrowthStampView } from "@/shared/types";
