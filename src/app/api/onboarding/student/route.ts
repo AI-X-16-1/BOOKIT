@@ -30,7 +30,7 @@ export async function POST(
   const parsed = studentOnboardingSchema.safeParse(await readJson(request));
   if (!parsed.success) return invalidBody("6자리 코드와 학년을 확인해줘.");
 
-  const result = await joinClassByCode(supabase, user.id, parsed.data);
+  const result = await joinClassByCode(supabase, user, parsed.data);
   if (!result.ok) return fail(result.code, result.message, result.status);
 
   return ok({ class: result.data });
