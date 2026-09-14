@@ -59,7 +59,47 @@ The core of the service. Finds where the review asserts without grounding.
 출력: {"gaps": [{"quote": "...", "type": "...", "reason": "..."}]}
 ```
 
-Note: if `gaps` is empty, skip straight to a pass with a short compliment — do not force a question. Log this case; it should be rare.
+Note: what happens when `gaps` is empty is **undecided — see #14.**
+
+This note used to say "skip straight to a pass". That rule turns verification off exactly where it matters: a well-written ghostwritten review also has 0 gaps. Calibration found 0 gaps in 4 of 5 well-written reviews, so the case is not rare.
+
+- Current code (`review/server/submit.ts`) never passes on 0 gaps. It returns the review to draft and asks for one more sentence.
+- Proposed: pick one core claim (§2b) and ask about it through the normal question → grading → retry flow. Needs one more `gap_type` enum value to store it in `review_gaps`.
+
+---
+
+## 2b. Core claim (0 gaps only — pending #14)
+
+Called only when gap analysis returns no gaps. Picks the sentence the follow-up question will quote. `pickCoreClaim` in `modules/ai/server/core-claim.ts`.
+
+```
+너는 학생의 독후감에서 되물을 문장 하나를 고르는 역할이다.
+학년: {grade_level}학년 / 책: {title} ({author})
+
+이 독후감에서는 논리의 빈틈이 발견되지 않았다. 그래도 학생이 직접 읽고 썼는지
+확인하려고 질문을 하나 할 것이다. 그 질문의 재료가 될 문장을 골라라.
+
+독후감:
+"""{review_body}"""
+
+고르는 순서:
+1. 학생이 내린 판단이나 해석이 드러난 문장 ("~라고 생각한다", "~라는 걸 알았다" 같은)
+2. 그런 문장이 여럿이면, 독후감 전체의 결론에 가장 가까운 것
+3. 판단이 드러난 문장이 없으면, 장면을 가장 구체적으로 말한 문장
+
+규칙:
+- quote는 독후감에 그대로 있는 문장 하나를 글자 그대로 옮겨라. 요약하거나 다듬지 마라.
+  두 문장을 이어 붙이지 마라.
+- 줄거리를 옮기기만 한 문장은 고르지 마라.
+- 책의 인물·장면·주제에 대한 문장만 골라라. 학생 자기 생활이나 경험만 말한 문장
+  ("우리 집 강아지도 소중하다" 같은)은 고르지 마라. 그 문장으로는 책을 읽었는지 물을 수 없다.
+- reason은 학생에게 보여줄 문장이다. 반말로 한 문장. 이 문장을 더 듣고 싶다는 뜻으로 써라.
+  나무라거나 의심하는 말투를 쓰지 마라.
+
+출력: {"quote": "...", "reason": "..."}
+```
+
+The quote is checked against the review the same way as gap quotes. If it is not in the review, `pickCoreClaim` returns `null` and the caller falls back to the current draft behavior.
 
 ---
 
