@@ -13,8 +13,11 @@
  * 배럴 전체를 로드하면 react.react-server.js에 createContext가 없어 크래시한다
  * (Task 4의 mock.ts/review 배럴 문제와 같은 종류지만, 이번엔 HomeScreen이 books 자신의
  * 정당한 public export라 지울 수 없다 — src/app/(main)/home/page.tsx가 실제로 쓴다).
- * 실제 앱은 Next 번들러가 client/server 그래프를 쪼개주므로 라우트 핸들러는 전혀 영향
- * 없다 — 이 우회는 번들러 없이 도는 개발용 스크립트에만 해당한다.
+ * (barrel을 섞어 쓰면 실제 빌드도 깨질 수 있다 — rewards/MeScreen.tsx가 COVER를
+ * @/modules/books에서 가져오다 서버 전용 코드까지 클라이언트 번들에 끌려들어가
+ * 빌드가 실패한 적이 있고, books/index.ts를 client-safe 배럴과
+ * server/index.ts(서버 전용 배럴)로 나눠서 고쳤다. 이 스크립트의 우회는 그것과는
+ * 별개로, 번들러가 아예 없는 plain node 실행 환경에서만 필요하다.)
  */
 import { randomUUID } from "node:crypto";
 
