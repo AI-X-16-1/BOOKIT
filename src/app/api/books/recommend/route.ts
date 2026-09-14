@@ -12,7 +12,7 @@ import {
   ok,
   recommendBooks,
   unauthorized,
-} from "@/modules/books";
+} from "@/modules/books/server";
 import { createServerSupabase } from "@/shared/supabase/server";
 import type { ApiResponse, BookRecommendResponse } from "@/shared/types";
 

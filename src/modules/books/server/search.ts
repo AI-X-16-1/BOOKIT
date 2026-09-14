@@ -16,6 +16,7 @@ type IsbnHit = RawBookHit & { isbn13: string };
  * TODO: 국회전자도서관 실제 검색 딥링크 URL 패턴 확인 후 채운다.
  * docs/superpowers/specs/2026-09-14-books-search-recommend-design.md 후속 작업 참고.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- params kept for future implementation, see TODO above
 export function buildLibraryUrl(_title: string, _isbn13: string): string | null {
   return null;
 }

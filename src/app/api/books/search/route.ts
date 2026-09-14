@@ -7,15 +7,15 @@
  */
 import type { NextRequest, NextResponse } from "next/server";
 
+import { parseSearchQuery } from "@/modules/books";
 import {
   createSupabaseBooksAdminPort,
   fail,
   getBookSource,
   ok,
-  parseSearchQuery,
   searchAndUpsertBooks,
   unauthorized,
-} from "@/modules/books";
+} from "@/modules/books/server";
 import { createAdminClient } from "@/shared/supabase/admin";
 import { createServerSupabase } from "@/shared/supabase/server";
 import type { ApiResponse, BookSearchResponse } from "@/shared/types";

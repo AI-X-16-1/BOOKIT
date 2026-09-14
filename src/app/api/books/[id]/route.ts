@@ -6,14 +6,14 @@
  */
 import type { NextResponse } from "next/server";
 
+import { parseBookId } from "@/modules/books";
 import {
   createSupabaseBooksReadPort,
   fail,
   getBookById,
   ok,
-  parseBookId,
   unauthorized,
-} from "@/modules/books";
+} from "@/modules/books/server";
 import { createServerSupabase } from "@/shared/supabase/server";
 import type { ApiResponse, BookDetailResponse } from "@/shared/types";
 
