@@ -1328,19 +1328,24 @@ Expected: 모든 테스트 PASS (schema 4 + tags 4 + response 4 + source 5 + sea
  * search → recommend → detail 흐름이 계약대로 도는지 확인한다.
  * 실제 Supabase/국립중앙도서관 연결 확인은 이 스크립트의 범위가 아니다
  * (scripts/check-supabase.mjs, README 참고).
+ *
+ * ⚠️ 이 파일만 예외적으로 `@/modules/books` 배럴이 아니라 `server/*` 개별 파일에서
+ * 바로 import한다 — books/index.ts는 `HomeScreen`("use client", next/link 포함)도
+ * 같이 export하는데, Next 번들러 없이 `--conditions=react-server`로 plain node에서
+ * 배럴 전체를 로드하면 react.react-server.js에 createContext가 없어 크래시한다
+ * (Task 4의 mock.ts/review 배럴 문제와 같은 종류지만, 이번엔 HomeScreen이 books 자신의
+ * 정당한 public export라 지울 수 없다 — src/app/(main)/home/page.tsx가 실제로 쓴다).
+ * 실제 앱은 Next 번들러가 client/server 그래프를 쪼개주므로 라우트 핸들러는 전혀 영향
+ * 없다 — 이 우회는 번들러 없이 도는 개발용 스크립트에만 해당한다.
  */
 import { randomUUID } from "node:crypto";
 
 import type { Book } from "@/shared/types";
-import {
-  getBookById,
-  mockSource,
-  recommendBooks,
-  searchAndUpsertBooks,
-  type BookInsertRow,
-  type BooksAdminPort,
-  type BooksReadPort,
-} from "@/modules/books";
+import type { BookInsertRow, BooksAdminPort, BooksReadPort } from "@/modules/books/server/db";
+import { getBookById } from "@/modules/books/server/detail";
+import { recommendBooks } from "@/modules/books/server/recommend";
+import { searchAndUpsertBooks } from "@/modules/books/server/search";
+import { mockSource } from "@/modules/books/server/source";
 
 class FakeBooksStore implements BooksAdminPort, BooksReadPort {
   private rows = new Map<string, Book>();
