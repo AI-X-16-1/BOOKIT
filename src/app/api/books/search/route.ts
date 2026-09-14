@@ -29,9 +29,19 @@ export async function GET(
   } = await supabase.auth.getUser();
   if (!user) return unauthorized();
 
-  const query = parseSearchQuery(request.nextUrl.searchParams.get("q"));
-  const port = createSupabaseBooksAdminPort(createAdminClient());
-  const result = await searchAndUpsertBooks(port, getBookSource(), query);
-  if (!result.ok) return fail(result.code, result.message, result.status);
-  return ok({ books: result.books });
+  try {
+    const query = parseSearchQuery(request.nextUrl.searchParams.get("q"));
+    if (!query) return ok({ books: [] });
+
+    const port = createSupabaseBooksAdminPort(createAdminClient());
+    const result = await searchAndUpsertBooks(port, getBookSource(), query);
+    if (!result.ok) return fail(result.code, result.message, result.status);
+    return ok({ books: result.books });
+  } catch {
+    return fail(
+      "internal_error",
+      "지금은 잘 안 되네. 조금 뒤에 다시 해볼래?",
+      500,
+    );
+  }
 }

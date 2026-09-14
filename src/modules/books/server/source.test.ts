@@ -22,7 +22,7 @@ test("mockSource는 제목/저자로 찾는다", async () => {
   const hits = await mockSource.search("아몬드");
   assert.equal(hits.length, 1);
   assert.equal(hits[0].title, "아몬드");
-  assert.equal(hits[0].isbn13, "MOCK-ISBN-B5");
+  assert.equal(hits[0].isbn13, "9788936434267");
 });
 
 test("mockSource는 빈 검색어에 빈 배열", async () => {

@@ -60,6 +60,7 @@ export async function searchAndUpsertBooks(
     hits = await source.search(q);
   } catch (err) {
     if (err instanceof BookSourceError) {
+      console.error("[books] source error:", err);
       return {
         ok: false,
         code: "book_source_unavailable",

@@ -27,12 +27,20 @@ export async function GET(
   } = await supabase.auth.getUser();
   if (!user) return unauthorized();
 
-  const { id: rawId } = await params;
-  const id = parseBookId(rawId);
-  if (!id) return fail("invalid_id", "책 id 형식이 아니야.", 400);
+  try {
+    const { id: rawId } = await params;
+    const id = parseBookId(rawId);
+    if (!id) return fail("invalid_id", "책 id 형식이 아니야.", 400);
 
-  const port = createSupabaseBooksReadPort(supabase);
-  const book = await getBookById(port, id);
-  if (!book) return fail("book_not_found", "그 책을 찾을 수 없어.", 404);
-  return ok({ book });
+    const port = createSupabaseBooksReadPort(supabase);
+    const book = await getBookById(port, id);
+    if (!book) return fail("book_not_found", "그 책을 찾을 수 없어.", 404);
+    return ok({ book });
+  } catch {
+    return fail(
+      "internal_error",
+      "지금은 잘 안 되네. 조금 뒤에 다시 해볼래?",
+      500,
+    );
+  }
 }
