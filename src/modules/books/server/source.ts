@@ -142,6 +142,11 @@ function classifyAudience(eaAddCode: string | null): {
   exclude: boolean;
 } {
   const readerCode = eaAddCode?.charAt(0);
+  // 둘째 자리 = 발행형태기호. 7=그림책·만화. 청소년(4)+만화는 성인 취향 만화가
+  // 그대로 들어온다 ("아몬" → Go Nagai 데빌맨류, 47830). 아동(7)+7 은 그림책이라 둔다.
+  if (readerCode === "4" && eaAddCode?.charAt(1) === "7") {
+    return { targetGradeMin: null, targetGradeMax: null, exclude: true };
+  }
   switch (readerCode) {
     case "6":
     case "7":
@@ -160,6 +165,11 @@ export function toRawBookHitFromNlk(raw: unknown): RawBookHit | null {
   const title = typeof r.TITLE === "string" ? nullIfEmpty(r.TITLE) : null;
   const rawAuthor = typeof r.AUTHOR === "string" ? nullIfEmpty(r.AUTHOR) : null;
   if (!title || !rawAuthor) return null;
+
+  // 전자책·오디오북은 뺀다 — 웹소설·웹툰이 거의 전부 여기고, 종이책의 중복 판본이기도 하다.
+  // 실측: EBOOK_YN 은 "Y"/"N", FORM 은 "전자책"/"오디오북"/"종이책"/"" (2026-09-15)
+  if (r.EBOOK_YN === "Y") return null;
+  if (typeof r.FORM === "string" && /전자책|오디오북/.test(r.FORM)) return null;
 
   const eaAddCode = typeof r.EA_ADD_CODE === "string" ? nullIfEmpty(r.EA_ADD_CODE) : null;
   const audience = classifyAudience(eaAddCode);
