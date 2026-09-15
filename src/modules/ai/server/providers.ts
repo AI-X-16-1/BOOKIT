@@ -198,9 +198,11 @@ const TRANSIENT_STATUS = new Set([408, 500, 502, 503, 504]);
 /**
  * 한도 초과. 같은 모델로 다시 해도 소용없으니 곧장 대체 모델로 넘어간다.
  *
- * Gemini 무료 티어의 한도는 모델 단위다 —
- * quotaId 가 GenerateRequestsPerDayPerProjectPerModel-FreeTier 다.
+ * 무료 티어로 개발할 때 한도가 모델 단위였다 —
+ * quotaId 가 GenerateRequestsPerDayPerProjectPerModel-FreeTier 로 찍혔다.
  * 그래서 모델을 갈아타면 남은 한도가 새로 생긴다.
+ * 대회 기간은 유료 티어라(#29) 한도에 걸릴 일이 드물지만, 무료 키로 로컬에서
+ * 돌릴 때를 위해 그대로 둔다.
  */
 const QUOTA_STATUS = 429;
 
