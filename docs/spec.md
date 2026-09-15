@@ -10,7 +10,8 @@ Paste this whole file into your Claude Code session before starting.
 ```
 profile_role      : 'student' | 'teacher'
 review_status     : 'draft' | 'analyzing' | 'questioning' | 'passed' | 'failed'
-gap_type          : 'unsupported_claim' | 'vague_statement' | 'feeling_only'
+gap_type          : 'unsupported_claim' | 'vague_statement' | 'feeling_only' | 'core_claim'
+                    -- core_claim: 빈틈 0개일 때 AI 가 고른 핵심 주장 (0013, issue #14). 빈틈이 아니다
 grade_level       : 1..9   -- 1=초1 ... 6=초6, 7=중1, 8=중2, 9=중3
 point_reason      : 'verification_pass' | 'ebook_pass' | 'audiobook_pass' | 'admin_adjust'
 challenge_kind    : 'class_goal' | 'season'

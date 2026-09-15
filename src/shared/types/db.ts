@@ -16,7 +16,15 @@ export type ReviewStatus =
   | "passed"
   | "failed";
 
-export type GapType = "unsupported_claim" | "vague_statement" | "feeling_only";
+/**
+ * 빈틈 유형 3종 + core_claim (0013). core_claim 은 빈틈이 아니라 "빈틈이 없을 때
+ * 그래도 물어볼 핵심 주장 한 문장" — 화면은 다르게 안내하고 채점 기준은 같다 (issue #14).
+ */
+export type GapType =
+  | "unsupported_claim"
+  | "vague_statement"
+  | "feeling_only"
+  | "core_claim";
 
 /** 1=초1 … 6=초6, 7=중1, 8=중2, 9=중3 */
 export type GradeLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;

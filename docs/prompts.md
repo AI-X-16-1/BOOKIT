@@ -59,7 +59,7 @@ The core of the service. Finds where the review asserts without grounding.
 출력: {"gaps": [{"quote": "...", "type": "...", "reason": "..."}]}
 ```
 
-Note: if `gaps` is empty, skip straight to a pass with a short compliment — do not force a question. Log this case; it should be rare.
+Note: if `gaps` is empty, do NOT pass without a question (issue #14, decided 2026-09-15). Pick the review's core claim sentence (call 5, `pickCoreClaim`, PR #26), store it as a `review_gaps` row with `gap_type = 'core_claim'`, and continue with the normal question → grading flow. The screen tells the student there were no gaps but one question is still asked. Log this case.
 
 ---
 
