@@ -32,8 +32,8 @@ function coverClass(book: Book): string {
 
 function Cover({ book, size }: { book: Book; size: string }) {
   if (book.cover_url) {
-    // eslint-disable-next-line @next/next/no-img-element -- 외부 표지 URL, 크기 미상
     return (
+      // eslint-disable-next-line @next/next/no-img-element -- 외부 표지 URL, 크기 미상
       <img
         src={book.cover_url}
         alt=""
@@ -134,38 +134,53 @@ export function HomeScreen() {
             className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-faint"
           />
         </div>
-        {/* 결과는 자리를 차지하게 두고 아래 내용을 숨긴다 — 겹쳐 띄우면 추천 카드가 결과처럼 보인다 */}
+        {/* 결과는 헤더·닫기가 있는 박스로 — 아래 추천 카드와 한눈에 구분되게. 나머지 화면은 그대로 둔다 */}
         {showResults && (
-          <ul className="mt-2 overflow-hidden rounded-xl bg-card shadow-card">
-            {hits.map((b) => (
-              <li
-                key={b.id}
-                className="border-b border-border-soft last:border-b-0"
-              >
-                <Link
-                  href={`/write?book=${b.id}`}
-                  className="flex min-h-12 items-center gap-3 px-4 py-3"
-                >
-                  <Cover book={b} size="h-8 w-8" />
-                  <span className="flex-1 truncate text-[15px] font-bold text-ink">
-                    {b.title}
-                  </span>
-                  <span className="text-[13px] text-muted">{b.author}</span>
-                </Link>
-              </li>
-            ))}
-            {hits.length === 0 && (
-              <li className="px-4 py-3 text-[14px] text-muted">
+          <div className="mt-2 overflow-hidden rounded-xl border-[1.5px] border-border-strong bg-card shadow-card">
+            <div className="flex items-center justify-between border-b border-border-soft bg-notebook px-4 py-2.5">
+              <span className="text-[13px] font-bold text-muted">
                 {searching
                   ? "찾는 중…"
-                  : "그 책은 못 찾았어. 다른 제목으로 찾아볼까?"}
-              </li>
-            )}
-          </ul>
+                  : `'${q.trim()}' 검색 결과 ${hits.length}개`}
+              </span>
+              <button
+                type="button"
+                onClick={() => setQ("")}
+                aria-label="검색 닫기"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted"
+              >
+                ✕
+              </button>
+            </div>
+            <ul>
+              {hits.map((b) => (
+                <li
+                  key={b.id}
+                  className="border-b border-border-soft last:border-b-0"
+                >
+                  <Link
+                    href={`/write?book=${b.id}`}
+                    className="flex min-h-12 items-center gap-3 px-4 py-3"
+                  >
+                    <Cover book={b} size="h-8 w-8" />
+                    <span className="flex-1 truncate text-[15px] font-bold text-ink">
+                      {b.title}
+                    </span>
+                    <span className="text-[13px] text-muted">{b.author}</span>
+                  </Link>
+                </li>
+              ))}
+              {hits.length === 0 && !searching && (
+                <li className="px-4 py-3 text-[14px] text-muted">
+                  그 책은 못 찾았어. 다른 제목으로 찾아볼까?
+                </li>
+              )}
+            </ul>
+          </div>
         )}
       </div>
 
-      {showResults ? null : (
+      {
         <>
           {/* 책갈피 */}
           <div className="rounded-card bg-panel p-5">
@@ -240,7 +255,7 @@ export function HomeScreen() {
             </div>
           </div>
         </>
-      )}
+      }
     </div>
   );
 }
