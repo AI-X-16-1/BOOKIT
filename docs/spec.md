@@ -147,8 +147,7 @@ Guardian access goes through a Route Handler with the token, using the service r
 |---|---|
 | Verification passed | +50 |
 | Verification failed | 0 (row still written) |
-| 국회도서관 ebook 열람권 | −300 |
-| 오디오북 열람권 | −450 |
+| (exchange — retired, #58) | `ebook_pass` −300 / `audiobook_pass` −450 stay in the enum and `exchange_points` (0010) for ledger history; the UI no longer offers them (#64). No new spend path before submission. |
 
 Award and deduction happen inside one transaction with the verification/exchange row. Never award twice for the same `verification.id` — enforce with a unique index on `(reason, ref_id)`.
 
