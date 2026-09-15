@@ -172,3 +172,17 @@ test("toRawBookHitFromDataGoKr는 title이나 author가 없으면 null", () => {
   assert.equal(toRawBookHitFromDataGoKr({ TITLE: "아몬드" }), null);
   assert.equal(toRawBookHitFromDataGoKr(null), null);
 });
+
+test("전자책·오디오북(EBOOK_YN=Y, FORM)은 제외한다 — 웹소설·웹툰이 여기 있고 종이책 중복 판본이다", () => {
+  const base = { PUBLISHER: "창비", AUTHOR: "손원평", TITLE: "아몬드", EA_ISBN: "9788936434267", EA_ADD_CODE: "43810", TITLE_URL: "", SUBJECT: "", KDC: "" };
+  assert.equal(toRawBookHitFromNlk({ ...base, EBOOK_YN: "Y", FORM: "전자책" }), null);
+  assert.equal(toRawBookHitFromNlk({ ...base, EBOOK_YN: "N", FORM: "오디오북" }), null);
+  assert.notEqual(toRawBookHitFromNlk({ ...base, EBOOK_YN: "N", FORM: "종이책" }), null);
+});
+
+test("청소년(4) + 만화(둘째 자리 7)는 제외한다 — 성인 취향 만화가 그대로 들어온다", () => {
+  const base = { PUBLISHER: "학산", AUTHOR: "Go Nagai", TITLE: "아몬", EA_ISBN: "9791100000009", TITLE_URL: "", SUBJECT: "8", KDC: "", EBOOK_YN: "N" };
+  assert.equal(toRawBookHitFromNlk({ ...base, EA_ADD_CODE: "47830" }), null);
+  // 아동(7) 그림책·만화는 둔다
+  assert.notEqual(toRawBookHitFromNlk({ ...base, EA_ADD_CODE: "77810" }), null);
+});

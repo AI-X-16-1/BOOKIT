@@ -101,9 +101,19 @@ export async function searchAndUpsertBooks(
       (h.title.toLowerCase().includes(needle) || h.author.toLowerCase().includes(needle)) &&
       !isDerivative(h.title),
   );
+  // 같은 책의 판본이 ISBN 만 다르게 여러 개 온다 (아몬드 종이책 3종). 제목+저자로 하나만
+  const editionKey = (h: RawBookHit) =>
+    `${h.title}|${h.author}`.replace(/\s+/g, "").toLowerCase();
+  const seenEditions = new Set<string>();
+  const distinct = withIsbn.filter((h) => {
+    const key = editionKey(h);
+    if (seenEditions.has(key)) return false;
+    seenEditions.add(key);
+    return true;
+  });
   const books: Book[] = [...curated];
   const seen = new Set(curated.map((b) => b.id));
-  for (const hit of withIsbn) {
+  for (const hit of distinct) {
     if (books.length >= MAX_RESULTS) break;
     const book = await upsertHit(port, hit);
     if (seen.has(book.id)) continue;
