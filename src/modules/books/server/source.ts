@@ -13,18 +13,28 @@
  * 역할 라벨이 붙어 오고(첫 라벨만 벗겨낸다 — 공역자까지 완벽히 정리하진 않는다),
  * 값이 없는 필드는 null이 아니라 빈 문자열 ""로 온다(null로 정규화한다).
  *
- * ⚠️ dataGoKrSource는 여전히 실호출로 검증 못 했다 — DATA_GO_KR_KEY가 아직 없다.
- * 엔드포인트(api.kcisa.kr/openapi/API_LIB_052/request)·파라미터(serviceKey/
- * numOfRows/pageNo)·응답 필드(TITLE/AUTHOR/ISBN/AFFILIATION/IMAGE_OBJECT 등)는
- * culture.go.kr의 "국립어린이청소년도서관_사서추천도서" 소개 페이지(id=674, _OLD
- * 아닌 정식 버전)에 문서화된 값을 그대로 옮긴 것이다(2026-09-15 확인) — 응답의
- * 정확한 중첩 구조(response.body.items.item)만 미검증. 키가 발급되면 가장 먼저
- * 확인할 것. 이 API는 제목/키워드 검색 파라미터가 없어 목록을 받아 우리 쪽에서
- * 필터링한다(search 구현부 주석 참고).
+ * dataGoKrSource는 2026-09-15에 실제 DATA_GO_KR_KEY로 검증했다 — 엔드포인트·
+ * 파라미터·응답 필드(TITLE/AUTHOR/ISBN/AFFILIATION/IMAGE_OBJECT 등)는 문서
+ * (culture.go.kr id=674) 그대로였다. 다만 응답이 JSON이 아니라 **XML**로 온다
+ * (`type=json` 등 어떤 파라미터를 줘도 XML만 준다) — `fast-xml-parser`로 파싱한다.
+ * `numOfRows=1`이면 `item`이 배열이 아니라 객체 하나로 오고, `ISBN`/`LOCAL_ID`
+ * 같은 숫자로 보이는 필드는 파서가 기본값으로 자동으로 number 타입으로 바꿔버린다 —
+ * 둘 다 파서 옵션(`isArray`, `parseTagValue: false`)으로 막는다.
  */
 import "server-only";
 
+import { XMLParser } from "fast-xml-parser";
+
 import { BOOKS } from "../mock";
+
+/**
+ * 값은 전부 문자열로 유지하고(숫자로 보이는 ISBN 등을 number로 바꾸지 않는다),
+ * item이 하나뿐이어도 항상 배열로 만든다(기본값은 단일 객체라 배열 처리 코드가 깨진다).
+ */
+const dataGoKrXmlParser = new XMLParser({
+  parseTagValue: false,
+  isArray: (name) => name === "item",
+});
 
 export interface RawBookHit {
   isbn13: string | null;
@@ -263,7 +273,14 @@ export const dataGoKrSource: BookSource = {
     }
     if (!res.ok) throw new BookSourceError("data_go_kr", `HTTP ${res.status}`);
 
-    const body: unknown = await res.json().catch(() => null);
+    const xml = await res.text();
+    const body: unknown = (() => {
+      try {
+        return dataGoKrXmlParser.parse(xml);
+      } catch {
+        return null;
+      }
+    })();
     const items = extractArray(body, ["response", "body", "items", "item"]);
     if (!items)
       throw new BookSourceError("data_go_kr", "응답 형식이 예상과 다르다");
