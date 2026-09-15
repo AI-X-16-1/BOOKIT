@@ -19,11 +19,13 @@ import type { z } from "zod";
 import {
   call,
   ProviderCallError,
+  THINKING_LEVELS,
   type Effort,
   type Provider,
+  type ThinkingLevelName,
 } from "./providers";
 
-export type { Effort, Provider };
+export type { Effort, Provider, ThinkingLevelName };
 
 /** 형식이 어긋났을 때 다시 물어보는 횟수 포함 총 시도 횟수. */
 const MAX_ATTEMPTS = 2;
@@ -60,6 +62,8 @@ export interface LlmConfig {
   /** model 이 과부하일 때 순서대로 넘어갈 대체 모델. */
   fallbackModels: string[];
   effort: Effort | undefined;
+  /** gemini 사고 수준. undefined 면 모델 기본값. */
+  thinkingLevel: ThinkingLevelName | undefined;
 }
 
 /**
@@ -98,7 +102,28 @@ export function readConfig(): LlmConfig {
     .filter((name) => name && name !== model);
 
   const effort = process.env.LLM_EFFORT?.trim() as Effort | undefined;
-  return { provider, apiKey, model, fallbackModels, effort: effort || undefined };
+  return {
+    provider,
+    apiKey,
+    model,
+    fallbackModels,
+    effort: effort || undefined,
+    thinkingLevel: readThinkingLevel(),
+  };
+}
+
+/**
+ * 데모 직전까지 조정한다 (issue #36). 잘못된 값은 모델 기본값으로 떨어뜨린다 —
+ * 오타 하나로 검증 플로우가 멈추는 것보다 느린 편이 낫다.
+ */
+function readThinkingLevel(): ThinkingLevelName | undefined {
+  const raw = process.env.LLM_THINKING_LEVEL?.trim().toLowerCase();
+  if (!raw) return undefined;
+  if ((THINKING_LEVELS as readonly string[]).includes(raw)) return raw as ThinkingLevelName;
+  console.warn(
+    `[ai] LLM_THINKING_LEVEL=${raw} 를 모르겠다. 모델 기본값으로 간다 (${THINKING_LEVELS.join(" | ")}).`,
+  );
+  return undefined;
 }
 
 export interface CallJsonOptions<T> {
@@ -158,6 +183,7 @@ export async function callJson<T>(opts: CallJsonOptions<T>): Promise<T> {
         maxTokens,
         timeoutMs,
         effort,
+        thinkingLevel: config.thinkingLevel,
       });
     } catch (error) {
       throw toLlmError(error, label);
