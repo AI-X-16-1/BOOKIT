@@ -16,6 +16,7 @@ const read = p => readFileSync(p, 'utf8');
 const T1 = '11111111-1111-1111-1111-111111111111'; // 교사, 반 C1 소유
 const T2 = '22222222-2222-2222-2222-222222222222'; // 교사, 반 C2 소유
 const S1 = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'; // 학생, C1
+const S2 = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'; // 학생, C1
 const S3 = 'cccccccc-cccc-cccc-cccc-cccccccccccc'; // 학생, C2
 
 const db = await PGlite.create();
@@ -24,6 +25,7 @@ const check = (name, ok, detail = '') => results.push({ name, ok, detail });
 
 // ── 적용 ─────────────────────────────────────────────
 await db.exec(read(join(FIXTURES, 'shim.sql')));
+await db.exec(read(join(FIXTURES, 'grants.sql'))); // 마이그레이션 전 — default privileges
 for (const f of readdirSync(MIGRATIONS).filter(f => f.endsWith('.sql')).sort()) {
   try {
     await db.exec(read(join(MIGRATIONS, f)));
@@ -32,7 +34,6 @@ for (const f of readdirSync(MIGRATIONS).filter(f => f.endsWith('.sql')).sort()) 
     process.exit(1);
   }
 }
-await db.exec(read(join(FIXTURES, 'grants.sql')));
 await db.exec(read(join(FIXTURES, 'seed.sql')));
 
 // 해당 사용자로 로그인한 것처럼 질의한다.
@@ -101,6 +102,39 @@ check('학생 본인 답변은 본인에게만 보인다',
   own.rows.length === 1 && own.rows[0].answer.includes('S1'), `${own.rows.length}행`);
 check('학생이 남의 답변을 조회하면 0행',
   (await as(S1, `select answer from verifications where student_id = '${S3}'`)).rows.length === 0);
+
+// ── issue #22: 학생은 verifications 에 쓸 수 없다 ────────
+// for all 정책이었을 때는 passed=true 행을 직접 넣어 반 랭킹을 올릴 수 있었다.
+async function denied(uid, sql) {
+  try { await as(uid, sql); return false; }
+  catch (e) { return /row-level security|permission denied/.test(e.message); }
+}
+const R1 = 'd0000000-0000-0000-0000-00000000000a'; // S1 의 독후감
+const G1 = 'e0000000-0000-0000-0000-00000000000a'; // 그 독후감의 gap
+
+const before = Number((await as(T1, `select * from v_class_ranking where label like '%한빛초%'`)).rows[0].verified_count);
+check('#22 학생이 verifications 에 통과 행을 insert 하면 거부',
+  await denied(S1, `insert into verifications (review_id, student_id, attempt_no, gap_id, question, passed, answered_at)
+                    values ('${R1}', '${S1}', 99, '${G1}', 'forged', true, now())`));
+// 정책이 없는 update/delete 는 에러가 아니라 0행으로 조용히 막힌다.
+const upd = await as(S1, `update verifications set asked_at = now() + interval '1 hour' where student_id = '${S1}'`);
+check('#22 학생이 자기 verifications 를 update 하면 0행 (asked_at 조작)', upd.affectedRows === 0, `${upd.affectedRows}행`);
+const del = await as(S1, `delete from verifications where student_id = '${S1}'`);
+check('#22 학생이 자기 verifications 를 delete 하면 0행', del.affectedRows === 0, `${del.affectedRows}행`);
+const after = Number((await as(T1, `select * from v_class_ranking where label like '%한빛초%'`)).rows[0].verified_count);
+check('#22 반 랭킹 verified_count 가 그대로다', before === after, `${before} → ${after}`);
+check('학생 본인 verifications 는 여전히 읽힌다',
+  (await as(S1, 'select id from verifications')).rows.length === 1);
+
+// reviews.status 는 컬럼 단위로 잠겨 있다. body 와 is_shared 는 계속 쓴다.
+check('#22 학생이 reviews.status 를 바꾸면 거부',
+  await denied(S1, `update reviews set status = 'passed' where student_id = '${S1}'`));
+check('#22 학생이 status 를 지정해 reviews 를 insert 하면 거부',
+  await denied(S1, `insert into reviews (student_id, book_id, status) values ('${S2}', 'b0000000-0000-0000-0000-000000000001', 'passed')`));
+check('학생은 reviews.body 를 여전히 쓴다',
+  !(await denied(S1, `update reviews set body = '고쳐 씀', char_count = 4, updated_at = now() where student_id = '${S1}'`)));
+check('학생은 초고를 여전히 만든다 (student_id, book_id 만)',
+  !(await denied(S2, `insert into reviews (student_id, book_id) values ('${S2}', 'b0000000-0000-0000-0000-000000000001')`)));
 
 // ── anon ─────────────────────────────────────────────
 let anonOk;
@@ -285,6 +319,64 @@ check('실패 채점은 points_awarded 가 0 이다',
 check('실패하면 독후감 상태가 failed 로 바뀐다',
   (await db.query(`select status from reviews where id = 'd0000000-0000-0000-0000-00000000000d'`))
     .rows[0]?.status === 'failed');
+
+// ── exchange_points (0010) ────────────────────────────
+// 책갈피 교환의 잔액 확인 + 차감을 한 트랜잭션으로 남기는 함수.
+// 여기서 지키려는 것: 학생이 직접 부를 수 없어야 하고, 잔액을 넘는 교환은 막혀야 한다
+// (docs/spec.md §4, §5).
+
+const exchangeCall = (uid, student, reason, cost, role = 'service_role') => as(
+  uid,
+  `select delta, reason, ref_id from exchange_points(
+     '${student}'::uuid, '${reason}'::point_reason, ${cost})`,
+  role,
+);
+
+// S1 은 위 record_verification_result 테스트에서 이미 +50 을 받아 잔액이 50이다.
+let studentExchangeBlocked = false;
+try {
+  await exchangeCall(S1, S1, 'ebook_pass', 300, 'authenticated');
+} catch {
+  studentExchangeBlocked = true;
+}
+check('학생(authenticated) 은 exchange_points 를 실행할 수 없다', studentExchangeBlocked);
+
+// 잔액(50)보다 비싼 교환(300)은 check_violation(23514)으로 막힌다.
+let insufficient = null;
+try {
+  await exchangeCall(null, S1, 'ebook_pass', 300);
+} catch (e) {
+  insufficient = e.code ?? e.message;
+}
+check('잔액보다 비싼 교환은 23514 로 막힌다 (책갈피 부족)',
+  insufficient === '23514', String(insufficient));
+check('잔액 부족으로 막힌 교환은 원장에 행을 남기지 않는다',
+  (await db.query(
+    `select 1 from points_ledger where student_id = $1 and reason = 'ebook_pass'`, [S1]))
+    .rows.length === 0);
+
+// S3 에게 admin_adjust 로 잔액을 만들어 실제 차감 경로를 검증한다.
+await db.exec(
+  `insert into points_ledger (student_id, delta, reason) values ('${S3}', 500, 'admin_adjust')`);
+
+const exchanged = await exchangeCall(null, S3, 'audiobook_pass', 450);
+check('교환이 성공하면 원장에 −450 행이 남는다',
+  Number(exchanged.rows[0]?.delta) === -450 && exchanged.rows[0]?.reason === 'audiobook_pass',
+  JSON.stringify(exchanged.rows[0]));
+
+const s3Balance = await db.query(
+  `select coalesce(sum(delta), 0) as balance from points_ledger where student_id = $1`, [S3]);
+check('교환 뒤 S3 잔액이 50으로 줄어든다', Number(s3Balance.rows[0]?.balance) === 50,
+  s3Balance.rows[0]?.balance);
+
+// 남은 잔액(50)으로 또 오디오북(450)을 교환하면 다시 막힌다 — 두 번째 호출도 잔액을 다시 확인한다.
+let secondExchangeBlocked = false;
+try {
+  await exchangeCall(null, S3, 'audiobook_pass', 450);
+} catch (e) {
+  secondExchangeBlocked = (e.code ?? e.message) === '23514';
+}
+check('줄어든 잔액으로 또 교환하면 다시 23514 로 막힌다', secondExchangeBlocked);
 
 // ── bump_growth_on_pass (0011) ────────────────────────
 // 통과(verification_pass) 시 스트릭·장르 도장을 올리는 트리거.

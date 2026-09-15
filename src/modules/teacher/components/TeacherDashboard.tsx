@@ -8,6 +8,7 @@ import type {
   TeacherStudentsResponse,
 } from "@/shared/types";
 import { apiGet } from "@/shared/api/client";
+import type { ReactNode } from "react";
 import { Card, Chip } from "@/shared/ui";
 
 /**
@@ -18,7 +19,8 @@ import { Card, Chip } from "@/shared/ui";
  *
  * 화면 어디에도 독후감 본문이 없다. 점수·통과 여부·완료 건수만 본다 (CLAUDE.md §5).
  */
-export function TeacherDashboard() {
+/** actions — 헤더 오른쪽에 붙는 서버 컴포넌트(로그아웃 등). 이 파일은 클라이언트라 auth 배럴을 직접 못 부른다 */
+export function TeacherDashboard({ actions }: { actions?: ReactNode }) {
   const [cls, setCls] = useState<TeacherClassResponse | null>(null);
   const [rank, setRank] = useState<TeacherRankingResponse | null>(null);
   const [students, setStudents] = useState<TeacherStudentsResponse | null>(null);
@@ -85,6 +87,7 @@ export function TeacherDashboard() {
             {cls && (
               <Chip tone="yellow">참여 코드 {cls.join_code}</Chip>
             )}
+            {actions}
           </div>
         </div>
 

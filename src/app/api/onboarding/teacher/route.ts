@@ -29,7 +29,7 @@ export async function POST(
   const parsed = teacherOnboardingSchema.safeParse(await readJson(request));
   if (!parsed.success) return invalidBody("학교와 반을 확인해주세요.");
 
-  const result = await createClassForTeacher(supabase, user.id, parsed.data);
+  const result = await createClassForTeacher(supabase, user, parsed.data);
   if (!result.ok) return fail(result.code, result.message, result.status);
 
   return ok(result.data);
