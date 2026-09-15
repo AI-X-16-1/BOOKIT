@@ -19,6 +19,7 @@
 
 export { LoginScreen } from "./components/LoginScreen";
 export { OnboardingScreen } from "./components/OnboardingScreen";
+export { SignOutButton } from "./components/SignOutButton";
 
 export { GRADES, gradeLabel } from "./grades";
 
