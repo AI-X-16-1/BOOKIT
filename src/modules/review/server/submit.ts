@@ -18,6 +18,7 @@ import "server-only";
 
 import { analyzeGaps, LlmError } from "@/modules/ai";
 import type { BookitClient } from "@/shared/supabase";
+import { createAdminClient } from "@/shared/supabase/admin";
 import type { Gap, ReviewStatus, SubmitReviewResponse } from "@/shared/types";
 
 import { idSchema, MIN_SUBMIT_CHARS } from "../schema";
@@ -124,12 +125,17 @@ export async function submitReview(
   return { ok: true, data: { gaps: (inserted ?? []).map(toGapView) } };
 }
 
+/**
+ * 상태 전이는 admin 으로 쓴다 — 0009 가 학생 역할에서 reviews.status 컬럼을 걷었다.
+ * 소유권은 submitReview 첫머리에서 사용자 세션으로 이미 확인했다.
+ * supabase 인자는 호출부 모양을 유지하려고 남겨 둔다.
+ */
 async function setStatus(
-  supabase: BookitClient,
+  _supabase: BookitClient,
   reviewId: string,
   status: ReviewStatus,
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await createAdminClient()
     .from("reviews")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", reviewId);

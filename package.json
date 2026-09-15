@@ -12,12 +12,15 @@
     "prepare": "git config core.hooksPath .githooks || true",
     "test:rls": "node supabase/tests/rls.test.mjs",
     "check:supabase": "node scripts/check-supabase.mjs",
+    "books:smoke": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/books-smoke.ts",
+    "test:books": "node --conditions=react-server --import tsx --test src/modules/books/schema.test.ts src/modules/books/server/tags.test.ts src/modules/books/server/response.test.ts src/modules/books/server/source.test.ts src/modules/books/server/search.test.ts src/modules/books/server/recommend.test.ts",
     "ai:smoke": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-smoke.ts",
     "llm:models": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/llm-models.ts",
     "ai:gaps": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-gaps.ts",
     "ai:tags": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-tags.ts",
     "ai:calibrate": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-calibrate.ts",
-    "ai:question": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-question.ts"
+    "ai:question": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-question.ts",
+    "reader:dict": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/dict-check.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",

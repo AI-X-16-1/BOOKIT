@@ -12,13 +12,29 @@
 import "server-only";
 
 import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
 
 export type Provider = "gemini" | "anthropic";
 
-/** 사고 깊이. anthropic 전용 — gemini 는 모델 기본값을 쓴다. */
+/** 사고 깊이. anthropic 전용 — gemini 는 thinkingLevel 을 쓴다. */
 export type Effort = "low" | "medium" | "high" | "xhigh" | "max";
+
+/**
+ * gemini 사고 수준. 비우면 모델 기본값이다.
+ *
+ * flash 는 기본값에서 사고 토큰을 입력마다 크게 다르게 써서(질문 한 번에 최대 1483)
+ * maxTokens 를 넘기고, 지연도 LOW 의 두 배쯤이다. 측정은 issue #36.
+ */
+export const THINKING_LEVELS = ["minimal", "low", "medium", "high"] as const;
+export type ThinkingLevelName = (typeof THINKING_LEVELS)[number];
+
+const GEMINI_THINKING: Record<ThinkingLevelName, ThinkingLevel> = {
+  minimal: ThinkingLevel.MINIMAL,
+  low: ThinkingLevel.LOW,
+  medium: ThinkingLevel.MEDIUM,
+  high: ThinkingLevel.HIGH,
+};
 
 export interface ProviderRequest {
   model: string;
@@ -30,6 +46,7 @@ export interface ProviderRequest {
   maxTokens: number;
   timeoutMs: number;
   effort: Effort;
+  thinkingLevel?: ThinkingLevelName;
 }
 
 export interface ProviderResponse {
@@ -93,6 +110,10 @@ async function callGemini(
         // ⚠️ Gemini 의 maxOutputTokens 는 사고(thinking) 토큰까지 포함한다.
         // 실제 답이 한 문장이어도 여유 있게 잡아야 MAX_TOKENS 로 잘리지 않는다.
         maxOutputTokens: req.maxTokens,
+        // 비우면 thinkingConfig 자체를 안 보낸다 — 모델 기본값 그대로다.
+        ...(req.thinkingLevel && {
+          thinkingConfig: { thinkingLevel: GEMINI_THINKING[req.thinkingLevel] },
+        }),
         abortSignal: controller.signal,
       },
     });
@@ -198,9 +219,11 @@ const TRANSIENT_STATUS = new Set([408, 500, 502, 503, 504]);
 /**
  * 한도 초과. 같은 모델로 다시 해도 소용없으니 곧장 대체 모델로 넘어간다.
  *
- * Gemini 무료 티어의 한도는 모델 단위다 —
- * quotaId 가 GenerateRequestsPerDayPerProjectPerModel-FreeTier 다.
+ * 무료 티어로 개발할 때 한도가 모델 단위였다 —
+ * quotaId 가 GenerateRequestsPerDayPerProjectPerModel-FreeTier 로 찍혔다.
  * 그래서 모델을 갈아타면 남은 한도가 새로 생긴다.
+ * 대회 기간은 유료 티어라(#29) 한도에 걸릴 일이 드물지만, 무료 키로 로컬에서
+ * 돌릴 때를 위해 그대로 둔다.
  */
 const QUOTA_STATUS = 429;
 

@@ -54,8 +54,8 @@ export async function grade(
     schema: gradeSchema,
     system: GRADING_SYSTEM,
     user: gradingUser(review, gap.quote, question, trimmed, book, context),
-    // 3축 판정 + 피드백 두 문장 + 사고 토큰 (providers.ts 참고).
-    maxTokens: 2048,
+    // 3축 판정 + 피드백 두 문장 + 사고 토큰. flash 기본값에서 2048 을 넘겨 잘린 적이 있다 (issue #36).
+    maxTokens: 4096,
   });
 
   // 모델이 준 passed 는 버린다. 통과 여부는 임계값으로 여기서 정한다.

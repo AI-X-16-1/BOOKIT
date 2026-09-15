@@ -357,6 +357,24 @@ export interface Database {
         Args: { logic: ScoreAxis; spec: ScoreAxis; style: StyleAxis };
         Returns: number;
       };
+      /**
+       * 채점 기록 + 책갈피 적립 + 독후감 상태 변경을 한 트랜잭션으로 (0008).
+       * service_role 전용 — admin 클라이언트로만 rpc 한다. 갱신된 verifications 행을 돌려준다.
+       */
+      record_verification_result: {
+        Args: {
+          p_verification_id: string;
+          p_student_id: string;
+          p_answer: string;
+          p_logic: ScoreAxis;
+          p_specificity: ScoreAxis;
+          p_style: StyleAxis;
+          p_passed: boolean;
+          p_feedback: string;
+          p_points: number;
+        };
+        Returns: Database["public"]["Tables"]["verifications"]["Row"];
+      };
     };
 
     Enums: {

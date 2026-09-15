@@ -5,7 +5,7 @@
  *
  * 이 파일이 모듈의 유일한 public surface다.
  * 다른 모듈은 반드시 여기를 통해서만 import 한다 (CLAUDE.md §2).
- * 내부 구조: components/ · server/ · schema.ts
+ * 내부 구조: components/ · server/
  *
  * 계획된 export (docs/spec.md §5):
  *   POST /api/guardian/link    → { url }
@@ -16,8 +16,8 @@
  * 보호자가 보는 것: 완독 여부, 책갈피, 이해도 점수, 책 목록.
  * 독후감 본문은 절대 노출하지 않는다 (CLAUDE.md §5).
  *
- * ⚠️ 아래 mock export 는 임시다. 실제 Route Handler 가 붙으면 mock.ts 와 함께 지운다.
+ * ⚠️ 서버 로직은 여기서 re-export 하지 않는다. Route Handler 는
+ *    "@/modules/guardian/server" 를 직접 import 한다 (verification 모듈과 같은 이유).
  */
 
 export { GuardianView } from "./components/GuardianView";
-export { DEMO_TOKEN, getGuardianSummary } from "./mock";

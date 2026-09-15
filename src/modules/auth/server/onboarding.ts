@@ -8,9 +8,21 @@
  * 단 하나의 예외가 학생의 코드 조회다. 아래 joinClassByCode 주석 참고.
  */
 
+import type { User } from "@supabase/supabase-js";
+
 import type { BookitClient } from "@/shared/supabase";
 import { createAdminClient } from "@/shared/supabase/admin";
 import type { Class, GradeLevel, Profile } from "@/shared/types";
+
+/**
+ * 구글이 준 이름. profiles 행은 온보딩에서 처음 만들어지므로 그때 같이 넣는다.
+ * 콜백에서 미리 만들 수 없다 — role 기본값이 student 라 grade_level 없이는
+ * students_have_grade 제약에 걸린다 (0001).
+ */
+export function displayNameOf(user: User): string {
+  const metadata = user.user_metadata as { full_name?: string; name?: string };
+  return metadata.full_name ?? metadata.name ?? "친구";
+}
 
 export type OnboardingResult<T> =
   | { ok: true; data: T }
@@ -32,9 +44,10 @@ const failure = (
  */
 export async function joinClassByCode(
   supabase: BookitClient,
-  userId: string,
+  user: User,
   input: { grade_level: GradeLevel; join_code: string },
 ): Promise<OnboardingResult<Class>> {
+  const userId = user.id;
   const admin = createAdminClient();
   const { data: klass, error: lookupError } = await admin
     .from("classes")
@@ -54,10 +67,16 @@ export async function joinClassByCode(
     );
   }
 
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({ role: "student", grade_level: input.grade_level })
-    .eq("id", userId);
+  // 첫 온보딩이면 행을 만들고, 다시 온 거면 학년만 갱신한다
+  const { error: profileError } = await supabase.from("profiles").upsert(
+    {
+      id: userId,
+      display_name: displayNameOf(user),
+      role: "student",
+      grade_level: input.grade_level,
+    },
+    { onConflict: "id" },
+  );
 
   if (profileError) {
     console.error("[auth] 학생 프로필 갱신 실패", profileError);
@@ -100,15 +119,22 @@ export async function joinClassByCode(
  */
 export async function createClassForTeacher(
   supabase: BookitClient,
-  userId: string,
+  user: User,
   input: { school_name: string; grade_level: number; class_no: number },
 ): Promise<OnboardingResult<{ class: Class; join_code: string }>> {
+  const userId = user.id;
+
   // classes_insert_as_teacher 정책이 profiles.role = 'teacher' 를 요구한다.
   // 교사 본인의 grade_level 은 null 이다 — 학년은 반이 갖는다 (docs/spec.md §2)
-  const { error: roleError } = await supabase
-    .from("profiles")
-    .update({ role: "teacher", grade_level: null })
-    .eq("id", userId);
+  const { error: roleError } = await supabase.from("profiles").upsert(
+    {
+      id: userId,
+      display_name: displayNameOf(user),
+      role: "teacher",
+      grade_level: null,
+    },
+    { onConflict: "id" },
+  );
 
   if (roleError) {
     console.error("[auth] 교사 전환 실패", roleError);
