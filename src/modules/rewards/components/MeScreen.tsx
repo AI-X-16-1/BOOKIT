@@ -7,7 +7,7 @@ import type {
   PointsResponse,
 } from "@/shared/types";
 import { apiGet } from "@/shared/api/client";
-import { Card, Chip } from "@/shared/ui";
+import { Card } from "@/shared/ui";
 import { COVER } from "@/modules/books";
 import { REASON_LABEL } from "../schema";
 
@@ -26,6 +26,9 @@ import { REASON_LABEL } from "../schema";
  * 발급할 방법이 없고, 대부분 초1~중3 은 국회도서관 이용 대상도 아니다) 교환 버튼을 뺐다.
  * API·원장(points_ledger)은 과거 기록 보존을 위해 그대로 둔다 — 새 소비처는 반 챌린지
  * 쪽으로 옮기기로 했다 (#58 논의, 로드맵).
+ *
+ * #71 결정: 레벨·뱃지 칩("Lv.4 꾸준한 독서가", "🏅 첫 책갈피")은 docs/spec.md 에 없는
+ * 정적 데모 값이라 뺐다 — 독후감을 한 편도 안 쓴 계정에도 그대로 떴다 (GrowthSection.tsx 동일 결정).
  */
 const READ_BOOKS = [
   { title: "아몬드", score: 100, cover: "green" as const },
@@ -57,13 +60,7 @@ export function MeScreen() {
         <div className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-yellow text-xl font-bold text-stamp-text">
           민
         </div>
-        <div>
-          <div className="text-xl font-bold text-ink">민서 · 5학년 2반</div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <Chip tone="yellow">Lv.4 꾸준한 독서가</Chip>
-            <Chip tone="blue">🏅 첫 책갈피</Chip>
-          </div>
-        </div>
+        <div className="text-xl font-bold text-ink">민서 · 5학년 2반</div>
       </div>
 
       <div className="rounded-card bg-panel p-5">
