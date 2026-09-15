@@ -15,12 +15,14 @@ Contest: 원티드 AI Championship 2026. Submit by 2026-09-20. Deployed link mus
 | DB | Supabase PostgreSQL (RLS always on) |
 | Auth | Supabase Auth, Google OAuth only |
 | Serverless | Vercel Route Handlers only. NO Supabase Edge Functions |
-| LLM | One vendor only, server-side only |
+| LLM | Google Gemini, `gemini-3.5-flash` (paid tier). One vendor only, server-side only |
 | Deploy | Vercel |
 | Storage | Not used. No file uploads anywhere |
 | Package manager | pnpm |
 
 Never call the LLM from the client. Never expose API keys to the browser. All LLM calls go through an authenticated Route Handler.
+
+Every LLM call goes through `callJson()` in `modules/ai/server/llm.ts` - never call a vendor SDK directly. It owns JSON-schema enforcement, defensive re-parsing, one re-ask on a malformed response, transient retry, and model fallback. Vendor differences live in `providers.ts`; `LLM_PROVIDER` keeps exactly one alive.
 
 ---
 

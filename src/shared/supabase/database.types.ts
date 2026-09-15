@@ -321,6 +321,9 @@ export interface Database {
           avg_score: number;
           /** 통과 이력이 없는 학생은 null */
           last_active: string | null;
+          /** 반이 둘 이상인 교사를 위해 0007 에서 추가 */
+          class_id: string;
+          streak: number;
         };
         Relationships: [];
       };
