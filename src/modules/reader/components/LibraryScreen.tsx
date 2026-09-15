@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import type { ReaderChapterResponse } from "@/shared/types";
 import { ApiClientError } from "@/shared/api/client";
@@ -225,6 +226,13 @@ export function LibraryScreen({ books }: { books: ShelfBook[] }) {
               {chapterNo} / {book.chapterCount}장
             </Chip>
           )}
+          {/* 서재 책은 DB 행이 있어 바로 독후감으로 이어진다 — /write?book= 이 초고를 만든다 */}
+          <Link
+            href={`/write?book=${book.id}`}
+            className="flex h-12 flex-none items-center rounded-btn bg-ink px-4 text-[15px] font-bold text-on-dark"
+          >
+            독후감 쓰기
+          </Link>
         </div>
 
         <div className="mt-4 flex min-h-0 flex-1 gap-6">
@@ -267,6 +275,15 @@ export function LibraryScreen({ books }: { books: ShelfBook[] }) {
                   모르는 단어를 누르면 뜻이 떠요 ✎
                 </p>
               </>
+            )}
+
+            {!hasNext && reading.state === "ready" && (
+              <Link
+                href={`/write?book=${book.id}`}
+                className="mt-6 block min-h-12 rounded-btn bg-coral px-5 py-[19px] text-center text-[17px] font-bold text-white"
+              >
+                다 읽었어! 독후감 쓰러 가기 →
+              </Link>
             )}
 
             {(hasPrev || hasNext) && reading.state !== "loading" && (
