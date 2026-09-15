@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReaderChapterResponse } from "@/shared/types";
 import { ApiClientError } from "@/shared/api/client";
 import { BottomSheet, Button, Card, Chip } from "@/shared/ui";
@@ -150,21 +150,34 @@ type Reading = {
   | { state: "failed"; message: string }
 );
 
-export function LibraryScreen({ books }: { books: ShelfBook[] }) {
-  const [reading, setReading] = useState<Reading | null>(null);
+export function LibraryScreen({
+  books,
+  initial,
+}: {
+  books: ShelfBook[];
+  /** /library?book=<id>&chapter=<n> 로 들어왔을 때 바로 펼칠 책 (libraryHref) */
+  initial?: { bookId: string; chapterNo: number };
+}) {
+  // 주소로 책을 짚고 들어오면 목록을 거치지 않고 그 장을 바로 펼친다.
+  // 서재에 없는 책이면 조용히 목록을 보여준다.
+  const initialBook = initial && books.find((book) => book.id === initial.bookId);
+  const initialChapterNo =
+    initial && initialBook
+      ? Math.min(Math.max(initial.chapterNo, 1), initialBook.chapterCount)
+      : 1;
+
+  const [reading, setReading] = useState<Reading | null>(() =>
+    initialBook
+      ? { book: initialBook, chapterNo: initialChapterNo, state: "loading" }
+      : null,
+  );
   const [entry, setEntry] = useState<Entry>({ state: "idle" });
 
   // 장을 빠르게 넘기면 늦게 온 이전 장 응답이 새 장을 덮어쓴다. 마지막 요청만 반영한다.
   const chapterRequest = useRef(0);
   const dictRequest = useRef(0);
 
-  const openChapter = async (book: ShelfBook, chapterNo: number) => {
-    const requestId = ++chapterRequest.current;
-    dictRequest.current++;
-    setEntry({ state: "idle" });
-    setReading({ book, chapterNo, state: "loading" });
-    window.scrollTo({ top: 0 });
-
+  const loadChapter = async (book: ShelfBook, chapterNo: number, requestId: number) => {
     try {
       const chapter = await fetchChapter(book.id, chapterNo);
       if (requestId !== chapterRequest.current) return;
@@ -174,6 +187,23 @@ export function LibraryScreen({ books }: { books: ShelfBook[] }) {
       setReading({ book, chapterNo, state: "failed", message: messageOf(error) });
     }
   };
+
+  const openChapter = (book: ShelfBook, chapterNo: number) => {
+    const requestId = ++chapterRequest.current;
+    dictRequest.current++;
+    setEntry({ state: "idle" });
+    setReading({ book, chapterNo, state: "loading" });
+    window.scrollTo({ top: 0 });
+    void loadChapter(book, chapterNo, requestId);
+  };
+
+  // 주소로 짚은 책의 본문. 화면 상태는 useState 초기값이 이미 loading 으로 잡았다.
+  useEffect(() => {
+    if (!initialBook) return;
+    void loadChapter(initialBook, initialChapterNo, ++chapterRequest.current);
+    // 마운트 때 한 번만 — 이후 장 이동은 openChapter 가 맡는다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const tap = async (word: string) => {
     const requestId = ++dictRequest.current;
@@ -209,6 +239,8 @@ export function LibraryScreen({ books }: { books: ShelfBook[] }) {
               chapterRequest.current++;
               setReading(null);
               close();
+              // ?book= 으로 들어왔다면 주소를 목록으로 돌린다 — 새로고침에 그 책이 다시 열리지 않게
+              window.history.replaceState(null, "", "/library");
             }}
             className="flex h-12 w-12 flex-none items-center justify-center text-muted"
             aria-label="서재로 돌아가기"
