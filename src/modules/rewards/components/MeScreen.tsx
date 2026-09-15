@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ExchangeKind, PointsResponse } from "@/shared/types";
+import type {
+  ClassRankingResponse,
+  ExchangeKind,
+  PointsResponse,
+} from "@/shared/types";
 import { ApiClientError, apiGet, apiPost } from "@/shared/api/client";
 import { Button, Card, Chip } from "@/shared/ui";
 import { COVER } from "@/modules/books";
@@ -12,6 +16,14 @@ import { EXCHANGE_COST, EXCHANGE_LABEL, REASON_LABEL } from "../schema";
  *
  * 교환을 누르면 원장에 차감 행이 쌓이고 잔액이 즉시 줄어든다.
  * 잔액은 저장된 값이 아니라 sum(delta) 로 다시 계산된다 (CLAUDE.md §4).
+ *
+ * #38 진행 상황:
+ *   - 책갈피 잔액/원장 — GET /api/points 로 연결 완료 (#30).
+ *   - 우리 반 순위 — GET /api/ranking/class 로 연결 완료.
+ *   - 연속 기록 — GET /api/growth (#33 머지됨) 연결 예정, 아직 고정값.
+ *   - 이름·학반 — GET /api/profile 계약이 spec 에 없어 아직 못 붙인다 (#38, 김민경 담당).
+ *   - 읽은 책(완독 점수 목록) — docs/spec.md 에 없는 엔드포인트라 새로 만들지 않는다 (CLAUDE.md §11).
+ *     아직 고정 데이터.
  */
 const READ_BOOKS = [
   { title: "아몬드", score: 100, cover: "green" as const },
@@ -21,6 +33,7 @@ const READ_BOOKS = [
 
 export function MeScreen() {
   const [points, setPoints] = useState<PointsResponse | null>(null);
+  const [rank, setRank] = useState<ClassRankingResponse | null>(null);
   const [busy, setBusy] = useState<ExchangeKind | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
@@ -28,6 +41,9 @@ export function MeScreen() {
     apiGet<PointsResponse>("/api/points").then(setPoints).catch(() => {
       setNote("책갈피를 불러오지 못했어.");
     });
+    apiGet<ClassRankingResponse>("/api/ranking/class")
+      .then(setRank)
+      .catch(() => {});
   }, []);
 
   const doExchange = async (kind: ExchangeKind) => {
@@ -74,13 +90,16 @@ export function MeScreen() {
       </div>
 
       <div className="grid grid-cols-2 gap-2.5">
+        {/* TODO(#38): GET /api/growth (#33 머지 후) 로 교체 */}
         <Card>
           <div className="text-[13px] text-muted">연속 기록 🔥</div>
           <div className="mt-1.5 text-[26px] font-bold text-ink">7일</div>
         </Card>
         <Card>
           <div className="text-[13px] text-muted">우리 반 순위</div>
-          <div className="mt-1.5 text-[26px] font-bold text-coral">2위</div>
+          <div className="mt-1.5 text-[26px] font-bold text-coral">
+            {rank ? `${rank.my_class.rank}위` : "—"}
+          </div>
         </Card>
       </div>
 
