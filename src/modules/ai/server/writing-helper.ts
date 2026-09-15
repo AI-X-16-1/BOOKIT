@@ -32,8 +32,8 @@ export async function writingHelper(
     system: WRITING_HELPER_SYSTEM,
     user: writingHelperUser(book, grade),
     effort: "low",
-    // 한두 문장이지만 사고 토큰이 maxOutputTokens 에 함께 잡힌다 (providers.ts 참고).
-    maxTokens: 1024,
+    // 한두 문장이지만 사고 토큰이 maxOutputTokens 에 함께 잡힌다 (providers.ts, issue #36).
+    maxTokens: 2048,
     // 작성 화면에서 기다리는 시간이다. 오래 끌 바에는 도우미 없이 시작하는 게 낫다.
     timeoutMs: 12_000,
   });
