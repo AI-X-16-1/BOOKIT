@@ -4,7 +4,7 @@ import { test } from "node:test";
 
 import type { Book } from "@/shared/types";
 import type { BookInsertRow, BooksAdminPort } from "./db";
-import { searchAndUpsertBooks } from "./search";
+import { isDerivative, searchAndUpsertBooks } from "./search";
 import { BookSourceError, type BookSource } from "./source";
 
 function makeFakePort(): BooksAdminPort & { rows: Book[] } {
@@ -152,4 +152,13 @@ test("제목·저자에 검색어가 없는 외부 결과는 버린다 (NLK 의 
   const result = await searchAndUpsertBooks(makeFakePort(), source, "아몬드");
   assert.ok(result.ok);
   if (result.ok) assert.deepEqual(result.books.map((b) => b.title), ["아몬드"]);
+});
+
+test("워크북·스티커북·퍼즐북 같은 파생물은 제목으로 거른다", () => {
+  for (const t of ["마당을 나온 암탉 색칠놀이", "마당을 나온 암탉(워크북)", "마당을 나온 암탉 미니스티커북 패키지", "PlayFACTO 도형꾸러미 퍼즐북 헥시아몬드", "초등 국어 문제집"]) {
+    assert.equal(isDerivative(t), true, t);
+  }
+  for (const t of ["마당을 나온 암탉", "아몬드", "마당을 나온 암탉 2(애니 코믹스)", "어린 왕자"]) {
+    assert.equal(isDerivative(t), false, t);
+  }
 });

@@ -21,6 +21,17 @@ export function buildLibraryUrl(_title: string, _isbn13: string): string | null 
   return null;
 }
 
+/**
+ * 읽고 독후감을 쓸 책이 아닌 파생물 — 원작 제목이 그대로 붙어 검색에 딸려온다
+ * ("마당을 나온 암탉 색칠놀이", "PlayFACTO 퍼즐북 헥시아몬드"). 제목만 보고 거른다.
+ */
+const DERIVATIVE_RE =
+  /워크북|스티커|색칠|퍼즐|문제집|학습지|활동지|놀이북|만들기|따라\s*그리기|컬러링|미니북|패키지|세트|전\s*\d+\s*권|\d+\s*권\s*세트/;
+
+export function isDerivative(title: string): boolean {
+  return DERIVATIVE_RE.test(title);
+}
+
 export function rawHitToBookInsert(hit: IsbnHit): BookInsertRow {
   return {
     isbn13: hit.isbn13,
@@ -82,12 +93,13 @@ export async function searchAndUpsertBooks(
   }
 
   // NLK 는 시리즈명·설명까지 넓게 맞춰서 "아몬드" 에 "완득이" 가 딸려온다.
-  // 제목이나 저자에 검색어가 실제로 들어간 것만 받는다.
+  // 제목이나 저자에 검색어가 실제로 들어간 것만 받고, 독후감 대상이 아닌 파생물은 뺀다.
   const needle = q.toLowerCase();
   const withIsbn = hits.filter(
     (h): h is IsbnHit =>
       h.isbn13 !== null &&
-      (h.title.toLowerCase().includes(needle) || h.author.toLowerCase().includes(needle)),
+      (h.title.toLowerCase().includes(needle) || h.author.toLowerCase().includes(needle)) &&
+      !isDerivative(h.title),
   );
   const books: Book[] = [...curated];
   const seen = new Set(curated.map((b) => b.id));
