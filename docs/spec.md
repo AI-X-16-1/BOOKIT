@@ -128,9 +128,9 @@ Never delete a failed attempt. Retry inserts a new row with `attempt_no + 1` and
 |---|---|---|---|
 | profiles | own row | own row + students in owned classes (name, grade only) | — |
 | classes | own class (read) | owned classes (all) | — |
-| reviews | own rows (all columns) | **metadata only, never `body`** | **never `body`** |
+| reviews | own rows — read all, write `body` / `char_count` / `is_shared` only. `status` is server-only | **metadata only, never `body`** | **never `body`** |
 | review_gaps | own | no | no |
-| verifications | own | scores, passed, attempt_no — not `answer` | scores, passed |
+| verifications | own — **read only**. All writes go through the service role (attempt insert, `asked_at`, `record_verification_result`) | scores, passed, attempt_no — not `answer` | scores, passed |
 | points_ledger | own | aggregate per student | aggregate |
 | guardian_links | own (create/revoke) | no | own token row |
 
@@ -162,6 +162,7 @@ All under `/api`. All authenticated except the guardian route. All return `{ dat
 POST /api/onboarding/student   { grade_level, join_code }        → { class }
 POST /api/onboarding/teacher   { school_name, grade_level, class_no } → { class, join_code }
 PATCH /api/profile             { grade_level }                   → { profile }
+DELETE /api/profile                                              → { deleted }   계정·데이터 전부 삭제(cascade), 세션 종료
 ```
 
 ### books (이승환)
@@ -176,7 +177,9 @@ GET  /api/books/:id                          → { book }
 POST  /api/reviews             { book_id }                → { review }  (draft)
 PATCH /api/reviews/:id         { body }                   → { review }  autosave, debounce 2s
 POST  /api/reviews/:id/submit                             → { gaps[] }  triggers AI #2 + pre-generates AI #3
+POST  /api/reviews/:id/helper                             → { question }  AI #1. On failure the editor renders without the helper box
 ```
+`helper` returns an object so it can grow to `{ questions[] }` if #16 lands.
 
 ### verification (박재경 · uses 강민구's ai module)
 ```
@@ -197,7 +200,7 @@ grade(review, gap, question, answer) → { logic_consistency, specificity, style
 ### reader (강민구)
 ```
 GET /api/reader/:bookId?chapter=1     → { title, body }
-GET /api/dict?word=                   → { word, definition, source }
+GET /api/dict?word=                   → { word, definition, source, senses: [{ definition }] }  senses 1-5, definition = senses[0] (#43)
 ```
 
 ### rewards / growth / ranking / guardian (문민재)

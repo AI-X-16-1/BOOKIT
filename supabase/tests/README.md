@@ -17,7 +17,7 @@ Supabase 런타임을 흉내내는 최소 shim 이다.
 | 파일 | 언제 | 내용 |
 |---|---|---|
 | `shim.sql` | 마이그레이션 **전** | `anon`/`authenticated`/`service_role` 역할, `auth.users`, JWT claim 을 읽는 `auth.uid()` |
-| `grants.sql` | 마이그레이션 **후** | public 테이블에 grant 를 열어둔다. Supabase 기본 상태와 같고, 실제 제한은 RLS 가 한다 |
+| `grants.sql` | 마이그레이션 **전** | default privileges 로 public 테이블에 grant 를 연다. Supabase 기본 상태와 같고, 실제 제한은 RLS 가 한다. 마이그레이션 뒤에 `grant all` 을 하면 0009 가 걷어낸 컬럼 권한이 도로 열린다 |
 | `seed.sql` | 마지막 | 교사 2명 / 반 2개 / 학생 3명 (S1,S2→C1, S3→C2) |
 
 `grants.sql` 이 없으면 아래 테스트가 RLS 가 아니라 권한 부족으로 막혀서
