@@ -18,6 +18,8 @@ export type BookInsertRow = Database["public"]["Tables"]["books"]["Insert"];
 export interface BooksAdminPort {
   findByIsbn(isbn13: string): Promise<Book | null>;
   insertBook(row: BookInsertRow): Promise<Book>;
+  /** 시드가 고른 책(curated) 중 제목·저자에 query 가 들어가는 것. 외부 소스보다 먼저 보여준다 */
+  searchCurated(query: string, limit: number): Promise<Book[]>;
 }
 
 export interface BooksReadPort {
@@ -46,6 +48,20 @@ export function createSupabaseBooksAdminPort(
         .single();
       if (error) throw new Error(`책 저장 실패: ${error.message}`);
       return data;
+    },
+    async searchCurated(query, limit) {
+      // PostgREST 패턴에서 , ( ) 는 구분자라 검색어에서 뺀다
+      const q = query.replace(/[,()%]/g, " ").trim();
+      if (!q) return [];
+      const { data, error } = await admin
+        .from("books")
+        .select("*")
+        .eq("curated", true)
+        .or(`title.ilike.%${q}%,author.ilike.%${q}%`)
+        .order("title", { ascending: true })
+        .limit(limit);
+      if (error) throw new Error(`책 검색 실패: ${error.message}`);
+      return data ?? [];
     },
   };
 }

@@ -47,6 +47,13 @@ async function upsertHit(port: BooksAdminPort, hit: IsbnHit): Promise<Book> {
   return port.insertBook(rawHitToBookInsert(hit));
 }
 
+const MAX_RESULTS = 10;
+
+/**
+ * 시드가 고른 책(curated)을 먼저, 그 뒤에 외부 소스 결과를 붙인다.
+ * 외부 소스는 아동·청소년 부가기호가 붙은 책만 주므로(source.ts) 교양(0)으로 분류된
+ * 좋은 책 — 아몬드, 어린 왕자 — 은 여기 앞부분이 아니면 검색에 안 나온다.
+ */
 export async function searchAndUpsertBooks(
   port: BooksAdminPort,
   source: BookSource,
@@ -54,6 +61,8 @@ export async function searchAndUpsertBooks(
 ): Promise<SearchResult> {
   const q = query.trim();
   if (!q) return { ok: true, books: [] };
+
+  const curated = await port.searchCurated(q, MAX_RESULTS);
 
   let hits: RawBookHit[];
   try {
@@ -72,9 +81,14 @@ export async function searchAndUpsertBooks(
   }
 
   const withIsbn = hits.filter((h): h is IsbnHit => h.isbn13 !== null);
-  const books: Book[] = [];
+  const books: Book[] = [...curated];
+  const seen = new Set(curated.map((b) => b.id));
   for (const hit of withIsbn) {
-    books.push(await upsertHit(port, hit));
+    if (books.length >= MAX_RESULTS) break;
+    const book = await upsertHit(port, hit);
+    if (seen.has(book.id)) continue;
+    seen.add(book.id);
+    books.push(book);
   }
   return { ok: true, books };
 }

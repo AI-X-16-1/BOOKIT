@@ -35,6 +35,12 @@ class FakeBooksStore implements BooksAdminPort, BooksReadPort {
     return [...this.rows.values()].find((b) => b.isbn13 === isbn13) ?? null;
   }
 
+  async searchCurated(query: string, limit: number): Promise<Book[]> {
+    return [...this.rows.values()]
+      .filter((b) => b.curated && (b.title.includes(query) || b.author.includes(query)))
+      .slice(0, limit);
+  }
+
   async insertBook(row: BookInsertRow): Promise<Book> {
     const book: Book = {
       id: randomUUID(),

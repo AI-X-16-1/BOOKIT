@@ -82,7 +82,7 @@ test("EA_ADD_CODE 9(전문)는 학생 대상이 아니라서 결과에서 제외
   assert.equal(hit, null);
 });
 
-test("EA_ADD_CODE 0(교양)은 학년 제한 없이 통과시킨다", () => {
+test("EA_ADD_CODE 0(교양)은 제외한다 — 웹소설·성인 교양이 여기 섞인다. 아몬드는 시드(curated)가 갖고 있다", () => {
   const hit = toRawBookHitFromNlk({
     PUBLISHER: "창비",
     AUTHOR: "지은이: 손원평",
@@ -93,8 +93,7 @@ test("EA_ADD_CODE 0(교양)은 학년 제한 없이 통과시킨다", () => {
     SUBJECT: "",
     KDC: "",
   });
-  assert.equal(hit?.targetGradeMin, null);
-  assert.equal(hit?.targetGradeMax, null);
+  assert.equal(hit, null);
 });
 
 test("EA_ADD_CODE 7(아동)은 1~6학년으로 매핑한다", () => {
@@ -112,15 +111,14 @@ test("EA_ADD_CODE 7(아동)은 1~6학년으로 매핑한다", () => {
   assert.equal(hit?.targetGradeMax, 6);
 });
 
-test("EA_ADD_CODE 없으면(구버전 레코드 등) 학년 제한 없이 통과시킨다", () => {
+test("EA_ADD_CODE 없으면(구버전 레코드·전자책 등) 제외한다 — 웹소설이 대부분 여기다", () => {
   const hit = toRawBookHitFromNlk({
     PUBLISHER: "창비",
     AUTHOR: "손원평",
     TITLE: "아몬드",
     EA_ISBN: "9788936434267",
   });
-  assert.equal(hit?.targetGradeMin, null);
-  assert.equal(hit?.targetGradeMax, null);
+  assert.equal(hit, null);
 });
 
 test("toRawBookHitFromNlk는 첫 역할 라벨만 벗겨내고 나머지 공역자 표기는 남긴다", () => {
@@ -129,6 +127,7 @@ test("toRawBookHitFromNlk는 첫 역할 라벨만 벗겨내고 나머지 공역�
     AUTHOR: "원작자 :  앙투안 드 생텍쥐페리;역자 :  홍희숙;",
     TITLE: "어린왕자 요약",
     EA_ISBN: "9791166496103",
+    EA_ADD_CODE: "73810",
     TITLE_URL: "",
     SUBJECT: "",
     KDC: "",
