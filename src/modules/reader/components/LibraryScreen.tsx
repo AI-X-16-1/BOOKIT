@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { DictResponse, ReaderChapterResponse } from "@/shared/types";
+import type { ReaderChapterResponse } from "@/shared/types";
 import { ApiClientError } from "@/shared/api/client";
 import { BottomSheet, Button, Card, Chip } from "@/shared/ui";
 import { fetchChapter, fetchDictEntry } from "../api";
-import type { ShelfBook } from "../schema";
+import type { ReaderDictResponse, ShelfBook } from "../schema";
 
 /**
  * 책잇 서재. 목업 6 L386-404.
@@ -18,6 +18,7 @@ import type { ShelfBook } from "../schema";
  *
  * 사전은 GET /api/dict 를 쓴다. 조사가 붙은 낱말도 서버가 어간을 잘라
  * 찾아 준다 — "제비가" 를 눌러도 "제비" 의 뜻이 뜬다.
+ * 사전은 문맥을 모르므로 뜻이 여럿이면 모두 보여주고 아이가 고른다 (#43).
  */
 
 /** 낱말과 그 사이의 공백·문장부호를 나눈다. 낱말만 누를 수 있다. */
@@ -69,6 +70,48 @@ function Tappable({
   );
 }
 
+/**
+ * 낱말의 뜻. 하나면 문장 하나, 여럿이면 번호를 붙여 모두 보여준다.
+ *
+ * 뜻이 여럿일 때 첫 뜻만 보여주면, 본문과 다른 뜻을 정답처럼 믿게 된다
+ * ("쓰입니다" 에 '글자가 적히다' 만 뜨는 식). 고르는 일을 아이에게 맡긴다.
+ */
+function Senses({
+  data,
+  size,
+}: {
+  data: ReaderDictResponse;
+  size: "panel" | "sheet";
+}) {
+  // 배포 순서가 어긋나 senses 없는 응답이 와도 화면은 그린다.
+  const senses = data.senses?.length ? data.senses : [{ definition: data.definition }];
+  const text = size === "sheet" ? "text-[15px]" : "text-[13px]";
+
+  if (senses.length === 1) {
+    return (
+      <p className={`${size === "sheet" ? "mt-2.5" : "mt-2"} ${text} leading-relaxed text-ink-warm`}>
+        {senses[0].definition}
+      </p>
+    );
+  }
+
+  return (
+    <>
+      <p className={`${size === "sheet" ? "mt-2.5 text-[13px]" : "mt-2 text-[11px]"} text-muted`}>
+        뜻이 여러 개야. 글에 맞는 뜻을 찾아봐
+      </p>
+      <ol className="mt-2 flex flex-col gap-2">
+        {senses.map((sense, index) => (
+          <li key={index} className={`flex gap-2 ${text} leading-relaxed text-ink-warm`}>
+            <span className="flex-none font-bold text-coral-deep">{index + 1}</span>
+            <span>{sense.definition}</span>
+          </li>
+        ))}
+      </ol>
+    </>
+  );
+}
+
 /** 1~6 → 초N, 7~9 → 중N. 범위가 같은 학교 안이면 "초1~2", 걸치면 "초6~중1". */
 function gradeLabel(min: number | null, max: number | null): string | null {
   if (min === null) return null;
@@ -93,7 +136,7 @@ function messageOf(error: unknown): string {
 type Entry =
   | { state: "idle" }
   | { state: "loading"; word: string }
-  | { state: "found"; word: string; data: DictResponse }
+  | { state: "found"; word: string; data: ReaderDictResponse }
   | { state: "missing"; word: string; message: string };
 
 /** 펼쳐 둔 책과 그 장의 본문 상태. */
@@ -279,9 +322,7 @@ export function LibraryScreen({ books }: { books: ShelfBook[] }) {
                 )}
                 {entry.state === "found" && (
                   <>
-                    <p className="mt-2 text-[13px] leading-relaxed text-ink-warm">
-                      {entry.data.definition}
-                    </p>
+                    <Senses data={entry.data} size="panel" />
                     <p className="mt-3 text-[11px] text-on-dark-2">
                       {entry.data.source}
                     </p>
@@ -312,9 +353,7 @@ export function LibraryScreen({ books }: { books: ShelfBook[] }) {
             )}
             {entry.state === "found" && (
               <>
-                <p className="mt-2.5 text-[15px] leading-relaxed text-ink-warm">
-                  {entry.data.definition}
-                </p>
+                <Senses data={entry.data} size="sheet" />
                 <p className="mt-4 text-xs text-faint">{entry.data.source}</p>
               </>
             )}

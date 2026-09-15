@@ -197,7 +197,7 @@ grade(review, gap, question, answer) → { logic_consistency, specificity, style
 ### reader (강민구)
 ```
 GET /api/reader/:bookId?chapter=1     → { title, body }
-GET /api/dict?word=                   → { word, definition, source }
+GET /api/dict?word=                   → { word, definition, source, senses: [{ definition }] }  senses 1-5, definition = senses[0] (#43)
 ```
 
 ### rewards / growth / ranking / guardian (문민재)

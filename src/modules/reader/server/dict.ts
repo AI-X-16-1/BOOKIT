@@ -8,12 +8,12 @@
  * 키는 서버 환경변수에만 둔다. 브라우저에서 직접 부르지 않는다 —
  * 키가 노출되고, 하루 5만 건 한도를 아무나 태울 수 있다.
  *
- * 알려진 한계: 문맥을 보지 않는다. '눈은 아니 오고' 를 눌러도 감각 기관 '눈' 이 뜬다.
- * 뜻이 여러 개인 낱말은 대표 뜻 하나만 보여준다.
+ * 문맥은 보지 않는다. 대신 뜻을 여러 개 돌려주고 아이가 글에 맞는 뜻을 고른다 (#43).
+ * '눈은 아니 오고' 를 누르면 감각 기관 '눈' 과 하늘에서 내리는 '눈' 이 함께 뜬다.
  */
 import "server-only";
 
-import type { DictResponse } from "@/shared/types";
+import type { DictSense, ReaderDictResponse } from "../schema";
 
 const ENDPOINT = "https://krdict.korean.go.kr/api/search";
 const SOURCE = "국립국어원 한국어기초사전";
@@ -28,6 +28,13 @@ const TIMEOUT_MS = 5_000;
  * 낱말 하나에 호출이 수십 건 나가면 하루 한도를 금방 태운다.
  */
 const MAX_CANDIDATES = 8;
+
+/**
+ * 화면에 보여줄 뜻의 최대 개수. 바텀시트가 스크롤 없이 들어가는 선이다.
+ * 3개로 자르면 "쓰입니다" 의 '이용되다'(쓰이다³), "흐린" 의 '날씨가 맑지 않다'(5번 뜻)가
+ * 잘려 나간다 — 아이가 본문에서 가장 자주 만나는 뜻인데도.
+ */
+const MAX_SENSES = 5;
 
 export type DictErrorKind = "not_configured" | "not_found" | "upstream";
 
@@ -47,7 +54,7 @@ export class DictError extends Error {
  *
  * 환경변수는 모듈 스코프가 아니라 호출 시점에 읽는다 — 키 없는 CI 빌드가 깨지지 않게.
  */
-export async function lookup(word: string): Promise<DictResponse> {
+export async function lookup(word: string): Promise<ReaderDictResponse> {
   const query = word.trim();
   if (!query) throw new DictError("not_found", "찾을 단어가 없어.");
 
@@ -59,16 +66,48 @@ export async function lookup(word: string): Promise<DictResponse> {
     );
   }
 
-  const entry = await resolve(key, query);
-  if (entry) {
-    return { word: entry.word, definition: entry.definition, source: SOURCE };
-  }
+  const group = await resolve(key, query);
+  if (group.length > 0) return toResponse(group);
 
   throw new DictError("not_found", `'${query}'${topic(query)} 사전에 없는 말이야.`);
 }
 
 /**
- * 아이가 누른 낱말을 사전 표제어 하나로 옮긴다.
+ * 같은 표기의 표제어 묶음을 응답 하나로 만든다.
+ *
+ * 쉬운 등급부터 본다. **같은 등급의 표제어끼리는 첫 뜻부터 번갈아** 넣고,
+ * 더 어려운 등급의 표제어는 그 뒤에 온다.
+ *   눈¹(감각 기관, 초급) · 눈⁴(하늘에서 내리는 눈, 초급) → 눈¹-1, 눈⁴-1, 눈¹-2 …
+ *     표제어째로 이어 붙이면 눈¹ 의 뜻만으로 다섯 칸이 차서 눈⁴ 가 잘린다.
+ *   흐리다(형용사, 초급) · 흐리다(동사, 고급) → 형용사 뜻 1~5
+ *     5번 뜻이 '날씨가 맑지 않다' 다. 등급을 무시하고 번갈아 넣으면 이게 잘린다.
+ *
+ * definition 은 senses[0] 과 같다. 공유 계약(DictResponse)을 쓰는 쪽이 깨지지 않게 남긴다.
+ */
+function toResponse(group: DictEntry[]): ReaderDictResponse {
+  const senses: DictSense[] = [];
+
+  for (const tier of gradeTiers(group)) {
+    const depth = Math.max(...tier.map((entry) => entry.senses.length));
+    for (let index = 0; index < depth; index++) {
+      for (const entry of tier) {
+        const definition = entry.senses[index];
+        if (definition) senses.push({ definition });
+      }
+    }
+  }
+  senses.splice(MAX_SENSES);
+
+  return {
+    word: group[0].word,
+    definition: senses[0].definition,
+    source: SOURCE,
+    senses,
+  };
+}
+
+/**
+ * 아이가 누른 낱말을 사전 표제어 묶음으로 옮긴다. 못 찾으면 빈 배열.
  *
  * 아이는 본문에서 "제비가", "만났습니다" 를 누르지 "제비", "만나다" 를 누르지 않는다.
  * 형태소 분석기를 붙이는 게 정석이지만 이 규모에 들일 것이 아니다. 대신 후보를
@@ -82,11 +121,11 @@ export async function lookup(word: string): Promise<DictResponse> {
  *   4. 조사를 뗀 체언 ("비가" → 비)
  *   5. 어미를 떼고 '-다' 를 붙인 용언 ("새침하게" → 새침하다)
  */
-async function resolve(key: string, query: string): Promise<DictEntry | null> {
+async function resolve(key: string, query: string): Promise<DictEntry[]> {
   const first = await search(key, query);
 
-  const exact = pickEntry(first.entries.filter((entry) => entry.word === query));
-  if (exact) return exact;
+  const exact = byGrade(first.entries.filter((entry) => entry.word === query));
+  if (exact.length > 0) return exact;
 
   const nouns = nounCandidates(query);
   const lemmas = unique(first.guides.map((target) => target.word));
@@ -100,11 +139,11 @@ async function resolve(key: string, query: string): Promise<DictEntry | null> {
   );
 
   const exactOf = (word: string, accept: (entry: DictEntry) => boolean) =>
-    (found.get(word) ?? []).filter((entry) => entry.word === word && accept(entry));
+    byGrade((found.get(word) ?? []).filter((entry) => entry.word === word && accept(entry)));
 
   for (const noun of nouns) {
-    const pronoun = pickEntry(exactOf(noun, (entry) => entry.pos === "대명사"));
-    if (pronoun) return pronoun;
+    const pronoun = exactOf(noun, (entry) => entry.pos === "대명사");
+    if (pronoun.length > 0) return pronoun;
   }
 
   for (const lemma of lemmas) {
@@ -112,23 +151,24 @@ async function resolve(key: string, query: string): Promise<DictEntry | null> {
     const supNos = first.guides
       .filter((target) => target.word === lemma && target.supNo !== null)
       .map((target) => target.supNo);
-    const hit = pickEntry(
-      exactOf(lemma, (entry) => supNos.length === 0 || supNos.includes(entry.supNo)),
+    const hit = exactOf(
+      lemma,
+      (entry) => supNos.length === 0 || supNos.includes(entry.supNo),
     );
-    if (hit) return hit;
+    if (hit.length > 0) return hit;
   }
 
   for (const noun of nouns) {
-    const hit = pickEntry(exactOf(noun, (entry) => !PREDICATE_POS.has(entry.pos)));
-    if (hit) return hit;
+    const hit = exactOf(noun, (entry) => !PREDICATE_POS.has(entry.pos));
+    if (hit.length > 0) return hit;
   }
 
   for (const predicate of predicates) {
-    const hit = pickEntry(exactOf(predicate, (entry) => PREDICATE_POS.has(entry.pos)));
-    if (hit) return hit;
+    const hit = exactOf(predicate, (entry) => PREDICATE_POS.has(entry.pos));
+    if (hit.length > 0) return hit;
   }
 
-  return null;
+  return [];
 }
 
 interface DictEntry {
@@ -136,7 +176,8 @@ interface DictEntry {
   /** 동음이의어 번호. 없으면 0 */
   supNo: number;
   pos: string;
-  definition: string;
+  /** 사전에 적힌 순서 그대로의 뜻풀이. 비어 있는 항목은 만들지 않는다 */
+  senses: string[];
   /** 초급 / 중급 / 고급. 없을 수도 있다 */
   grade: string | null;
 }
@@ -197,15 +238,13 @@ function parseItems(xml: string): { entries: DictEntry[]; guides: GuideTarget[] 
     const word = decode(/<word>([\s\S]*?)<\/word>/.exec(item)?.[1]);
     if (!word) continue;
 
-    // sense_order 가 1 인 뜻, 없으면 첫 번째 뜻. 여러 뜻을 다 보여주기엔
-    // 바텀시트가 좁고, 아이에게는 대표 뜻 하나가 낫다.
-    const definition = decode(
-      /<sense>[\s\S]*?<definition>([\s\S]*?)<\/definition>/.exec(item)?.[1],
-    );
-    if (!definition) continue;
+    const senses = [...item.matchAll(/<sense>[\s\S]*?<definition>([\s\S]*?)<\/definition>/g)]
+      .map((sense) => decode(sense[1]))
+      .filter(Boolean);
+    if (senses.length === 0) continue;
 
     if (word.endsWith("-")) {
-      guides.push(...parseGuide(definition));
+      guides.push(...parseGuide(senses[0]));
       continue;
     }
 
@@ -213,7 +252,7 @@ function parseItems(xml: string): { entries: DictEntry[]; guides: GuideTarget[] 
       word,
       supNo: Number(decode(/<sup_no>([\s\S]*?)<\/sup_no>/.exec(item)?.[1])) || 0,
       pos: decode(/<pos>([\s\S]*?)<\/pos>/.exec(item)?.[1]),
-      definition,
+      senses,
       grade: decode(/<word_grade>([\s\S]*?)<\/word_grade>/.exec(item)?.[1]) || null,
     });
   }
@@ -234,13 +273,22 @@ function parseGuide(definition: string): GuideTarget[] {
 }
 
 /**
- * 같은 표기의 표제어 중 아이에게 보여줄 하나를 고른다 — word_grade 가 쉬운 것
- * (초급 → 중급 → 고급). 초등학생이 쓸 법한 쪽을 고르기 위해서다.
- * 등급이 같으면 API 가 준 순서를 지킨다.
+ * 같은 표기의 표제어를 word_grade 가 쉬운 순(초급 → 중급 → 고급)으로 둔다.
+ * 초등학생이 쓸 법한 쪽을 앞에 두기 위해서다. 등급이 같으면 API 가 준 순서를 지킨다.
  */
-function pickEntry(entries: DictEntry[]): DictEntry | null {
-  if (entries.length === 0) return null;
-  return [...entries].sort((a, b) => gradeRank(a.grade) - gradeRank(b.grade))[0];
+function byGrade(entries: DictEntry[]): DictEntry[] {
+  return [...entries].sort((a, b) => gradeRank(a.grade) - gradeRank(b.grade));
+}
+
+/** byGrade 로 정렬된 묶음을 같은 등급끼리 자른다. 순서는 그대로 둔다 */
+function gradeTiers(sorted: DictEntry[]): DictEntry[][] {
+  const tiers: DictEntry[][] = [];
+  for (const entry of sorted) {
+    const last = tiers.at(-1);
+    if (last && gradeRank(last[0].grade) === gradeRank(entry.grade)) last.push(entry);
+    else tiers.push([entry]);
+  }
+  return tiers;
 }
 
 function gradeRank(grade: string | null): number {

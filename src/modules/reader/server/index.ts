@@ -16,3 +16,4 @@ export {
 } from "./chapter";
 export { listShelf } from "./shelf";
 export { lookup, DictError, type DictErrorKind } from "./dict";
+export type { DictSense, ReaderDictResponse } from "../schema";

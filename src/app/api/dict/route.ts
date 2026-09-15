@@ -1,5 +1,5 @@
 /**
- * GET /api/dict?word=  → { word, definition, source }
+ * GET /api/dict?word=  → { word, definition, source, senses[] }
  *
  * 소유: 강민구 (docs/spec.md §5).
  * 얇게 유지한다 — 판단은 modules/reader 의 lookup 이 한다 (CLAUDE.md §2).
@@ -9,14 +9,18 @@
  */
 import type { NextRequest, NextResponse } from "next/server";
 
-import { DictError, lookup } from "@/modules/reader/server";
+import {
+  DictError,
+  lookup,
+  type ReaderDictResponse,
+} from "@/modules/reader/server";
 import { fail, ok, serverError, unauthorized } from "@/shared/api";
 import { createServerSupabase } from "@/shared/supabase/server";
-import type { ApiResponse, DictResponse } from "@/shared/types";
+import type { ApiResponse } from "@/shared/types";
 
 export async function GET(
   request: NextRequest,
-): Promise<NextResponse<ApiResponse<DictResponse>>> {
+): Promise<NextResponse<ApiResponse<ReaderDictResponse>>> {
   const supabase = await createServerSupabase();
   const {
     data: { user },
