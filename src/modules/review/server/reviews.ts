@@ -129,7 +129,8 @@ export async function saveDraft(
       body,
       // Postgres length() 와 맞춘다 — 코드 포인트 기준
       char_count: Array.from(body).length,
-      status: "draft",
+      // status 는 보내지 않는다 — 0009 가 학생 역할에서 그 컬럼을 걷었다.
+      // 아래 .or() 가 draft(또는 오래된 analyzing)만 고르므로 상태를 되돌릴 필요도 없다.
       updated_at: now.toISOString(),
     })
     .eq("id", reviewId)

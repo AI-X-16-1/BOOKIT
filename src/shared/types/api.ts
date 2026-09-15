@@ -58,6 +58,11 @@ export interface UpdateProfileResponse {
   profile: Profile;
 }
 
+/** DELETE /api/profile — 계정과 모든 데이터를 지운다. 세션도 끝난다 */
+export interface DeleteProfileResponse {
+  deleted: true;
+}
+
 /* ── books (이승환) ────────────────────────────────── */
 
 export interface BookSearchResponse {

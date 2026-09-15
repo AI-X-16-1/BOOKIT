@@ -11,11 +11,16 @@
  *
  * 카운트다운의 기준점은 verifications.asked_at 이다. 이 함수가 응답을 돌려주는
  * 순간이 곧 시작 시각이라, 질문을 미리 만들어 두더라도 asked_at 은 여기서 찍는다.
+ *
+ * 읽기는 사용자 세션으로, verifications 와 reviews.status 쓰기는 admin 으로 한다 —
+ * 0009 가 학생의 verifications 쓰기와 reviews.status 컬럼을 막았다 (issue #22).
+ * 소유권은 loadContext 가 사용자 세션으로 이미 확인한 뒤다.
  */
 import "server-only";
 
 import { buildQuestion, LlmError } from "@/modules/ai";
 import type { BookitClient } from "@/shared/supabase";
+import { createAdminClient } from "@/shared/supabase/admin";
 import type { QuestionResponse, ReviewGap } from "@/shared/types";
 
 import { loadContext, type AttemptSummary, type VerificationContext } from "./context";
@@ -73,10 +78,11 @@ async function restamp(
   attempt: AttemptSummary,
 ): Promise<VerificationResult<QuestionResponse>> {
   const askedAt = new Date().toISOString();
-  const { error } = await supabase
+  const { error } = await createAdminClient()
     .from("verifications")
     .update({ asked_at: askedAt })
-    .eq("id", attempt.id);
+    .eq("id", attempt.id)
+    .eq("student_id", context.review.student_id);
 
   if (error) throw error;
 
@@ -142,7 +148,8 @@ async function createAttempt(
     );
   }
 
-  const { data: created, error: insertError } = await supabase
+  const admin = createAdminClient();
+  const { data: created, error: insertError } = await admin
     .from("verifications")
     .insert({
       review_id: review.id,
@@ -164,7 +171,7 @@ async function createAttempt(
   }
 
   // 실패로 끝났던 독후감이 재시도로 다시 진행 중이 된다.
-  const { error: statusError } = await supabase
+  const { error: statusError } = await admin
     .from("reviews")
     .update({ status: "questioning", updated_at: new Date().toISOString() })
     .eq("id", review.id);
