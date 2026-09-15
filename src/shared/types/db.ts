@@ -82,6 +82,8 @@ export interface Book {
   /** 국회전자도서관 딥링크 */
   library_url: string | null;
   aladin_url: string | null;
+  /** 추천 목록 후보 (0012). 시드가 고른 책만 true, 검색으로 저장된 책은 false */
+  curated: boolean;
 }
 
 /** 저작권 만료 도서 전용 */

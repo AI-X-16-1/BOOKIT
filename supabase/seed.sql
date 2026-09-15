@@ -2619,6 +2619,11 @@ insert into book_contents (book_id, chapter_no, title, body) values
 
 하고, 세째 처녀는 손으로 고인 때 모르는 눈물을 씻었다.');
 
+-- 추천 후보(0012). 시드가 고른 책만 true — 'harry'·'squirrel' 은 검색 픽스처라 뺀다.
+-- 검색으로 들어온 책은 여기서 false 로 돌아간다.
+update books
+   set curated = (id::text like '0000b0%' and title not in ('harry', 'squirrel'));
+
 -- ── 2. 교사 · 학급 ───────────────────────────────────
 -- Google OAuth 전용이라 비밀번호는 쓰지 않는다 (CLAUDE.md §1).
 -- encrypted_password 는 빈 문자열로 둔다.

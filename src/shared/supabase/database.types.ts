@@ -108,6 +108,7 @@ export interface Database {
           | "is_public_domain"
           | "library_url"
           | "aladin_url"
+          | "curated"
         >;
         Update: Flatten<Partial<Book>>;
         Relationships: [];

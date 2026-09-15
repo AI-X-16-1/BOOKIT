@@ -49,6 +49,7 @@ class FakeBooksStore implements BooksAdminPort, BooksReadPort {
       is_public_domain: row.is_public_domain ?? false,
       library_url: row.library_url ?? null,
       aladin_url: row.aladin_url ?? null,
+      curated: row.curated ?? false,
     };
     this.rows.set(book.id, book);
     return book;

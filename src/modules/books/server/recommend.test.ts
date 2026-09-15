@@ -19,6 +19,7 @@ function book(partial: Partial<Book>): Book {
     is_public_domain: false,
     library_url: null,
     aladin_url: null,
+    curated: true,
     ...partial,
   };
 }
