@@ -19,6 +19,8 @@
 
 export { LoginScreen } from "./components/LoginScreen";
 export { OnboardingScreen } from "./components/OnboardingScreen";
+export { SignOutButton } from "./components/SignOutButton";
+export { DeleteAccountButton } from "./components/DeleteAccountButton";
 
 export { GRADES, gradeLabel } from "./grades";
 
@@ -40,3 +42,5 @@ export {
   updateGradeLevel,
   type OnboardingResult,
 } from "./server/onboarding";
+
+export { deleteAccount } from "./server/account";

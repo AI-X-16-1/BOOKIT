@@ -14,12 +14,7 @@ import "server-only";
 import { grade } from "@/modules/ai";
 import type { BookitClient } from "@/shared/supabase";
 import { createAdminClient } from "@/shared/supabase/admin";
-import type {
-  AnswerResponse,
-  GradeResult,
-  ScoreAxis,
-  StyleAxis,
-} from "@/shared/types";
+import type { AnswerResponse, GradeResult } from "@/shared/types";
 
 import { loadContext } from "./context";
 import { failure, type VerificationResult } from "./result";
@@ -119,7 +114,7 @@ async function persist(
 ): Promise<VerificationResult<number>> {
   const points = result.passed ? pointsPerPass() : 0;
 
-  const { data, error } = await recordResult(createAdminClient(), {
+  const { data, error } = await createAdminClient().rpc("record_verification_result", {
     p_verification_id: verificationId,
     p_student_id: studentId,
     p_answer: answer,
@@ -141,42 +136,4 @@ async function persist(
   }
 
   return { ok: true, data: data?.points_awarded ?? points };
-}
-
-interface RecordResultArgs {
-  p_verification_id: string;
-  p_student_id: string;
-  p_answer: string;
-  p_logic: ScoreAxis;
-  p_specificity: ScoreAxis;
-  p_style: StyleAxis;
-  p_passed: boolean;
-  p_feedback: string;
-  p_points: number;
-}
-
-/**
- * ⚠️ 임시 캐스트.
- *
- * record_verification_result 는 0008 에서 새로 만든 함수라 아직
- * shared/supabase/database.types.ts 의 Functions 에 없다. 그 파일은 김민경 소유라
- * 이 세션에서 고치지 않는다 (CLAUDE.md §2).
- * 0008 이 머지되고 타입이 추가되면 이 함수를 지우고 supabase.rpc(...) 를 직접 부른다.
- */
-function recordResult(
-  admin: BookitClient,
-  args: RecordResultArgs,
-): PromiseLike<{
-  data: { points_awarded: number } | null;
-  error: { code?: string; message: string } | null;
-}> {
-  const rpc = admin.rpc as unknown as (
-    name: string,
-    params: RecordResultArgs,
-  ) => PromiseLike<{
-    data: { points_awarded: number } | null;
-    error: { code?: string; message: string } | null;
-  }>;
-
-  return rpc("record_verification_result", args);
 }
