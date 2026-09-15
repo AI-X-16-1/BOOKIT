@@ -8,11 +8,13 @@ import { BottomSheet, Button, Card, Chip } from "@/shared/ui";
 import { fetchChapter, fetchDictEntry } from "../api";
 import type { ReaderDictResponse, ShelfBook } from "../schema";
 import { PagedText } from "./PagedText";
+import { ShelfPagination, useShelfPageSize } from "./ShelfPagination";
 
 /**
  * 책잇 서재. 목업 6 L386-404.
  *
  * 책 목록은 서버 컴포넌트가 넘긴다 (app/(main)/library/page.tsx → listShelf).
+ * 목록은 태블릿·PC 12권, 폰 6권씩 쪽으로 나눠 번호로 넘긴다 (ShelfPagination).
  * 본문은 장마다 GET /api/reader/:bookId?chapter= 로 불러온다.
  *
  * 본문은 18px / line-height 2 (CLAUDE.md §8). 전자책처럼 쪽을 넘기며 읽는다 (PagedText).
@@ -175,6 +177,10 @@ export function LibraryScreen({
       : null,
   );
   const [entry, setEntry] = useState<Entry>({ state: "idle" });
+
+  // 목록 쪽. 책을 읽다 돌아와도 보던 쪽이 남는다
+  const [shelfPage, setShelfPage] = useState(1);
+  const pageSize = useShelfPageSize();
 
   // 장을 빠르게 넘기면 늦게 온 이전 장 응답이 새 장을 덮어쓴다. 마지막 요청만 반영한다.
   const chapterRequest = useRef(0);
@@ -413,6 +419,11 @@ export function LibraryScreen({
     );
   }
 
+  // 폭이 바뀌어 쪽 수가 줄면 마지막 쪽으로 맞춘다
+  const pageCount = Math.max(1, Math.ceil(books.length / pageSize));
+  const currentPage = Math.min(shelfPage, pageCount);
+  const pageBooks = books.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -429,28 +440,40 @@ export function LibraryScreen({
           </p>
         </Card>
       ) : (
-        <div className="flex flex-col gap-2.5">
-          {books.map((book) => (
-            <button
-              key={book.id}
-              type="button"
-              onClick={() => openChapter(book, 1)}
-              className="text-left"
-            >
-              <Card className="flex items-center gap-3">
-                <div className="h-14 w-11 flex-none rounded-lg bg-linear-160 from-yellow to-yellow-text-2" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[15px] font-bold text-ink">
-                    {book.title}
+        <div>
+          {/* 폰 1열 · 태블릿 2열 · 넓은 PC 3열. 태블릿은 왼쪽 레일이 자리를 차지해 3열이면 제목이 잘린다 */}
+          <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+            {pageBooks.map((book) => (
+              <button
+                key={book.id}
+                type="button"
+                onClick={() => openChapter(book, 1)}
+                className="text-left"
+              >
+                <Card className="flex h-full items-center gap-3">
+                  <div className="h-14 w-11 flex-none rounded-lg bg-linear-160 from-yellow to-yellow-text-2" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[15px] font-bold text-ink">
+                      {book.title}
+                    </div>
+                    <div className="mt-1 text-[13px] text-muted">
+                      {subtitleOf(book)}
+                    </div>
                   </div>
-                  <div className="mt-1 text-[13px] text-muted">
-                    {subtitleOf(book)}
-                  </div>
-                </div>
-                <Chip tone="green">무료</Chip>
-              </Card>
-            </button>
-          ))}
+                  <Chip tone="green">무료</Chip>
+                </Card>
+              </button>
+            ))}
+          </div>
+
+          <ShelfPagination
+            page={currentPage}
+            pageCount={pageCount}
+            onChange={(next) => {
+              setShelfPage(next);
+              window.scrollTo({ top: 0 });
+            }}
+          />
         </div>
       )}
     </div>
