@@ -2,23 +2,16 @@
 
 import { useEffect, useState } from "react";
 import type { ExchangeKind, PointsResponse } from "@/shared/types";
+import { ApiClientError, apiGet, apiPost } from "@/shared/api/client";
 import { Button, Card, Chip } from "@/shared/ui";
 import { COVER } from "@/modules/books";
-import {
-  EXCHANGE_COST,
-  EXCHANGE_LABEL,
-  REASON_LABEL,
-  exchange,
-  getPoints,
-} from "../mock";
+import { EXCHANGE_COST, EXCHANGE_LABEL, REASON_LABEL } from "../schema";
 
 /**
  * 나 — 책갈피·교환·읽은 책. 목업 4 #1 (L36-86).
  *
  * 교환을 누르면 원장에 차감 행이 쌓이고 잔액이 즉시 줄어든다.
  * 잔액은 저장된 값이 아니라 sum(delta) 로 다시 계산된다 (CLAUDE.md §4).
- *
- * ⚠️ 목 데이터로 도는 화면이다. 새로고침하면 초기 상태로 돌아간다.
  */
 const READ_BOOKS = [
   { title: "아몬드", score: 100, cover: "green" as const },
@@ -32,18 +25,27 @@ export function MeScreen() {
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
-    getPoints().then(setPoints);
+    apiGet<PointsResponse>("/api/points").then(setPoints).catch(() => {
+      setNote("책갈피를 불러오지 못했어.");
+    });
   }, []);
 
   const doExchange = async (kind: ExchangeKind) => {
     setBusy(kind);
     setNote(null);
     try {
-      const r = await exchange(kind);
-      setPoints(await getPoints());
+      const r = await apiPost<{ balance: number; voucher_url: string }>(
+        "/api/points/exchange",
+        { kind },
+      );
+      setPoints(await apiGet<PointsResponse>("/api/points"));
       setNote(`${EXCHANGE_LABEL[kind]}을 받았어! 잔액 ${r.balance.toLocaleString()}`);
-    } catch {
-      setNote("책갈피가 모자라. 조금만 더 모아볼까?");
+    } catch (cause) {
+      setNote(
+        cause instanceof ApiClientError
+          ? cause.message
+          : "책갈피가 모자라. 조금만 더 모아볼까?",
+      );
     } finally {
       setBusy(null);
     }

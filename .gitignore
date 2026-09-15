@@ -34,3 +34,6 @@ yarn-error.log*
 
 # supabase CLI 임시 파일
 supabase/.temp/
+
+# superpowers subagent-driven-development 작업 스크래치
+.superpowers/
