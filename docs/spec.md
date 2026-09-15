@@ -162,6 +162,7 @@ All under `/api`. All authenticated except the guardian route. All return `{ dat
 POST /api/onboarding/student   { grade_level, join_code }        → { class }
 POST /api/onboarding/teacher   { school_name, grade_level, class_no } → { class, join_code }
 PATCH /api/profile             { grade_level }                   → { profile }
+DELETE /api/profile                                              → { deleted }   계정·데이터 전부 삭제(cascade), 세션 종료
 ```
 
 ### books (이승환)
