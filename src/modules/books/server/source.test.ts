@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { mockSource, selectSourceKind, toRawBookHitFromNlk } from "./source";
+import {
+  mockSource,
+  selectSourceKind,
+  toRawBookHitFromDataGoKr,
+  toRawBookHitFromNlk,
+} from "./source";
 
 test("키가 하나도 없으면 mock", () => {
   assert.equal(selectSourceKind({}), "mock");
@@ -135,4 +140,36 @@ test("toRawBookHitFromNlk는 title이나 author가 없으면 null", () => {
   assert.equal(toRawBookHitFromNlk({ AUTHOR: "손원평", TITLE: "" }), null);
   assert.equal(toRawBookHitFromNlk({ TITLE: "아몬드" }), null);
   assert.equal(toRawBookHitFromNlk(null), null);
+});
+
+/**
+ * 아래는 실제 캡처한 응답이 아니라 culture.go.kr의 "국립어린이청소년도서관_사서추천도서"
+ * 소개 페이지(id=674)에 문서화된 필드명(TITLE/AUTHOR/ISBN/AFFILIATION/IMAGE_OBJECT)
+ * 기준으로 만든 테스트다. DATA_GO_KR_KEY 발급되면 실제 응답으로 재검증할 것.
+ */
+test("toRawBookHitFromDataGoKr는 문서화된 필드명으로 파싱한다", () => {
+  const hit = toRawBookHitFromDataGoKr({
+    TITLE: "아몬드",
+    AUTHOR: "손원평",
+    ISBN: "9788936434267",
+    AFFILIATION: "창비",
+    IMAGE_OBJECT: "",
+  });
+  assert.deepEqual(hit, {
+    isbn13: "9788936434267",
+    title: "아몬드",
+    author: "손원평",
+    publisher: "창비",
+    coverUrl: null,
+    rawCategory: null,
+    kdc: null,
+    targetGradeMin: null,
+    targetGradeMax: null,
+  });
+});
+
+test("toRawBookHitFromDataGoKr는 title이나 author가 없으면 null", () => {
+  assert.equal(toRawBookHitFromDataGoKr({ AUTHOR: "손원평", TITLE: "" }), null);
+  assert.equal(toRawBookHitFromDataGoKr({ TITLE: "아몬드" }), null);
+  assert.equal(toRawBookHitFromDataGoKr(null), null);
 });

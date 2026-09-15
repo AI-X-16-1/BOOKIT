@@ -13,8 +13,14 @@
  * 역할 라벨이 붙어 오고(첫 라벨만 벗겨낸다 — 공역자까지 완벽히 정리하진 않는다),
  * 값이 없는 필드는 null이 아니라 빈 문자열 ""로 온다(null로 정규화한다).
  *
- * ⚠️ dataGoKrSource는 여전히 미검증이다 — DATA_GO_KR_KEY가 아직 없다. 파라미터명은
- * data.go.kr 공공데이터 공통 관례를 따른 추정이다. 키가 발급되면 가장 먼저 검증할 것.
+ * ⚠️ dataGoKrSource는 여전히 실호출로 검증 못 했다 — DATA_GO_KR_KEY가 아직 없다.
+ * 엔드포인트(api.kcisa.kr/openapi/API_LIB_052/request)·파라미터(serviceKey/
+ * numOfRows/pageNo)·응답 필드(TITLE/AUTHOR/ISBN/AFFILIATION/IMAGE_OBJECT 등)는
+ * culture.go.kr의 "국립어린이청소년도서관_사서추천도서" 소개 페이지(id=674, _OLD
+ * 아닌 정식 버전)에 문서화된 값을 그대로 옮긴 것이다(2026-09-15 확인) — 응답의
+ * 정확한 중첩 구조(response.body.items.item)만 미검증. 키가 발급되면 가장 먼저
+ * 확인할 것. 이 API는 제목/키워드 검색 파라미터가 없어 목록을 받아 우리 쪽에서
+ * 필터링한다(search 구현부 주석 참고).
  */
 import "server-only";
 
@@ -196,41 +202,55 @@ export const nlkSource: BookSource = {
   },
 };
 
-function toRawBookHitFromDataGoKr(raw: unknown): RawBookHit | null {
+/**
+ * 응답 필드는 문화포털(culture.go.kr)의 "국립어린이청소년도서관_사서추천도서"
+ * API 소개 페이지(id=674, _OLD 아닌 정식 버전)에 문서화된 14개 필드를 그대로 썼다:
+ * TITLE/AUTHOR/ISBN/ISSUED_DATE/COLLECTED_DATE/REG_DT/DESCRIPTION/
+ * TABLE_OF_CONTENTS/SUB_DESCRIPTION/IMAGE_OBJECT/URL/LOCAL_ID/UCI/AFFILIATION.
+ * ⚠️ 이 필드명은 문서 기준이고, 정확한 응답 중첩 구조(response.body.items.item
+ * 여부)는 문서에 샘플 응답이 없어 실제 호출로 검증 못 했다 — DATA_GO_KR_KEY 발급되면
+ * 가장 먼저 확인할 것.
+ */
+export function toRawBookHitFromDataGoKr(raw: unknown): RawBookHit | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Record<string, unknown>;
-  const title = typeof r.title === "string" ? r.title : null;
-  const author = typeof r.author === "string" ? r.author : null;
+  const title = typeof r.TITLE === "string" ? nullIfEmpty(r.TITLE) : null;
+  const author = typeof r.AUTHOR === "string" ? nullIfEmpty(r.AUTHOR) : null;
   if (!title || !author) return null;
   return {
-    isbn13: typeof r.isbn13 === "string" && r.isbn13 ? r.isbn13 : null,
+    isbn13: typeof r.ISBN === "string" ? nullIfEmpty(r.ISBN) : null,
     title,
     author,
-    publisher: typeof r.publisher === "string" ? r.publisher : null,
-    coverUrl: null,
-    rawCategory: typeof r.kdcName === "string" ? r.kdcName : null,
-    kdc: typeof r.kdc === "string" ? r.kdc : null,
+    publisher: typeof r.AFFILIATION === "string" ? nullIfEmpty(r.AFFILIATION) : null,
+    coverUrl: typeof r.IMAGE_OBJECT === "string" ? nullIfEmpty(r.IMAGE_OBJECT) : null,
+    rawCategory: null,
+    kdc: null,
     // 국립어린이청소년도서관 사서추천도서 자체가 이미 아동·청소년 대상으로 큐레이션된
-    // 목록이라 별도 학년 필터가 필요 없다 — 다만 세부 학년 필드는 미검증(키 없음).
+    // 목록이라 별도 학년 필터가 필요 없다.
     targetGradeMin: null,
     targetGradeMax: null,
   };
 }
 
-/** 국립어린이청소년도서관 사서추천도서 (data.go.kr) */
+/**
+ * 국립어린이청소년도서관 사서추천도서.
+ *
+ * ⚠️ 이 API는 제목/키워드로 검색하는 파라미터가 없다 — serviceKey/numOfRows/pageNo
+ * 뿐인 목록 조회 API다(culture.go.kr id=674 문서 확인, 2026-09-15). 그래서 한 페이지를
+ * 받아온 뒤 제목·저자에 검색어가 들어있는지 우리 쪽에서 직접 걸러낸다. 추천 목록
+ * 전체가 100건을 넘으면 이 방식으론 뒷페이지 결과를 놓칠 수 있다 — 이 소스는
+ * "사서가 이미 골라둔 소규모 추천 목록"이라는 전제로 설계됐다.
+ */
 export const dataGoKrSource: BookSource = {
   name: "data_go_kr",
   async search(query) {
     const key = process.env.DATA_GO_KR_KEY;
     if (!key) throw new BookSourceError("data_go_kr", "DATA_GO_KR_KEY 가 없다");
 
-    const url = new URL(
-      "https://apis.data.go.kr/9720000/BookRecommendationInquiryService/getBookRecommendationList",
-    );
+    const url = new URL("https://api.kcisa.kr/openapi/API_LIB_052/request");
     url.searchParams.set("serviceKey", key);
-    url.searchParams.set("type", "json");
-    url.searchParams.set("title", query);
-    url.searchParams.set("numOfRows", "10");
+    url.searchParams.set("numOfRows", "100");
+    url.searchParams.set("pageNo", "1");
 
     let res: Response;
     try {
@@ -248,9 +268,11 @@ export const dataGoKrSource: BookSource = {
     if (!items)
       throw new BookSourceError("data_go_kr", "응답 형식이 예상과 다르다");
 
+    const q = query.trim();
     return items
       .map(toRawBookHitFromDataGoKr)
-      .filter((hit): hit is RawBookHit => hit !== null);
+      .filter((hit): hit is RawBookHit => hit !== null)
+      .filter((hit) => !q || hit.title.includes(q) || hit.author.includes(q));
   },
 };
 
