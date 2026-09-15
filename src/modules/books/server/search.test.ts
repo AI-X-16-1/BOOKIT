@@ -62,6 +62,8 @@ test("isbn13 없는 결과는 걸러낸다", async () => {
           coverUrl: null,
           rawCategory: null,
           kdc: null,
+          targetGradeMin: null,
+          targetGradeMax: null,
         },
       ];
     },
@@ -79,6 +81,8 @@ test("같은 isbn13은 두 번 insert하지 않는다", async () => {
     coverUrl: null,
     rawCategory: "성장소설",
     kdc: null,
+    targetGradeMin: 6,
+    targetGradeMax: 9,
   };
   const source: BookSource = {
     name: "mock",
@@ -92,6 +96,8 @@ test("같은 isbn13은 두 번 insert하지 않는다", async () => {
   assert.equal(port.rows.length, 1);
   if (first.ok && second.ok) {
     assert.equal(first.books[0].id, second.books[0].id);
+    assert.equal(first.books[0].target_grade_min, 6);
+    assert.equal(first.books[0].target_grade_max, 9);
   }
 });
 

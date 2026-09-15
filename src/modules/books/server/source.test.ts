@@ -40,6 +40,7 @@ test("toRawBookHitFromNlk는 빈 문자열 필드를 null로 정규화한다", (
     AUTHOR: "지은이: 손원평",
     TITLE: "아몬드",
     EA_ISBN: "9788936456788",
+    EA_ADD_CODE: "43810",
     TITLE_URL: "",
     SUBJECT: "",
     KDC: "",
@@ -52,7 +53,69 @@ test("toRawBookHitFromNlk는 빈 문자열 필드를 null로 정규화한다", (
     coverUrl: null,
     rawCategory: null,
     kdc: null,
+    targetGradeMin: 4,
+    targetGradeMax: 9,
   });
+});
+
+/**
+ * EA_ADD_CODE(부가기호) 첫 자리는 독자대상기호다 — 6/7=초등·아동, 4=청소년,
+ * 5=중고교 학습참고서, 9=전문(성인) 등. 아래 값들은 실제 응답에서 그대로 옮긴 것이다
+ * (43810=아몬드/청소년, 95600=성인 대상 국가고시 문제집, 03810/05810/05800=교양).
+ */
+test("EA_ADD_CODE 9(전문)는 학생 대상이 아니라서 결과에서 제외한다", () => {
+  const hit = toRawBookHitFromNlk({
+    PUBLISHER: "(주식회사) 엘씨나인",
+    AUTHOR: "저자 : 아몬드영",
+    TITLE: "[전자책] 아몬드영 미용사(피부) 국가고시 원패스 필기 모의고사 문제집",
+    EA_ISBN: "9791198761538",
+    EA_ADD_CODE: "95600",
+    TITLE_URL: "",
+    SUBJECT: "6",
+    KDC: "",
+  });
+  assert.equal(hit, null);
+});
+
+test("EA_ADD_CODE 0(교양)은 학년 제한 없이 통과시킨다", () => {
+  const hit = toRawBookHitFromNlk({
+    PUBLISHER: "창비",
+    AUTHOR: "지은이: 손원평",
+    TITLE: "아몬드",
+    EA_ISBN: "9788936475659",
+    EA_ADD_CODE: "03810",
+    TITLE_URL: "",
+    SUBJECT: "",
+    KDC: "",
+  });
+  assert.equal(hit?.targetGradeMin, null);
+  assert.equal(hit?.targetGradeMax, null);
+});
+
+test("EA_ADD_CODE 7(아동)은 1~6학년으로 매핑한다", () => {
+  const hit = toRawBookHitFromNlk({
+    PUBLISHER: "사계절",
+    AUTHOR: "황선미",
+    TITLE: "마당을 나온 암탉",
+    EA_ISBN: "9788932917245",
+    EA_ADD_CODE: "78630",
+    TITLE_URL: "",
+    SUBJECT: "",
+    KDC: "",
+  });
+  assert.equal(hit?.targetGradeMin, 1);
+  assert.equal(hit?.targetGradeMax, 6);
+});
+
+test("EA_ADD_CODE 없으면(구버전 레코드 등) 학년 제한 없이 통과시킨다", () => {
+  const hit = toRawBookHitFromNlk({
+    PUBLISHER: "창비",
+    AUTHOR: "손원평",
+    TITLE: "아몬드",
+    EA_ISBN: "9788936434267",
+  });
+  assert.equal(hit?.targetGradeMin, null);
+  assert.equal(hit?.targetGradeMax, null);
 });
 
 test("toRawBookHitFromNlk는 첫 역할 라벨만 벗겨내고 나머지 공역자 표기는 남긴다", () => {

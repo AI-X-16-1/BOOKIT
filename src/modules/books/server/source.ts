@@ -30,6 +30,9 @@ export interface RawBookHit {
   rawCategory: string | null;
   /** 국립중앙도서관 KDC 분류기호 */
   kdc: string | null;
+  /** 대상 학년 추정치. 소스가 판단할 수 없으면 둘 다 null(전체 학년 대상 취급) */
+  targetGradeMin: number | null;
+  targetGradeMax: number | null;
 }
 
 export interface BookSource {
@@ -72,6 +75,8 @@ export const mockSource: BookSource = {
       coverUrl: b.cover_url,
       rawCategory: b.tags[0] ?? null,
       kdc: null,
+      targetGradeMin: b.target_grade_min,
+      targetGradeMax: b.target_grade_max,
     }));
   },
 };
@@ -102,12 +107,50 @@ function stripAuthorRolePrefix(author: string): string {
   return author.replace(AUTHOR_ROLE_PREFIX_RE, "").trim();
 }
 
+/**
+ * 한국 ISBN 부가기호(EA_ADD_CODE, 5자리) 첫 자리 = 독자대상기호.
+ * 6=학습참고서(초등), 7=아동, 4=청소년, 5=학습참고서(중고교) — 이 넷은 책잇의
+ * 타겟(초1~중3)과 겹치므로 학년 범위로 매핑한다. 1=실용, 2=여성, 9=전문 등은
+ * 성인 대상이라 검색 결과에서 아예 제외한다. 0=교양처럼 애매한 코드는 좋은 책도
+ * 많이 섞여 있어(아몬드, 어린 왕자 등) 학년 제한 없이 통과시킨다.
+ *
+ * ⚠️ 이 매핑은 실제 API 문서로 재검증한 게 아니라 알려진 출판 표준(ISBN 부가기호)
+ * 지식에 기반한 추정이다. 실 검색 결과를 보면서 필요하면 조정할 것.
+ */
+function classifyAudience(eaAddCode: string | null): {
+  targetGradeMin: number | null;
+  targetGradeMax: number | null;
+  exclude: boolean;
+} {
+  const readerCode = eaAddCode?.charAt(0);
+  switch (readerCode) {
+    case "6":
+    case "7":
+      return { targetGradeMin: 1, targetGradeMax: 6, exclude: false };
+    case "4":
+      return { targetGradeMin: 4, targetGradeMax: 9, exclude: false };
+    case "5":
+      return { targetGradeMin: 7, targetGradeMax: 9, exclude: false };
+    case "1":
+    case "2":
+    case "9":
+      return { targetGradeMin: null, targetGradeMax: null, exclude: true };
+    default:
+      return { targetGradeMin: null, targetGradeMax: null, exclude: false };
+  }
+}
+
 export function toRawBookHitFromNlk(raw: unknown): RawBookHit | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Record<string, unknown>;
   const title = typeof r.TITLE === "string" ? nullIfEmpty(r.TITLE) : null;
   const rawAuthor = typeof r.AUTHOR === "string" ? nullIfEmpty(r.AUTHOR) : null;
   if (!title || !rawAuthor) return null;
+
+  const eaAddCode = typeof r.EA_ADD_CODE === "string" ? nullIfEmpty(r.EA_ADD_CODE) : null;
+  const audience = classifyAudience(eaAddCode);
+  if (audience.exclude) return null;
+
   return {
     isbn13: typeof r.EA_ISBN === "string" ? nullIfEmpty(r.EA_ISBN) : null,
     title,
@@ -116,6 +159,8 @@ export function toRawBookHitFromNlk(raw: unknown): RawBookHit | null {
     coverUrl: typeof r.TITLE_URL === "string" ? nullIfEmpty(r.TITLE_URL) : null,
     rawCategory: typeof r.SUBJECT === "string" ? nullIfEmpty(r.SUBJECT) : null,
     kdc: typeof r.KDC === "string" ? nullIfEmpty(r.KDC) : null,
+    targetGradeMin: audience.targetGradeMin,
+    targetGradeMax: audience.targetGradeMax,
   };
 }
 
@@ -165,6 +210,10 @@ function toRawBookHitFromDataGoKr(raw: unknown): RawBookHit | null {
     coverUrl: null,
     rawCategory: typeof r.kdcName === "string" ? r.kdcName : null,
     kdc: typeof r.kdc === "string" ? r.kdc : null,
+    // 국립어린이청소년도서관 사서추천도서 자체가 이미 아동·청소년 대상으로 큐레이션된
+    // 목록이라 별도 학년 필터가 필요 없다 — 다만 세부 학년 필드는 미검증(키 없음).
+    targetGradeMin: null,
+    targetGradeMax: null,
   };
 }
 
