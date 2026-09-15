@@ -19,6 +19,7 @@
     "ai:gaps": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-gaps.ts",
     "ai:tags": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-tags.ts",
     "ai:calibrate": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-calibrate.ts",
+    "ai:question": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-question.ts",
     "reader:dict": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/dict-check.ts"
   },
   "dependencies": {
