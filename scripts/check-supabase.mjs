@@ -97,11 +97,14 @@ if (!serviceKey) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // 실제 교사가 반을 만들면 행이 늘어난다 — 정확히 5개가 아니라 시드 5개가 있는지 본다
+  const SEED_CODES = ["HBCLSA", "HBCLSB", "HBCLSC", "HBCLSD", "HBCLSE"];
   const classes = await admin.from("classes").select("join_code");
+  const codes = new Set(classes.data?.map((c) => c.join_code));
   check(
-    "시드: 반 5개",
-    !classes.error && classes.data?.length === 5,
-    classes.error?.message ?? `${classes.data?.length}개 (${classes.data?.map((c) => c.join_code).join(", ")})`,
+    "시드: 반 5개 (HBCLSA~E)",
+    !classes.error && SEED_CODES.every((code) => codes.has(code)),
+    classes.error?.message ?? `${classes.data?.length}개 (${[...codes].join(", ")})`,
   );
 
   const badCode = classes.data?.find(
