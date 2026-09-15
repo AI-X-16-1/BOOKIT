@@ -17,11 +17,14 @@ export function SideRail() {
   return (
     <nav
       aria-label="주요 메뉴"
-      className="hidden w-[76px] flex-none flex-col items-center gap-3.5 bg-panel py-5 md:flex"
+      // 뷰포트 높이에 고정하고 붙여 둔다 — 페이지가 길어져도 레일이 따라 늘어나 아바타가 아래로 밀리지 않는다
+      className="sticky top-0 hidden h-dvh w-[76px] flex-none flex-col items-center gap-3.5 self-start bg-panel py-5 md:flex"
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-coral text-lg text-white">
-        ⌄
-      </div>
+      {/* 앱 아이콘 — 홈으로. 목업의 코랄 네모 자리표시자를 실제 아이콘으로 */}
+      <Link href="/home" aria-label="책잇 홈" className="block h-11 w-11 overflow-hidden rounded-[14px]">
+        {/* eslint-disable-next-line @next/next/no-img-element -- 정적 PWA 아이콘 */}
+        <img src="/icons/icon-192.png" alt="" width={44} height={44} className="h-11 w-11" />
+      </Link>
       <div className="h-1.5" />
       {NAV_ITEMS.map((item) => {
         const active = pathname === item.href;
@@ -43,9 +46,14 @@ export function SideRail() {
         );
       })}
       <div className="flex-1" />
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow text-sm font-bold text-stamp-text">
-        민
-      </div>
+      {/* 하단 아바타 — "나" 로. 이름 첫 글자는 프로필 조회가 붙기 전까지 넣지 않는다 */}
+      <Link
+        href="/me"
+        aria-label="내 정보"
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow text-base text-stamp-text"
+      >
+        <span aria-hidden>☺</span>
+      </Link>
     </nav>
   );
 }

@@ -3,8 +3,7 @@
  *
  *   node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-core-claim.ts
  *
- * package.json 에 스크립트를 올리지 않았다 — #14 가 결정되기 전의 검증용이라
- * 다른 PR 과 package.json 충돌을 만들 이유가 없다. 결정되면 ai:gaps 에 합친다.
+ * `npm run ai:core-claim` — id 를 주면 그것만 돈다 (`npm run ai:core-claim -- g4 w1`).
  *
  * 여기서 보는 것은 세 가지.
  *   1. quote 가 독후감 원문과 글자 그대로 일치하는가 (하이라이트가 뜨는가)
@@ -61,18 +60,12 @@ async function main() {
     }
 
     exact += 1;
-    console.log(`   ✓ "${claim.quote}"`);
+    console.log(`   ✓ [${claim.type}] "${claim.quote}"`);
     console.log(`      → ${claim.reason}`);
 
-    // ⚠️ gap_type enum 에 값이 없어 임시로 unsupported_claim 을 붙인다. 질문 프롬프트는
-    //    type 을 쓰지 않고 quote·reason 만 쓰므로 결과에 영향이 없다 (prompts.ts questionUser).
+    // pickCoreClaim 은 Gap(type: core_claim)을 돌려준다 — submit.ts 가 저장하는 그대로 질문을 만든다
     const { question } = await paced("question", () =>
-      buildQuestion(
-        { quote: claim.quote, type: "unsupported_claim", reason: claim.reason },
-        sample.body,
-        sample.book,
-        context,
-      ),
+      buildQuestion(claim, sample.body, sample.book, context),
     );
     console.log(`   Q: ${question}`);
   }

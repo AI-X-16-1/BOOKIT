@@ -42,9 +42,15 @@ function LoginCard() {
 
   return (
     <div className="relative flex w-full max-w-[382px] flex-col items-center rounded-sheet bg-card px-8 py-12 shadow-card">
-      <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[20px] bg-ink text-3xl font-bold text-on-dark">
-        ▯▯
-      </div>
+      {/* 앱 아이콘. 글자(▯▯)로 흉내 낸 목업 자리표시자는 폰트에 따라 빈 네모로 깨졌다 */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- 정적 PWA 아이콘 */}
+      <img
+        src="/icons/icon-192.png"
+        alt=""
+        width={72}
+        height={72}
+        className="h-[72px] w-[72px] rounded-[20px]"
+      />
       <h1 className="mt-5 text-[34px] font-bold text-ink">책잇</h1>
       <p className="mt-2.5 text-center text-base leading-relaxed text-muted">
         네가 진짜 읽었는지,

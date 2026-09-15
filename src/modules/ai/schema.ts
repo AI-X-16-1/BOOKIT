@@ -35,8 +35,8 @@ export const gapSchema = z.object({
 /**
  * AI #2b 핵심 문장 고르기 (#14). 빈틈이 0개일 때만 부른다.
  *
- * type 이 없다 — gap_type enum 에 값이 추가되기 전까지는 호출부가 저장할 자리가 없다.
- * shared/types 에 계약이 없으므로 이 스키마가 곧 타입이다.
+ * 모델은 quote·reason 만 돌려준다. type("core_claim")은 pickCoreClaim 이 붙인다 —
+ * 빈틈 분석의 3종 enum 에 넣으면 모델이 빈틈 대신 그걸 고르기 시작한다.
  */
 export const coreClaimSchema = z.object({
   /** 독후감에 그대로 있는 문장 하나. 요약·윤문 금지 */
@@ -45,7 +45,7 @@ export const coreClaimSchema = z.object({
   reason: z.string().min(1),
 });
 
-export type CoreClaim = z.infer<typeof coreClaimSchema>;
+export type CoreClaimOutput = z.infer<typeof coreClaimSchema>;
 
 /**
  * AI #2 빈틈 분석.

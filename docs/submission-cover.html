@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>책잇 대표 이미지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  /* 1920×1080 (16:9). 색은 CLAUDE.md §7 디자인 토큰 그대로. */
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body {
+    font-family: "Noto Sans KR", system-ui, sans-serif;
+    color: #2E241D;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #FDF6EC;
+  }
+
+  /* ── 왼쪽: 크림 + 공책 줄 ── */
+  .left {
+    position: relative;
+    background: repeating-linear-gradient(#FDF6EC 0 47px, #F4E5D1 47px 49px);
+    padding: 88px 96px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 22px; }
+  .brand h1 { font-size: 132px; font-weight: 900; letter-spacing: -4px; line-height: 1; }
+  .brand .en { font-size: 34px; font-weight: 700; color: #9A8B7C; letter-spacing: 1px; }
+  .tagline { margin-top: 26px; font-size: 34px; font-weight: 500; color: #2E241D; line-height: 1.45; }
+  .tagline strong { font-weight: 900; color: #FF6B4A; }
+
+  .label {
+    display: inline-block; margin-bottom: 18px;
+    padding: 8px 18px; border-radius: 999px;
+    font-size: 22px; font-weight: 700;
+  }
+  .card {
+    background: #FFFDF9; border: 2px solid #ECDFCD; border-radius: 22px;
+    padding: 44px 48px; box-shadow: 0 14px 40px rgba(46, 36, 29, .10);
+  }
+  .card p { font-size: 44px; font-weight: 700; line-height: 1.5; }
+  .left .label { background: #FDF0CD; color: #7A6320; }
+  .left .card { margin-top: 118px; width: 760px; }
+  .left .card .who { margin-top: 26px; font-size: 24px; color: #9A8B7C; font-weight: 500; }
+
+  .steps {
+    position: absolute; left: 96px; bottom: 84px;
+    display: flex; align-items: center; gap: 18px;
+    font-size: 26px; font-weight: 700; color: #A99A89;
+  }
+  .steps .chip { background: #FFFDF9; border: 2px solid #ECDFCD; border-radius: 999px; padding: 10px 24px; color: #2E241D; }
+  .steps .sep { color: #FF6B4A; font-size: 30px; }
+
+  /* ── 가운데 화살표 ── */
+  .arrow {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 136px; height: 136px; border-radius: 50%;
+    background: #FF6B4A; color: #fff; display: grid; place-items: center;
+    box-shadow: 0 16px 44px rgba(255, 107, 74, .45);
+    z-index: 2; font-size: 76px; font-weight: 900; line-height: 1;
+  }
+
+  /* ── 오른쪽: 다크 패널 (검증 중) ── */
+  .right {
+    position: relative; background: #2B211B; color: #FDF6EC;
+    padding: 88px 96px 88px 128px;
+  }
+  .right .head { display: flex; justify-content: space-between; align-items: center; }
+  .right .head .title { font-size: 34px; font-weight: 700; color: #FDF6EC; opacity: .9; }
+  .timer {
+    display: inline-flex; align-items: center; gap: 14px;
+    background: #FF6B4A; color: #fff; border-radius: 999px;
+    padding: 14px 30px; font-size: 32px; font-weight: 900;
+  }
+  .timer .dot { width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+  .right .label { background: #3A2D25; color: #FF8F75; }
+  .right .card { margin-top: 300px; width: 760px; background: #3A2D25; border-color: #4a3b31; box-shadow: none; }
+  .right .card p { color: #FDF6EC; }
+  .right .card .quote { font-size: 24px; color: #A99A89; margin-bottom: 18px; font-weight: 500; }
+  .right .card .quote b { color: #FFD866; font-weight: 700; }
+
+  .axes {
+    position: absolute; left: 128px; bottom: 84px;
+    display: flex; gap: 14px; align-items: center;
+    font-size: 24px; font-weight: 700;
+  }
+  .axes .ax { background: #3A2D25; border-radius: 999px; padding: 10px 22px; color: #FDF6EC; }
+  .axes .ax i { font-style: normal; color: #3FA778; margin-right: 8px; }
+  .axes .reward { margin-left: 10px; color: #FFD866; }
+</style>
+</head>
+<body>
+  <section class="left">
+    <div class="brand"><h1>책잇</h1><span class="en">Bookit</span></div>
+    <p class="tagline">독후감을 읽고 <strong>되묻는</strong> AI<br>독서 이해도 검증 서비스</p>
+
+    <div class="card">
+      <span class="label">네가 쓴 문장</span>
+      <p>“주인공이 정말 용감했다고<br>생각했다.”</p>
+      <div class="who">초5 · 《마당을 나온 암탉》 독후감</div>
+    </div>
+
+    <div class="steps">
+      <span class="chip">빈틈 분석</span><span class="sep">→</span>
+      <span class="chip">꼬리질문</span><span class="sep">→</span>
+      <span class="chip">채점</span>
+    </div>
+  </section>
+
+  <div class="arrow">→</div>
+
+  <section class="right">
+    <div class="head">
+      <span class="title">AI가 되물어요</span>
+      <span class="timer"><span class="dot"></span>45초</span>
+    </div>
+
+    <div class="card">
+      <span class="label">AI의 질문</span>
+      <p class="quote">네가 쓴 <b>“정말 용감했다”</b>에서</p>
+      <p>왜 그렇게 생각했어?<br>어떤 장면에서 그렇게 느꼈어?</p>
+    </div>
+
+    <div class="axes">
+      <span class="ax"><i>✓</i>논리 정합성</span>
+      <span class="ax"><i>✓</i>구체성</span>
+      <span class="ax"><i>✓</i>문체 일관성</span>
+      <span class="reward">통과하면 책갈피 +50</span>
+    </div>
+  </section>
+</body>
+</html>

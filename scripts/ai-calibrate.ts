@@ -12,9 +12,12 @@
  * isPass 가 정하므로(grade.ts), 같은 응답으로 두 임계값을 다 계산할 수 있다.
  * 호출을 두 배로 늘릴 이유가 없다.
  *
- * 무료 티어 분당 한도 때문에 호출 사이를 벌린다. 60회 남짓이라 20분쯤 걸린다.
+ * 빈틈이 0개면 제출 흐름과 똑같이 핵심 문장(#14)으로 질문·채점한다. 예전에는 건너뛰었다.
+ *
+ * 호출 사이를 15초씩 벌린다. 무료 키(분당 15회)로도 끝까지 돌게 잡은 값이라 60회 남짓에
+ * 20분쯤 걸린다. 대회용 유료 키(#29)는 한도가 높으니 급하면 SPACING_MS 를 줄여도 된다.
  */
-import { analyzeGaps, buildQuestion, isPass, LlmError } from "@/modules/ai";
+import { analyzeGaps, buildQuestion, isPass, LlmError, pickCoreClaim } from "@/modules/ai";
 import { GRADING_SYSTEM, gradingUser } from "@/modules/ai/server/prompts";
 import { gradeSchema } from "@/modules/ai/schema";
 import { callJson } from "@/modules/ai/server/llm";
@@ -60,10 +63,10 @@ async function gradeAxes(
     label: "grading",
     schema: gradeSchema,
     system: GRADING_SYSTEM,
-    user: gradingUser(review.body, question, answer, review.book, {
+    user: gradingUser(review.body, gap.quote, question, answer, review.book, {
       gradeLevel: review.gradeLevel,
     }),
-    maxTokens: 2048,
+    maxTokens: 4096,
   });
 }
 
@@ -72,6 +75,8 @@ interface Row {
   category: TestCategory;
   gaps: number;
   gapsOk: boolean;
+  /** 빈틈이 0개라 핵심 문장(#14)으로 질문했는가 */
+  coreClaim: boolean;
   /** 답변별 결과 */
   answers: {
     label: string;
@@ -104,19 +109,32 @@ async function main() {
       category: review.category,
       gaps: gaps.length,
       gapsOk,
+      coreClaim: false,
       answers: [],
     };
 
-    if (gaps.length > 0 && review.answers?.length) {
+    // 빈틈이 0개면 제출 흐름과 똑같이 핵심 문장 하나로 질문한다 (#14).
+    // 핵심 문장을 못 고르면 제출 흐름은 초고로 돌아가므로 채점도 없다.
+    let target: Gap | null = gaps[0] ?? null;
+    if (!target) {
+      target = await paced("core-claim", () =>
+        pickCoreClaim(review.body, review.book, { gradeLevel: review.gradeLevel }),
+      );
+      row.coreClaim = target !== null;
+      process.stdout.write(target ? " → 핵심 문장으로 질문" : " → 핵심 문장 못 고름(초고로)");
+    }
+
+    if (target && review.answers?.length) {
+      const gap = target;
       const { question } = await paced("question", () =>
-        buildQuestion(gaps[0], review.body, review.book, {
+        buildQuestion(gap, review.body, review.book, {
           gradeLevel: review.gradeLevel,
         }),
       );
 
       for (const answer of review.answers) {
         const axes = await paced("grading", () =>
-          gradeAxes(review, gaps[0], question, answer.text),
+          gradeAxes(review, gap, question, answer.text),
         );
         row.answers.push({
           label: answer.label,
@@ -151,6 +169,10 @@ function report(rows: Row[]) {
     const gapsOk = group.filter((row) => row.gapsOk).length;
     console.log(`\n▸ ${category}  (${group.length}건)`);
     console.log(`   빈틈 개수 기대 범위 안: ${gapsOk}/${group.length}`);
+    const viaCoreClaim = group.filter((row) => row.coreClaim).length;
+    if (viaCoreClaim > 0) {
+      console.log(`   빈틈 0개 → 핵심 문장으로 질문: ${viaCoreClaim}/${group.length}`);
+    }
 
     for (const threshold of ["moderate", "strict"] as const) {
       const answers = group.flatMap((row) => row.answers);

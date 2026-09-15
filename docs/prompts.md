@@ -59,16 +59,13 @@ The core of the service. Finds where the review asserts without grounding.
 출력: {"gaps": [{"quote": "...", "type": "...", "reason": "..."}]}
 ```
 
-Note: what happens when `gaps` is empty is **undecided — see #14.**
+Note: if `gaps` is empty, do NOT pass without a question (issue #14, decided 2026-09-15). Pick the review's core claim sentence (§2b, `pickCoreClaim`), store it as a `review_gaps` row with `gap_type = 'core_claim'`, and continue with the normal question → grading flow. The screen tells the student there were no gaps but one question is still asked. Log this case.
 
-This note used to say "skip straight to a pass". That rule turns verification off exactly where it matters: a well-written ghostwritten review also has 0 gaps. Calibration found 0 gaps in 4 of 5 well-written reviews, so the case is not rare.
-
-- Current code (`review/server/submit.ts`) never passes on 0 gaps. It returns the review to draft and asks for one more sentence.
-- Proposed: pick one core claim (§2b) and ask about it through the normal question → grading → retry flow. Needs one more `gap_type` enum value to store it in `review_gaps`.
+This is not rare: calibration found 0 gaps in 4 of 5 well-written reviews. A well-written ghostwritten review also has 0 gaps — exactly the case that must not skip verification.
 
 ---
 
-## 2b. Core claim (0 gaps only — pending #14)
+## 2b. Core claim (0 gaps only — #14)
 
 Called only when gap analysis returns no gaps. Picks the sentence the follow-up question will quote. `pickCoreClaim` in `modules/ai/server/core-claim.ts`.
 
@@ -99,7 +96,9 @@ Called only when gap analysis returns no gaps. Picks the sentence the follow-up 
 출력: {"quote": "...", "reason": "..."}
 ```
 
-The quote is checked against the review the same way as gap quotes. If it is not in the review, `pickCoreClaim` returns `null` and the caller falls back to the current draft behavior.
+The quote is checked against the review the same way as gap quotes. If it is not in the review, `pickCoreClaim` returns `null` and the caller returns the review to draft (asks for one more sentence), as before.
+
+`pickCoreClaim` returns a `Gap` with `type: "core_claim"`, so the caller stores it in `review_gaps` as is. The question (§3) and grading (§4) prompts run unchanged — they read `quote`, not `type`.
 
 ---
 
@@ -116,21 +115,31 @@ Takes one gap and turns it into the follow-up question. This is what makes ghost
 
 독후감 전문: """{review_body}"""
 
-이 문장을 인용해서, 왜 그렇게 생각했는지 되묻는 질문 한 개를 만들어라.
+주어진 학생 문장에 대해, 왜 그렇게 생각했는지 되묻는 질문 한 개를 만들어라.
+
+화면에는 그 문장이 "네가 쓴 문장" 칸에 먼저 따로 보이고, 네 질문은 바로 아래에 붙는다.
+그러니 질문 안에 학생 문장을 다시 옮겨 적지 마라.
 
 규칙:
-- 인용은 반드시 주어진 그 문장이어야 한다. 독후감의 다른 문장을 인용하지 마라.
+- 학생 문장을 통째로 되풀이하거나 인용하지 마라. "그렇게", "그 문장에서"처럼 가리키면 된다.
+  핵심 낱말 한두 개를 짚는 것은 괜찮다.
+  나쁜 예: "…라고 생각한다라고 했는데, 왜 그렇게 생각했어?"
+  좋은 예: "'용감했다'고 본 까닭이 책의 어느 장면에 있어?"
+- 반드시 주어진 그 문장에 대해 물어라. 독후감의 다른 문장으로 옮겨 가지 마라.
+- 학생이 쓰지 않은 감정·판단을 질문에 넣지 마라. 학생이 "그 선택이 옳았다"고만 썼으면
+  "왜 화가 났어?"라고 묻지 마라. 학생이 쓴 말의 범위 안에서만 물어라.
 - 독후감 전문은 맥락 파악용이다. 독후감에 이미 쓰여 있는 내용을 그대로 되풀이하면
   답이 되는 질문은 만들지 마라. 이미 쓴 것보다 한 걸음 더 들어가게 물어라.
 - 해석·근거형 질문만. "어느 장면에서", "왜 그렇게 느꼈는지"를 묻는다.
 - 등장인물 이름이나 지엽적 사실을 묻지 마라. 읽었어도 잊을 수 있다.
 - "만약 ~라면" 가정형을 묻지 마라. 채점 기준을 세울 수 없다.
-- 인용은 자연스럽게 이어 붙여라. "~다라고 했는데" 처럼 조사를 겹쳐 쓰지 마라.
 - 반말로 한 문장. 30초 안에 답할 수 있는 크기여야 한다.
 - 답을 유도하거나 힌트를 주지 마라.
 
 출력: {"question": "..."}
 ```
+
+**The question does not repeat the quote.** The question screen already shows `quote` in its own "네가 쓴 문장" box right above the question (`POST /api/reviews/:id/question → { question, quote }`). Quoting it again showed the sentence twice and produced doubled particles like "…생각한다라고 했는데" in 7 of 10 test questions (issue #27). `buildQuestion` regenerates once if the question still echoes 12+ characters of the quote, and keeps the second result either way — an awkward question beats no question.
 
 Generate this **immediately after review submission**, while the gap-analysis screen is showing. The countdown starts only when the question is on screen.
 
@@ -147,6 +156,7 @@ Not right-or-wrong. Three axes.
 학년: {grade_level}학년 / 책: {title}
 
 독후감: """{review_body}"""
+질문한 문장 (학생이 쓴 문장): "{gap.quote}"
 질문: {question}
 학생 답변: """{answer}"""
 
