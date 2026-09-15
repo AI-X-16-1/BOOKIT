@@ -6,7 +6,7 @@
  *   2. 목록에 없는 태그를 만들어내지 않는가 (만들면 sanitize 가 경고를 찍는다)
  *   3. 맞는 태그가 없는 책에서 억지로 채우지 않는가
  *
- * 무료 티어 분당 한도 때문에 호출 사이를 벌린다 (scripts/ai-gaps.ts 와 같은 이유).
+ * 무료 키로도 끝까지 돌게 호출 사이를 벌린다 (scripts/ai-gaps.ts 와 같은 이유).
  */
 import { GENRE_TAGS, LlmError, normalizeGenreTags } from "@/modules/ai";
 import type { BookClassification } from "@/modules/ai";

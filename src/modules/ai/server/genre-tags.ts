@@ -28,8 +28,8 @@ const ALLOWED = new Set<string>(GENRE_TAGS);
 /**
  * 책 한 권의 장르 태그를 정규화한다.
  *
- * 배치로 돌릴 때는 호출부가 간격을 벌려야 한다 — 무료 티어는 분당 한도가 낮아서
- * 수백 권을 연속으로 돌리면 반드시 429 에 걸린다 (scripts/ai-gaps.ts 의 paced 참고).
+ * 배치로 돌릴 때는 호출부가 간격을 벌려야 한다 — 수백 권을 연속으로 돌리면 분당 한도(429)에
+ * 걸릴 수 있다. 무료 키라면 반드시 걸린다 (scripts/ai-gaps.ts 의 paced 참고).
  *
  * 결과가 빈 배열일 수 있다. 맞는 태그가 없는 책이라는 뜻이고 오류가 아니다.
  * 억지로 채우면 엉뚱한 도장이 찍히고 추천이 어긋난다.
@@ -44,7 +44,8 @@ export async function normalizeGenreTags(
     user: genreTagsUser(book),
     // 사용자가 기다리지 않는 배치 작업이라 싸게 간다.
     effort: "low",
-    maxTokens: 1024,
+    // 사고 토큰이 maxOutputTokens 에 함께 잡힌다 (providers.ts, issue #36).
+    maxTokens: 2048,
   });
 
   return { tags: sanitize(tags) };

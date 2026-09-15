@@ -12,7 +12,8 @@
  * isPass 가 정하므로(grade.ts), 같은 응답으로 두 임계값을 다 계산할 수 있다.
  * 호출을 두 배로 늘릴 이유가 없다.
  *
- * 무료 티어 분당 한도 때문에 호출 사이를 벌린다. 60회 남짓이라 20분쯤 걸린다.
+ * 호출 사이를 15초씩 벌린다. 무료 키(분당 15회)로도 끝까지 돌게 잡은 값이라 60회 남짓에
+ * 20분쯤 걸린다. 대회용 유료 키(#29)는 한도가 높으니 급하면 SPACING_MS 를 줄여도 된다.
  */
 import { analyzeGaps, buildQuestion, isPass, LlmError } from "@/modules/ai";
 import { GRADING_SYSTEM, gradingUser } from "@/modules/ai/server/prompts";
@@ -60,10 +61,10 @@ async function gradeAxes(
     label: "grading",
     schema: gradeSchema,
     system: GRADING_SYSTEM,
-    user: gradingUser(review.body, question, answer, review.book, {
+    user: gradingUser(review.body, gap.quote, question, answer, review.book, {
       gradeLevel: review.gradeLevel,
     }),
-    maxTokens: 2048,
+    maxTokens: 4096,
   });
 }
 

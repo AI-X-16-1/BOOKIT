@@ -6,16 +6,10 @@ import type {
   ExchangeKind,
   PointsResponse,
 } from "@/shared/types";
-import { apiGet } from "@/shared/api/client";
+import { ApiClientError, apiGet, apiPost } from "@/shared/api/client";
 import { Button, Card, Chip } from "@/shared/ui";
 import { COVER } from "@/modules/books";
-import {
-  EXCHANGE_COST,
-  EXCHANGE_LABEL,
-  REASON_LABEL,
-  exchange,
-  getPoints,
-} from "../mock";
+import { EXCHANGE_COST, EXCHANGE_LABEL, REASON_LABEL } from "../schema";
 
 /**
  * 나 — 책갈피·교환·읽은 책. 목업 4 #1 (L36-86).
@@ -24,9 +18,9 @@ import {
  * 잔액은 저장된 값이 아니라 sum(delta) 로 다시 계산된다 (CLAUDE.md §4).
  *
  * #38 진행 상황:
- *   - 책갈피 잔액/원장 — #30 머지되면 mock.ts 제거와 함께 실 데이터로 바뀐다.
+ *   - 책갈피 잔액/원장 — GET /api/points 로 연결 완료 (#30).
  *   - 우리 반 순위 — GET /api/ranking/class 로 연결 완료.
- *   - 연속 기록 — GET /api/growth (#33) 머지 후 연결 예정, 아직 고정값.
+ *   - 연속 기록 — GET /api/growth (#33 머지됨) 연결 예정, 아직 고정값.
  *   - 이름·학반 — GET /api/profile 계약이 spec 에 없어 아직 못 붙인다 (#38, 김민경 담당).
  *   - 읽은 책(완독 점수 목록) — docs/spec.md 에 없는 엔드포인트라 새로 만들지 않는다 (CLAUDE.md §11).
  *     아직 고정 데이터.
@@ -44,7 +38,9 @@ export function MeScreen() {
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
-    getPoints().then(setPoints);
+    apiGet<PointsResponse>("/api/points").then(setPoints).catch(() => {
+      setNote("책갈피를 불러오지 못했어.");
+    });
     apiGet<ClassRankingResponse>("/api/ranking/class")
       .then(setRank)
       .catch(() => {});
@@ -54,11 +50,18 @@ export function MeScreen() {
     setBusy(kind);
     setNote(null);
     try {
-      const r = await exchange(kind);
-      setPoints(await getPoints());
+      const r = await apiPost<{ balance: number; voucher_url: string }>(
+        "/api/points/exchange",
+        { kind },
+      );
+      setPoints(await apiGet<PointsResponse>("/api/points"));
       setNote(`${EXCHANGE_LABEL[kind]}을 받았어! 잔액 ${r.balance.toLocaleString()}`);
-    } catch {
-      setNote("책갈피가 모자라. 조금만 더 모아볼까?");
+    } catch (cause) {
+      setNote(
+        cause instanceof ApiClientError
+          ? cause.message
+          : "책갈피가 모자라. 조금만 더 모아볼까?",
+      );
     } finally {
       setBusy(null);
     }
