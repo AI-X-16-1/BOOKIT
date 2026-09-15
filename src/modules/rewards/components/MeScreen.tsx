@@ -3,27 +3,29 @@
 import { useEffect, useState } from "react";
 import type {
   ClassRankingResponse,
-  ExchangeKind,
+  GrowthResponse,
   PointsResponse,
 } from "@/shared/types";
-import { ApiClientError, apiGet, apiPost } from "@/shared/api/client";
-import { Button, Card, Chip } from "@/shared/ui";
+import { apiGet } from "@/shared/api/client";
+import { Card, Chip } from "@/shared/ui";
 import { COVER } from "@/modules/books";
-import { EXCHANGE_COST, EXCHANGE_LABEL, REASON_LABEL } from "../schema";
+import { REASON_LABEL } from "../schema";
 
 /**
- * 나 — 책갈피·교환·읽은 책. 목업 4 #1 (L36-86).
- *
- * 교환을 누르면 원장에 차감 행이 쌓이고 잔액이 즉시 줄어든다.
- * 잔액은 저장된 값이 아니라 sum(delta) 로 다시 계산된다 (CLAUDE.md §4).
+ * 나 — 책갈피·읽은 책. 목업 4 #1 (L36-86).
  *
  * #38 진행 상황:
  *   - 책갈피 잔액/원장 — GET /api/points 로 연결 완료 (#30).
  *   - 우리 반 순위 — GET /api/ranking/class 로 연결 완료.
- *   - 연속 기록 — GET /api/growth (#33 머지됨) 연결 예정, 아직 고정값.
+ *   - 연속 기록 — GET /api/growth 로 연결 완료 (#33 머지됨).
  *   - 이름·학반 — GET /api/profile 계약이 spec 에 없어 아직 못 붙인다 (#38, 김민경 담당).
  *   - 읽은 책(완독 점수 목록) — docs/spec.md 에 없는 엔드포인트라 새로 만들지 않는다 (CLAUDE.md §11).
  *     아직 고정 데이터.
+ *
+ * #58 결정: 국회도서관 ebook·오디오북 "열람권" 교환은 실제로 전달되는 게 없어(무료 열람권을
+ * 발급할 방법이 없고, 대부분 초1~중3 은 국회도서관 이용 대상도 아니다) 교환 버튼을 뺐다.
+ * API·원장(points_ledger)은 과거 기록 보존을 위해 그대로 둔다 — 새 소비처는 반 챌린지
+ * 쪽으로 옮기기로 했다 (#58 논의, 로드맵).
  */
 const READ_BOOKS = [
   { title: "아몬드", score: 100, cover: "green" as const },
@@ -34,7 +36,7 @@ const READ_BOOKS = [
 export function MeScreen() {
   const [points, setPoints] = useState<PointsResponse | null>(null);
   const [rank, setRank] = useState<ClassRankingResponse | null>(null);
-  const [busy, setBusy] = useState<ExchangeKind | null>(null);
+  const [growth, setGrowth] = useState<GrowthResponse | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,28 +46,10 @@ export function MeScreen() {
     apiGet<ClassRankingResponse>("/api/ranking/class")
       .then(setRank)
       .catch(() => {});
+    apiGet<GrowthResponse>("/api/growth")
+      .then(setGrowth)
+      .catch(() => {});
   }, []);
-
-  const doExchange = async (kind: ExchangeKind) => {
-    setBusy(kind);
-    setNote(null);
-    try {
-      const r = await apiPost<{ balance: number; voucher_url: string }>(
-        "/api/points/exchange",
-        { kind },
-      );
-      setPoints(await apiGet<PointsResponse>("/api/points"));
-      setNote(`${EXCHANGE_LABEL[kind]}을 받았어! 잔액 ${r.balance.toLocaleString()}`);
-    } catch (cause) {
-      setNote(
-        cause instanceof ApiClientError
-          ? cause.message
-          : "책갈피가 모자라. 조금만 더 모아볼까?",
-      );
-    } finally {
-      setBusy(null);
-    }
-  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -90,10 +74,11 @@ export function MeScreen() {
       </div>
 
       <div className="grid grid-cols-2 gap-2.5">
-        {/* TODO(#38): GET /api/growth (#33 머지 후) 로 교체 */}
         <Card>
           <div className="text-[13px] text-muted">연속 기록 🔥</div>
-          <div className="mt-1.5 text-[26px] font-bold text-ink">7일</div>
+          <div className="mt-1.5 text-[26px] font-bold text-ink">
+            {growth ? `${growth.streak.current_days}일` : "—"}
+          </div>
         </Card>
         <Card>
           <div className="text-[13px] text-muted">우리 반 순위</div>
@@ -119,29 +104,13 @@ export function MeScreen() {
         ))}
       </Card>
 
-      {/* 교환 — 누르면 실제로 잔액이 줄어든다 */}
+      {/* #58: 국회도서관 열람권 교환은 실제로 전달되는 게 없어 뺐다 — 준비 중 안내만 남긴다 */}
       <div className="rounded-card bg-yellow-bg p-4">
         <div className="text-[13px] text-yellow-text-2">책갈피 교환하기</div>
-        <div className="mt-2.5 flex flex-col gap-2">
-          <Button
-            variant="dark"
-            disabled={busy !== null}
-            onClick={() => doExchange("ebook")}
-          >
-            {busy === "ebook"
-              ? "교환하는 중…"
-              : `📖 ${EXCHANGE_LABEL.ebook} (${EXCHANGE_COST.ebook})`}
-          </Button>
-          <Button
-            variant="outline"
-            disabled={busy !== null}
-            onClick={() => doExchange("audiobook")}
-          >
-            {busy === "audiobook"
-              ? "교환하는 중…"
-              : `🎧 ${EXCHANGE_LABEL.audiobook} (${EXCHANGE_COST.audiobook})`}
-          </Button>
-        </div>
+        <p className="mt-2 text-sm text-yellow-text">
+          열람권 교환은 아직 준비 중이야. 모은 책갈피는 책나무를 키우고 우리 반 순위를
+          올리는 데 쓰이고 있어!
+        </p>
         {note && (
           <p className="mt-3 text-center text-[13px] text-yellow-text">{note}</p>
         )}
