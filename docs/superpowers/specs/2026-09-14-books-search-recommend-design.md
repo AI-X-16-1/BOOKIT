@@ -166,5 +166,9 @@ vitest/jest 없는 레포 컨벤션(ai 모듈의 `scripts/ai-smoke.ts` 패턴)�
 - `ai` 모듈 복구 후 `tags.ts` → `ai.normalizeGenreTags` 교체.
 - `shared/api` 복구 후 `books/server/response.ts` 제거.
 - 알라딘 종료가 `rewards`(문민재, "알라딘 링크") 모듈에도 영향 — 별도 공유 필요.
-- 국립중앙도서관 API 인증키 신청 (신청 문구는 대화 내 별도 전달됨).
+- ~~국립중앙도서관 API 인증키 신청~~ — 완료. 2026-09-15에 키 발급받아 실제 응답으로
+  `nlkSource`를 검증함: 요청 파라미터·최상위 필드명은 전부 맞았고, AUTHOR 필드의
+  역할 라벨(`"지은이: 손원평"`)과 빈 값이 `""`로 오는 것만 파싱 단계에서 정리했다
+  (`src/modules/books/server/source.ts`). `DATA_GO_KR_KEY`는 아직 미발급 — 그쪽은
+  여전히 미검증.
 - 국회전자도서관 실제 검색 딥링크 URL 패턴 확인 후 `buildLibraryUrl` 채우기.

@@ -6,9 +6,15 @@
  * 실제 키가 있는데 호출이 실패하면 mock으로 조용히 폴백하지 않고 에러를 그대로 올린다
  * (docs/superpowers/specs/2026-09-14-books-search-recommend-design.md).
  *
- * ⚠️ nlkSource / dataGoKrSource는 미검증이다 — 두 API 다 인증키가 아직 없어서 실제
- * 응답으로 테스트하지 못했다. 파라미터명은 각 API의 일반적인 공개 문서 관례를 따른
- * 최선의 추정이다. 키가 발급되면 scripts/books-smoke.ts 로 가장 먼저 검증할 것.
+ * nlkSource는 2026-09-15에 실제 NLK_API_KEY로 검증했다 — 요청 파라미터
+ * (cert_key/result_style/page_no/page_size/title)와 최상위 필드명(docs/TITLE/
+ * AUTHOR/PUBLISHER/EA_ISBN/TITLE_URL/SUBJECT/KDC)은 전부 맞았다. 다만 두 가지는
+ * 파싱 단계에서 정리해야 했다: AUTHOR는 "지은이: 손원평", "원작자 :  … ;역자 :  …;"처럼
+ * 역할 라벨이 붙어 오고(첫 라벨만 벗겨낸다 — 공역자까지 완벽히 정리하진 않는다),
+ * 값이 없는 필드는 null이 아니라 빈 문자열 ""로 온다(null로 정규화한다).
+ *
+ * ⚠️ dataGoKrSource는 여전히 미검증이다 — DATA_GO_KR_KEY가 아직 없다. 파라미터명은
+ * data.go.kr 공공데이터 공통 관례를 따른 추정이다. 키가 발급되면 가장 먼저 검증할 것.
  */
 import "server-only";
 
@@ -80,20 +86,36 @@ function extractArray(body: unknown, path: string[]): unknown[] | null {
   return Array.isArray(cur) ? cur : null;
 }
 
-function toRawBookHitFromNlk(raw: unknown): RawBookHit | null {
+/** NLK API는 값이 없는 필드를 null이 아니라 ""로 준다 — null로 정규화한다 */
+function nullIfEmpty(value: string): string | null {
+  return value === "" ? null : value;
+}
+
+/**
+ * "지은이: 손원평", "저자 : 앙투안 드 생텍쥐페리" 같은 앞쪽 역할 라벨 하나만 벗겨낸다.
+ * "원작자 :  …;역자 :  …;"처럼 여러 역할이 세미콜론으로 이어진 경우 첫 라벨만 지우고
+ * 나머지는 그대로 둔다 — 흔한 단일 저자 표기를 깔끔하게 만드는 게 목적이지, 공역자까지
+ * 완벽하게 구조화하는 건 이 어댑터의 범위 밖이다.
+ */
+const AUTHOR_ROLE_PREFIX_RE = /^[가-힣]{1,4}\s*[:：]\s*/;
+function stripAuthorRolePrefix(author: string): string {
+  return author.replace(AUTHOR_ROLE_PREFIX_RE, "").trim();
+}
+
+export function toRawBookHitFromNlk(raw: unknown): RawBookHit | null {
   if (typeof raw !== "object" || raw === null) return null;
   const r = raw as Record<string, unknown>;
-  const title = typeof r.TITLE === "string" ? r.TITLE : null;
-  const author = typeof r.AUTHOR === "string" ? r.AUTHOR : null;
-  if (!title || !author) return null;
+  const title = typeof r.TITLE === "string" ? nullIfEmpty(r.TITLE) : null;
+  const rawAuthor = typeof r.AUTHOR === "string" ? nullIfEmpty(r.AUTHOR) : null;
+  if (!title || !rawAuthor) return null;
   return {
-    isbn13: typeof r.EA_ISBN === "string" && r.EA_ISBN ? r.EA_ISBN : null,
+    isbn13: typeof r.EA_ISBN === "string" ? nullIfEmpty(r.EA_ISBN) : null,
     title,
-    author,
-    publisher: typeof r.PUBLISHER === "string" ? r.PUBLISHER : null,
-    coverUrl: typeof r.TITLE_URL === "string" ? r.TITLE_URL : null,
-    rawCategory: typeof r.SUBJECT === "string" ? r.SUBJECT : null,
-    kdc: typeof r.KDC === "string" ? r.KDC : null,
+    author: stripAuthorRolePrefix(rawAuthor),
+    publisher: typeof r.PUBLISHER === "string" ? nullIfEmpty(r.PUBLISHER) : null,
+    coverUrl: typeof r.TITLE_URL === "string" ? nullIfEmpty(r.TITLE_URL) : null,
+    rawCategory: typeof r.SUBJECT === "string" ? nullIfEmpty(r.SUBJECT) : null,
+    kdc: typeof r.KDC === "string" ? nullIfEmpty(r.KDC) : null,
   };
 }
 
