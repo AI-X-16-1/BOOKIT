@@ -55,9 +55,11 @@ export function createSupabaseBooksReadPort(
 ): BooksReadPort {
   return {
     async listByGrade(gradeLevel, limit) {
+      // 추천은 고른 책만 (0012). 검색으로 저장된 책이 남의 추천에 섞이지 않게.
       const { data, error } = await supabase
         .from("books")
         .select("*")
+        .eq("curated", true)
         .or(`target_grade_min.is.null,target_grade_min.lte.${gradeLevel}`)
         .or(`target_grade_max.is.null,target_grade_max.gte.${gradeLevel}`)
         .order("title", { ascending: true })
