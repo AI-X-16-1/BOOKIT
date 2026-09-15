@@ -89,11 +89,14 @@ interface Row {
 
 async function main() {
   console.log(`model: ${process.env.LLM_MODEL?.trim() || "(미설정)"}`);
-  console.log(`독후감 ${TEST_REVIEWS.length}건 · 예상 20분\n`);
+  // id 를 주면 그것만 돈다 — `npm run ai:calibrate -- n1 n2`
+  const only = process.argv.slice(2);
+  const reviews = TEST_REVIEWS.filter((review) => only.length === 0 || only.includes(review.id));
+  console.log(`독후감 ${reviews.length}건 · 예상 ${reviews.length}분\n`);
 
   const rows: Row[] = [];
 
-  for (const review of TEST_REVIEWS) {
+  for (const review of reviews) {
     process.stdout.write(`${review.id.padEnd(4)} ${review.category.padEnd(15)}`);
 
     const { gaps } = await paced("gap-analysis", () =>
@@ -182,6 +185,16 @@ function report(rows: Row[]) {
       console.log(
         `   ${threshold.padEnd(8)} 기대와 일치: ${correct}/${answers.length}`,
       );
+    }
+
+    // 기대와 다르게 판정된 답변 — 수치만으로는 어느 답변이 틀렸는지 알 수 없다
+    for (const row of group) {
+      for (const answer of row.answers.filter((a) => a.moderate !== a.expectPass)) {
+        console.log(
+          `   ✕ ${row.id} "${answer.label}" 기대 ${answer.expectPass ? "통과" : "미통과"} → moderate ${answer.moderate ? "통과" : "미통과"}` +
+            ` · 논리 ${answer.axes.logic_consistency} · 구체성 ${answer.axes.specificity} · 문체 ${answer.axes.style_consistency}`,
+        );
+      }
     }
 
     // 대필 무리는 style_consistency 가 걸렸는지가 핵심이다.
