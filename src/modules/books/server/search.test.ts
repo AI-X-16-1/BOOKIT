@@ -14,6 +14,11 @@ function makeFakePort(): BooksAdminPort & { rows: Book[] } {
     async findByIsbn(isbn13) {
       return rows.find((b) => b.isbn13 === isbn13) ?? null;
     },
+    async searchCurated(query, limit) {
+      return rows
+        .filter((b) => b.curated && (b.title.includes(query) || b.author.includes(query)))
+        .slice(0, limit);
+    },
     async insertBook(row: BookInsertRow) {
       const book: Book = {
         id: `id-${rows.length + 1}`,

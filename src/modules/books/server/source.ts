@@ -125,10 +125,13 @@ function stripAuthorRolePrefix(author: string): string {
 
 /**
  * 한국 ISBN 부가기호(EA_ADD_CODE, 5자리) 첫 자리 = 독자대상기호.
- * 6=학습참고서(초등), 7=아동, 4=청소년, 5=학습참고서(중고교) — 이 넷은 책잇의
- * 타겟(초1~중3)과 겹치므로 학년 범위로 매핑한다. 1=실용, 2=여성, 9=전문 등은
- * 성인 대상이라 검색 결과에서 아예 제외한다. 0=교양처럼 애매한 코드는 좋은 책도
- * 많이 섞여 있어(아몬드, 어린 왕자 등) 학년 제한 없이 통과시킨다.
+ * 7=아동, 6=학습참고서(초등), 4=청소년 — 이 셋만 통과시키고 학년 범위로 매핑한다.
+ *
+ * 0=교양은 처음엔 통과시켰는데(아몬드·어린 왕자 같은 좋은 책이 여기 있어서), 웹소설·
+ * 라이트노벨·성인 교양서가 전부 0 이라 "나의" 한 글자에 "나의 절륜 히어로님" 류가
+ * 초등학생 검색창에 올라왔다 (프로덕션 2026-09-15). 0·공백·5(중고교 학습참고서)·
+ * 1·2·9 는 전부 제외한다. 0 에 있던 좋은 책은 시드(curated)가 갖고 있어 DB 검색이
+ * 먼저 찾는다 (search.ts).
  *
  * ⚠️ 이 매핑은 실제 API 문서로 재검증한 게 아니라 알려진 출판 표준(ISBN 부가기호)
  * 지식에 기반한 추정이다. 실 검색 결과를 보면서 필요하면 조정할 것.
@@ -145,14 +148,9 @@ function classifyAudience(eaAddCode: string | null): {
       return { targetGradeMin: 1, targetGradeMax: 6, exclude: false };
     case "4":
       return { targetGradeMin: 4, targetGradeMax: 9, exclude: false };
-    case "5":
-      return { targetGradeMin: 7, targetGradeMax: 9, exclude: false };
-    case "1":
-    case "2":
-    case "9":
-      return { targetGradeMin: null, targetGradeMax: null, exclude: true };
     default:
-      return { targetGradeMin: null, targetGradeMax: null, exclude: false };
+      // 0(교양)·공백·5(중고교 학습참고서)·1·2·9 — 아동·청소년 도서가 아니다
+      return { targetGradeMin: null, targetGradeMax: null, exclude: true };
   }
 }
 
