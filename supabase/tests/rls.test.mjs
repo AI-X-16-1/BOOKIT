@@ -378,6 +378,99 @@ try {
 }
 check('줄어든 잔액으로 또 교환하면 다시 23514 로 막힌다', secondExchangeBlocked);
 
+// ── bump_growth_on_pass (0011) ────────────────────────
+// 통과(verification_pass) 시 스트릭·장르 도장을 올리는 트리거.
+// 리뷰 반영: 스트릭은 하루 1회(KST 기준)만 올리고 — current_days 는 "연속 일수"라는
+// 뜻을 teacher 뷰·seed 와 공유해야 한다 — 책의 장르 태그 전부에는 매번 도장 진행도를 올린다.
+
+// KST 변환 자체를 wall-clock 에 기대지 않고 확인한다.
+// UTC 2026-01-01 16:00 은 KST 로 2026-01-02 01:00 — current_date(UTC) 라면 여전히
+// 1일이지만, KST 기준으로는 이미 2일로 넘어가 있어야 한다.
+const kst = await db.query(
+  `select (timestamptz '2026-01-01 16:00:00+00' at time zone 'Asia/Seoul')::date = date '2026-01-02' as ok`);
+check('KST 변환이 UTC 자정 경계에서 날짜를 하루 앞당긴다',
+  kst.rows[0]?.ok === true, JSON.stringify(kst.rows[0]));
+
+// "0007" 구간의 시드는 last_passed_on 을 UTC current_date 로 넣었다. 트리거는 KST 로
+// "오늘"을 판단하므로, UTC 저녁(KST 새벽) 시간대에 테스트를 돌리면 이 값이 실제로는
+// "어제"가 돼 버려 다음 통과가 캡이 아니라 증가로 갈 수 있다 — 그 시간대 의존성을
+// 없애려고 트리거와 같은 식으로 "오늘"을 다시 맞춰 둔다.
+await db.exec(`
+  update streaks set last_passed_on = (now() at time zone 'Asia/Seoul')::date
+  where student_id = '${S1}'`);
+
+// S1 의 streaks 는 위 "0007" 구간에서 이미 (current=7, longest=9, last_passed_on=오늘)
+// 로 시드돼 있고, 그 뒤 V_OPEN 통과가 트리거를 한 번 거쳤다 — 오늘 이미 센 것으로 보고
+// 그대로여야 한다(하루 1회 캡).
+const afterFirstPass = await db.query(
+  `select current_days, longest_days, last_passed_on from streaks where student_id = $1`, [S1]);
+check('오늘 이미 스트릭이 찍혀 있으면 통과해도 그대로다 (하루 1회 캡)',
+  Number(afterFirstPass.rows[0]?.current_days) === 7
+    && Number(afterFirstPass.rows[0]?.longest_days) === 9,
+  JSON.stringify(afterFirstPass.rows[0]));
+
+await db.exec(`
+  insert into books (id, title, author, tags) values
+    ('b1111111-0000-0000-0000-000000000002','책나무 테스트북 A','작가A','{성장,한국소설}'),
+    ('b1111111-0000-0000-0000-000000000003','책나무 테스트북 B','작가B','{한국소설,고전}'),
+    ('b1111111-0000-0000-0000-000000000004','책나무 테스트북 C','작가C','{성장}');
+
+  insert into reviews (id, student_id, book_id, body, status) values
+    ('d1111111-0000-0000-0000-000000000002','${S1}','b1111111-0000-0000-0000-000000000002','두 번째 완독','questioning'),
+    ('d1111111-0000-0000-0000-000000000003','${S1}','b1111111-0000-0000-0000-000000000003','세 번째 완독','questioning'),
+    ('d1111111-0000-0000-0000-000000000004','${S1}','b1111111-0000-0000-0000-000000000004','네 번째 완독','questioning');
+  insert into review_gaps (id, review_id, ord, quote, gap_type, reason) values
+    ('e1111111-0000-0000-0000-000000000002','d1111111-0000-0000-0000-000000000002',1,'좋았다','feeling_only','감상만 남음'),
+    ('e1111111-0000-0000-0000-000000000003','d1111111-0000-0000-0000-000000000003',1,'좋았다','feeling_only','감상만 남음'),
+    ('e1111111-0000-0000-0000-000000000004','d1111111-0000-0000-0000-000000000004',1,'좋았다','feeling_only','감상만 남음');
+  insert into verifications (id, review_id, student_id, attempt_no, gap_id, question) values
+    ('f1111111-0000-0000-0000-000000000002','d1111111-0000-0000-0000-000000000002','${S1}',1,'e1111111-0000-0000-0000-000000000002','왜 그렇게 생각했어?'),
+    ('f1111111-0000-0000-0000-000000000003','d1111111-0000-0000-0000-000000000003','${S1}',1,'e1111111-0000-0000-0000-000000000003','왜 그렇게 생각했어?'),
+    ('f1111111-0000-0000-0000-000000000004','d1111111-0000-0000-0000-000000000004','${S1}',1,'e1111111-0000-0000-0000-000000000004','왜 그렇게 생각했어?');
+`);
+
+// 같은 날 두 번째 통과 — 하루 1회 캡이라 스트릭은 그대로다.
+await record(null, 'f1111111-0000-0000-0000-000000000002', S1, true);
+const afterSecondPass = await db.query(
+  `select current_days, longest_days from streaks where student_id = $1`, [S1]);
+check('같은 날 두 번째 통과는 스트릭을 늘리지 않는다 (하루 1회 캡)',
+  Number(afterSecondPass.rows[0]?.current_days) === 7
+    && Number(afterSecondPass.rows[0]?.longest_days) === 9,
+  JSON.stringify(afterSecondPass.rows[0]));
+
+const stampsAfterSecond = await db.query(
+  `select genre, completed_count from genre_stamps where student_id = $1 order by genre`, [S1]);
+check('장르 태그 두 개짜리 책을 완독하면 태그 전부에 도장 진행도가 붙는다',
+  stampsAfterSecond.rows.length === 2
+    && stampsAfterSecond.rows.every((r) => Number(r.completed_count) === 1),
+  JSON.stringify(stampsAfterSecond.rows));
+
+// 세 번째 통과 — 겹치는 태그(한국소설)는 누적되고, 새 태그(고전)는 새로 생긴다.
+await record(null, 'f1111111-0000-0000-0000-000000000003', S1, true);
+const stampsAfterThird = await db.query(
+  `select genre, completed_count from genre_stamps where student_id = $1 order by genre`, [S1]);
+const byGenre = Object.fromEntries(stampsAfterThird.rows.map((r) => [r.genre, Number(r.completed_count)]));
+check('겹치는 장르 태그는 누적되고 새 태그는 새로 생긴다',
+  byGenre['성장'] === 1 && byGenre['한국소설'] === 2 && byGenre['고전'] === 1,
+  JSON.stringify(byGenre));
+
+// 스트릭이 끊긴 경우 — last_passed_on 을 열흘 전으로 되돌린 뒤 다시 통과하면 1로 리셋된다.
+await db.exec(
+  `update streaks set last_passed_on = current_date - 10 where student_id = '${S1}'`);
+await record(null, 'f1111111-0000-0000-0000-000000000004', S1, true);
+const afterGap = await db.query(
+  `select current_days, longest_days from streaks where student_id = $1`, [S1]);
+check('마지막 통과일이 열흘 전이면 스트릭이 1로 리셋된다',
+  Number(afterGap.rows[0]?.current_days) === 1, JSON.stringify(afterGap.rows[0]));
+check('리셋되어도 longest_days 는 이전 최고치를 유지한다',
+  Number(afterGap.rows[0]?.longest_days) === 9, JSON.stringify(afterGap.rows[0]));
+
+// 실패한 시도는 트리거를 건드리지 않는다 — reason 이 애초에 verification_pass 가 아니다.
+const streakBeforeFail = (await db.query(
+  `select current_days from streaks where student_id = $1`, [S3])).rows[0]?.current_days ?? null;
+check('실패 채점은 스트릭에 영향을 주지 않는다 (앞서 이미 실패로 기록된 S3 그대로)',
+  streakBeforeFail === null, `current_days=${streakBeforeFail}`);
+
 // ── 출력 ─────────────────────────────────────────────
 const failed = results.filter(r => !r.ok);
 for (const r of results) {

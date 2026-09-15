@@ -410,6 +410,13 @@ end $$;
 --
 -- 1,240 은 50 의 배수가 아니라서(1240 mod 50 = 40) ±50/±300/±450 조합만으로는
 -- 만들 수 없다. 이월 금액으로 끝수를 맞춘 이유다.
+--
+-- points_ledger_bump_growth(0011) 는 verification_pass 행이 쌓일 때마다 streaks·
+-- genre_stamps 를 실제로 올린다. 아래 seed 값(7일 스트릭, 도장 6/4/3/2/1)은
+-- spec §7 이 요구하는 정확한 숫자라 트리거가 끼어들면 안 된다 — §7 에서 그 값을
+-- 직접 넣으므로, 여기서는 트리거를 잠깐 꺼 둔다 (SQL Editor 는 service role 이라 가능하다).
+
+alter table points_ledger disable trigger points_ledger_bump_growth;
 
 insert into points_ledger (student_id, delta, reason, ref_id, created_at)
 values ('0000a001-0000-4000-8000-000000000001', 1390, 'admin_adjust', null,
@@ -426,6 +433,8 @@ select v.student_id, 50, 'verification_pass', v.id, v.answered_at
 insert into points_ledger (student_id, delta, reason, ref_id, created_at)
 values ('0000a001-0000-4000-8000-000000000001', -300, 'ebook_pass',
         gen_random_uuid(), now() - interval '5 days');
+
+alter table points_ledger enable trigger points_ledger_bump_growth;
 
 -- ── 7. 성장 (스트릭 · 도장판) ────────────────────────
 
