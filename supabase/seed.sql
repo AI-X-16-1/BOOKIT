@@ -53,7 +53,8 @@ delete from auth.users         where id in (select id from auth.users where emai
 
 delete from book_contents where book_id in (
   select id from books where id::text like '0000b0%');
-delete from books where id::text like '0000b0%';
+-- books 는 지우지 않는다. reviews.book_id 가 on delete restrict(0003) 라 실제 계정이
+-- 시드 책으로 독후감을 하나라도 쓰면 여기서 막힌다. §1 이 같은 id 로 upsert 한다.
 
 -- ── 1. 도서 ──────────────────────────────────────────
 -- 앞의 4권과 이 섹션 끝의 10권이 저작권 만료 도서(책잇 서재에서 읽힘), 나머지는 일반 도서.
@@ -78,7 +79,13 @@ insert into books (id, isbn13, title, author, publisher, tags,
   ('0000b012-0000-4000-8000-000000000012', '9788937834011', '갈매기의 꿈',    '리처드 바크', '현문미디어', '{"성장","외국소설"}',     5, 9, false, null, null),
   ('0000b013-0000-4000-8000-000000000013', '9788934972464', '우리들의 일그러진 영웅', '이문열', '다림', '{"한국소설","사회"}',      7, 9, false, null, null),
   ('0000b014-0000-4000-8000-000000000014', '9788956055732', 'squirrel',      '데모 저자',  '데모출판',  '{"과학","교양"}',           5, 8, false, null, null),
-  ('0000b015-0000-4000-8000-000000000015', '9788947542524', '몽실 언니',      '권정생',    '창비',      '{"역사","한국소설"}',       5, 8, false, null, null);
+  ('0000b015-0000-4000-8000-000000000015', '9788947542524', '몽실 언니',      '권정생',    '창비',      '{"역사","한국소설"}',       5, 8, false, null, null)
+on conflict (id) do update set
+  isbn13 = excluded.isbn13, title = excluded.title, author = excluded.author,
+  publisher = excluded.publisher, tags = excluded.tags,
+  target_grade_min = excluded.target_grade_min, target_grade_max = excluded.target_grade_max,
+  is_public_domain = excluded.is_public_domain,
+  library_url = excluded.library_url, aladin_url = excluded.aladin_url;
 
 -- 저작권 만료 도서 본문. 위키문헌(ko.wikisource.org)에서 받은 원문이다.
 -- 세 작가 모두 사후 70년이 지나 저작권이 만료됐다 — 현진건(1943)·이효석(1942)·김유정(1937).
@@ -804,7 +811,13 @@ insert into books (id, isbn13, title, author, publisher, tags,
   ('0000b022-0000-4000-8000-000000000022', null, '동무를 위하여', '방정환', null, '{"우정","성장소설"}', 5, 6, true, null, null),
   ('0000b023-0000-4000-8000-000000000023', null, '두포전', '김유정', null, '{"동화","모험"}', 5, 7, true, null, null),
   ('0000b024-0000-4000-8000-000000000024', null, '금 따는 콩밭', '김유정', null, '{"고전","사회"}', 7, 9, true, null, null),
-  ('0000b025-0000-4000-8000-000000000025', null, 'B사감과 러브레터', '현진건', null, '{"고전","인물심리"}', 7, 9, true, null, null);
+  ('0000b025-0000-4000-8000-000000000025', null, 'B사감과 러브레터', '현진건', null, '{"고전","인물심리"}', 7, 9, true, null, null)
+on conflict (id) do update set
+  isbn13 = excluded.isbn13, title = excluded.title, author = excluded.author,
+  publisher = excluded.publisher, tags = excluded.tags,
+  target_grade_min = excluded.target_grade_min, target_grade_max = excluded.target_grade_max,
+  is_public_domain = excluded.is_public_domain,
+  library_url = excluded.library_url, aladin_url = excluded.aladin_url;
 
 insert into book_contents (book_id, chapter_no, title, body) values
   ('0000b016-0000-4000-8000-000000000016', 1, '1장',
