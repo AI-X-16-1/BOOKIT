@@ -68,19 +68,27 @@ export async function searchAndUpsertBooks(
   try {
     hits = await source.search(q);
   } catch (err) {
-    if (err instanceof BookSourceError) {
-      console.error("[books] source error:", err);
-      return {
-        ok: false,
-        code: "book_source_unavailable",
-        message: "지금 책을 검색할 수 없어. 잠시 후 다시 해봐.",
-        status: 503,
-      };
-    }
-    throw err;
+    if (!(err instanceof BookSourceError)) throw err;
+    // 국립중앙도서관 API 는 5초 타임아웃이 잦다 (프로덕션 2026-09-15). 외부가 죽어도
+    // 시드에서 찾은 책은 보여준다 — 시드에도 없을 때만 "검색할 수 없어" 다.
+    console.error("[books] source error:", err);
+    if (curated.length > 0) return { ok: true, books: curated };
+    return {
+      ok: false,
+      code: "book_source_unavailable",
+      message: "지금 책을 검색할 수 없어. 잠시 후 다시 해봐.",
+      status: 503,
+    };
   }
 
-  const withIsbn = hits.filter((h): h is IsbnHit => h.isbn13 !== null);
+  // NLK 는 시리즈명·설명까지 넓게 맞춰서 "아몬드" 에 "완득이" 가 딸려온다.
+  // 제목이나 저자에 검색어가 실제로 들어간 것만 받는다.
+  const needle = q.toLowerCase();
+  const withIsbn = hits.filter(
+    (h): h is IsbnHit =>
+      h.isbn13 !== null &&
+      (h.title.toLowerCase().includes(needle) || h.author.toLowerCase().includes(needle)),
+  );
   const books: Book[] = [...curated];
   const seen = new Set(curated.map((b) => b.id));
   for (const hit of withIsbn) {

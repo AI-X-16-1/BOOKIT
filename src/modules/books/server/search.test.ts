@@ -122,3 +122,34 @@ test("BookSourceError는 book_source_unavailable로 변환된다", async () => {
     status: 503,
   });
 });
+
+test("외부 소스가 죽어도 시드(curated)에서 찾은 책은 돌려준다", async () => {
+  const port = makeFakePort();
+  const seeded = await port.insertBook({
+    title: "아몬드", author: "손원평", publisher: "창비", isbn13: "9788936434267", curated: true,
+  });
+  const source: BookSource = {
+    name: "nlk",
+    async search() {
+      throw new BookSourceError("nlk", "timeout");
+    },
+  };
+  const result = await searchAndUpsertBooks(port, source, "아몬드");
+  assert.deepEqual(result, { ok: true, books: [seeded] });
+});
+
+test("제목·저자에 검색어가 없는 외부 결과는 버린다 (NLK 의 시리즈·설명 매칭)", async () => {
+  const base = { publisher: "창비", coverUrl: null, rawCategory: null, kdc: null, targetGradeMin: 4, targetGradeMax: 9 };
+  const source: BookSource = {
+    name: "nlk",
+    async search() {
+      return [
+        { ...base, isbn13: "9791100000001", title: "아몬드", author: "손원평" },
+        { ...base, isbn13: "9791100000002", title: "완득이", author: "김려령" },
+      ];
+    },
+  };
+  const result = await searchAndUpsertBooks(makeFakePort(), source, "아몬드");
+  assert.ok(result.ok);
+  if (result.ok) assert.deepEqual(result.books.map((b) => b.title), ["아몬드"]);
+});
