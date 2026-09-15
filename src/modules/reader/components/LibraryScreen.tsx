@@ -7,6 +7,7 @@ import { ApiClientError } from "@/shared/api/client";
 import { BottomSheet, Button, Card, Chip } from "@/shared/ui";
 import { fetchChapter, fetchDictEntry } from "../api";
 import type { ReaderDictResponse, ShelfBook } from "../schema";
+import { PagedText } from "./PagedText";
 
 /**
  * 책잇 서재. 목업 6 L386-404.
@@ -14,7 +15,7 @@ import type { ReaderDictResponse, ShelfBook } from "../schema";
  * 책 목록은 서버 컴포넌트가 넘긴다 (app/(main)/library/page.tsx → listShelf).
  * 본문은 장마다 GET /api/reader/:bookId?chapter= 로 불러온다.
  *
- * 본문은 18px / line-height 2 (CLAUDE.md §8).
+ * 본문은 18px / line-height 2 (CLAUDE.md §8). 전자책처럼 쪽을 넘기며 읽는다 (PagedText).
  * 낱말을 누르면 뜻이 뜬다 — 768px 미만은 바텀시트, 이상은 우측 사이드 패널 (CLAUDE.md §8).
  *
  * 사전은 GET /api/dict 를 쓴다. 조사가 붙은 낱말도 서버가 어간을 잘라
@@ -144,6 +145,8 @@ type Entry =
 type Reading = {
   book: ShelfBook;
   chapterNo: number;
+  /** 앞 장에서 거꾸로 넘어왔으면 "end" — 그 장의 마지막 쪽부터 연다 */
+  startAt: "start" | "end";
 } & (
   | { state: "loading" }
   | { state: "ready"; chapter: ReaderChapterResponse }
@@ -168,7 +171,7 @@ export function LibraryScreen({
 
   const [reading, setReading] = useState<Reading | null>(() =>
     initialBook
-      ? { book: initialBook, chapterNo: initialChapterNo, state: "loading" }
+      ? { book: initialBook, chapterNo: initialChapterNo, startAt: "start", state: "loading" }
       : null,
   );
   const [entry, setEntry] = useState<Entry>({ state: "idle" });
@@ -177,30 +180,39 @@ export function LibraryScreen({
   const chapterRequest = useRef(0);
   const dictRequest = useRef(0);
 
-  const loadChapter = async (book: ShelfBook, chapterNo: number, requestId: number) => {
+  const loadChapter = async (
+    book: ShelfBook,
+    chapterNo: number,
+    startAt: Reading["startAt"],
+    requestId: number,
+  ) => {
     try {
       const chapter = await fetchChapter(book.id, chapterNo);
       if (requestId !== chapterRequest.current) return;
-      setReading({ book, chapterNo, state: "ready", chapter });
+      setReading({ book, chapterNo, startAt, state: "ready", chapter });
     } catch (error) {
       if (requestId !== chapterRequest.current) return;
-      setReading({ book, chapterNo, state: "failed", message: messageOf(error) });
+      setReading({ book, chapterNo, startAt, state: "failed", message: messageOf(error) });
     }
   };
 
-  const openChapter = (book: ShelfBook, chapterNo: number) => {
+  const openChapter = (
+    book: ShelfBook,
+    chapterNo: number,
+    startAt: Reading["startAt"] = "start",
+  ) => {
     const requestId = ++chapterRequest.current;
     dictRequest.current++;
     setEntry({ state: "idle" });
-    setReading({ book, chapterNo, state: "loading" });
+    setReading({ book, chapterNo, startAt, state: "loading" });
     window.scrollTo({ top: 0 });
-    void loadChapter(book, chapterNo, requestId);
+    void loadChapter(book, chapterNo, startAt, requestId);
   };
 
   // 주소로 짚은 책의 본문. 화면 상태는 useState 초기값이 이미 loading 으로 잡았다.
   useEffect(() => {
     if (!initialBook) return;
-    void loadChapter(initialBook, initialChapterNo, ++chapterRequest.current);
+    void loadChapter(initialBook, initialChapterNo, "start", ++chapterRequest.current);
     // 마운트 때 한 번만 — 이후 장 이동은 openChapter 가 맡는다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -280,7 +292,7 @@ export function LibraryScreen({
                 </p>
                 <Button
                   variant="outline"
-                  onClick={() => openChapter(book, chapterNo)}
+                  onClick={() => openChapter(book, chapterNo, reading.startAt)}
                 >
                   다시 펼치기
                 </Button>
@@ -289,55 +301,44 @@ export function LibraryScreen({
 
             {reading.state === "ready" && (
               <>
-                <div className="flex flex-col gap-5">
-                  {reading.chapter.body
-                    .split(PARAGRAPH_BREAK)
-                    .map((paragraph) => paragraph.trim())
-                    .filter(Boolean)
-                    .map((paragraph, index) => (
-                      <Tappable
-                        key={index}
-                        body={paragraph}
-                        active={activeWord}
-                        onTap={tap}
-                      />
-                    ))}
-                </div>
-                <p className="mt-6 text-xs text-faint">
-                  모르는 단어를 누르면 뜻이 떠요 ✎
+                <PagedText
+                  // 장이 바뀌면 쪽 상태를 새로 만든다
+                  key={`${book.id}:${chapterNo}`}
+                  startAt={reading.startAt}
+                  hasPrevChapter={hasPrev}
+                  hasNextChapter={hasNext}
+                  onPrevChapter={() => openChapter(book, chapterNo - 1, "end")}
+                  onNextChapter={() => openChapter(book, chapterNo + 1, "start")}
+                >
+                  {/* 문단은 블록으로 쌓는다 — flex 로 감싸면 쪽 경계에서 문단이 쪼개지지 않는다 */}
+                  <div className="space-y-5">
+                    {reading.chapter.body
+                      .split(PARAGRAPH_BREAK)
+                      .map((paragraph) => paragraph.trim())
+                      .filter(Boolean)
+                      .map((paragraph, index) => (
+                        <Tappable
+                          key={index}
+                          body={paragraph}
+                          active={activeWord}
+                          onTap={tap}
+                        />
+                      ))}
+                  </div>
+
+                  {!hasNext && (
+                    <Link
+                      href={`/write?book=${book.id}`}
+                      className="mt-6 block min-h-12 rounded-btn bg-coral px-5 py-[19px] text-center text-[17px] font-bold text-white [break-inside:avoid]"
+                    >
+                      다 읽었어! 독후감 쓰러 가기 →
+                    </Link>
+                  )}
+                </PagedText>
+                <p className="mt-2 text-center text-xs text-faint">
+                  모르는 단어를 누르면 뜻이 떠요 ✎ · 옆으로 밀어서 넘겨
                 </p>
               </>
-            )}
-
-            {!hasNext && reading.state === "ready" && (
-              <Link
-                href={`/write?book=${book.id}`}
-                className="mt-6 block min-h-12 rounded-btn bg-coral px-5 py-[19px] text-center text-[17px] font-bold text-white"
-              >
-                다 읽었어! 독후감 쓰러 가기 →
-              </Link>
-            )}
-
-            {(hasPrev || hasNext) && reading.state !== "loading" && (
-              <div className="mt-6 flex gap-3">
-                {hasPrev && (
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => openChapter(book, chapterNo - 1)}
-                  >
-                    ← 앞 장
-                  </Button>
-                )}
-                {hasNext && (
-                  <Button
-                    className="flex-1"
-                    onClick={() => openChapter(book, chapterNo + 1)}
-                  >
-                    다음 장 →
-                  </Button>
-                )}
-              </div>
             )}
           </div>
 
