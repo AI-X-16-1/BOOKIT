@@ -25,7 +25,7 @@ export class ApiClientError extends Error {
 
 async function request<T>(
   path: string,
-  method: "GET" | "POST" | "PATCH",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   body?: unknown,
 ): Promise<T> {
   let payload: ApiResponse<T>;
@@ -57,3 +57,6 @@ export const apiPost = <T>(path: string, body: unknown): Promise<T> =>
 
 export const apiPatch = <T>(path: string, body: unknown): Promise<T> =>
   request<T>(path, "PATCH", body);
+
+export const apiDelete = <T>(path: string): Promise<T> =>
+  request<T>(path, "DELETE");
