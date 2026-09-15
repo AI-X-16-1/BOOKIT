@@ -123,8 +123,8 @@ export function HomeScreen() {
         </p>
       </div>
 
-      {/* 검색 — 결과를 누르면 그 책으로 독후감을 쓴다 */}
-      <div>
+      {/* 검색 — 결과를 누르면 그 책으로 독후감을 쓴다. 결과는 겹쳐 띄운다 (레이아웃 밀림 = CLS 방지) */}
+      <div className="relative">
         <div className="flex items-center gap-2 rounded-xl border-[1.5px] border-coral bg-card px-3.5 py-3">
           <span className="text-faint">⌕</span>
           <input
@@ -134,9 +134,9 @@ export function HomeScreen() {
             className="min-w-0 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-faint"
           />
         </div>
-        {/* 결과는 헤더·닫기가 있는 박스로 — 아래 추천 카드와 한눈에 구분되게. 나머지 화면은 그대로 둔다 */}
+        {/* 헤더·닫기가 있는 불투명 박스를 위에 띄운다 — 아래 추천 카드와 구분되고, 홈 컴포넌트는 밀리지 않는다 */}
         {showResults && (
-          <div className="mt-2 overflow-hidden rounded-xl border-[1.5px] border-border-strong bg-card shadow-card">
+          <div className="absolute inset-x-0 top-full z-20 mt-2 max-h-[60vh] overflow-y-auto rounded-xl border-[1.5px] border-border-strong bg-card shadow-card">
             <div className="flex items-center justify-between border-b border-border-soft bg-notebook px-4 py-2.5">
               <span className="text-[13px] font-bold text-muted">
                 {searching
