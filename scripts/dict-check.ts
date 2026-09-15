@@ -2,65 +2,86 @@
  * 단어 사전 실호출 검증 — `npm run reader:dict`
  *
  * 국립국어원 API 는 무료(하루 5만 건)라 마음껏 돌려도 된다.
- * 보는 것은 두 가지다.
- *   1. 동음이의어·활용형에서 엉뚱한 단어의 뜻이 붙지 않는가
- *   2. 사전에 없는 말(고유명사 등)을 not_found 로 깔끔히 처리하는가
+ * 보는 것은 세 가지다.
+ *   1. 동음이의어·이웃 표제어에서 엉뚱한 단어의 뜻이 붙지 않는가
+ *   2. 조사·어미가 붙은 채로 눌러도 원형을 찾는가
+ *   3. 사전에 없는 말(고유명사 등)을 not_found 로 깔끔히 처리하는가
+ *
+ * 문맥이 필요한 뜻 고르기('눈은 아니 오고' 의 눈)는 여기서 보지 않는다 — 알려진 한계다.
  */
-import { DictError, lookup, stripParticle } from "@/modules/reader/server/dict";
+import { DictError, lookup } from "@/modules/reader/server/dict";
 
-/** 책잇 서재 본문에서 아이가 누를 법한 말들 + 함정 케이스 */
-const WORDS = [
-  "나무", // 뜻 3개 + '나무라다' 같은 이웃 표제어가 섞여 오는 대표 함정
-  "제비",
-  "심술", // 흥부와 놀부 본문
-  "겨루다", // 토끼와 거북이 본문
-  "처마",
-  "정성껏",
-  // 조사가 붙은 채로 누른 경우 — 어간을 잘라 찾아야 한다
-  "제비가",
-  "흥부는",
-  "다리를",
-  "마을에",
-  "그늘에서",
-  "잎싹", // 고유명사 — 없어야 정상
-  "ㅁㄴㅇㄹ", // 쓰레기 입력 — not_found 로 떨어져야 한다
-  "", // 빈 입력
+/** [아이가 누른 낱말, 떠야 하는 표제어 (null 이면 not_found 가 정상)] */
+const CASES: Array<[string, string | null]> = [
+  ["나무", "나무"], // 뜻 3개 + '나무라다' 같은 이웃 표제어가 섞여 오는 대표 함정
+  ["제비", "제비"],
+  ["심술", "심술"],
+  ["겨루다", "겨루다"],
+  ["처마", "처마"],
+  // 조사가 붙은 경우
+  ["제비가", "제비"],
+  ["다리를", "다리"],
+  ["그늘에서", "그늘"],
+  ["첨지에게는", null], // 조사 두 겹을 떼도 기초사전에 '첨지' 가 없다
+  // 한 글자 체언 + 조사
+  ["비가", "비"],
+  ["눈은", "눈"],
+  ["돈이", "돈"],
+  ["산에", "산"],
+  ["일입니다", "일"],
+  ["나를", "나"], // API 안내는 '나르다' 를 가리킨다 — 대명사가 먼저
+  // 활용 안내 항목 ("오-" 는 뜻이 아니다)
+  ["오고", "오다"],
+  ["이어질", "이어지다"],
+  ["쓰입니다", "쓰이다"],
+  // 어미를 직접 떼야 하는 경우
+  ["되었다", "되다"],
+  ["만났습니다", "만나다"],
+  ["새침하게", "새침하다"],
+  ["기절해", "기절하다"],
+  ["가깝게", "가깝다"],
+  ["있었던", "있다"],
+  ["있을까", "있다"],
+  ["없었는지", "없다"],
+  ["만나거든", "만나다"],
+  // 사전에 없어야 정상
+  ["잎싹", null], // 고유명사
+  ["ㅁㄴㅇㄹ", null], // 쓰레기 입력
+  ["", null], // 빈 입력
 ];
 
 async function main() {
-  for (const word of WORDS) {
-    const label = word || "(빈 문자열)";
+  let failed = 0;
+
+  for (const [word, expected] of CASES) {
+    const label = (word || "(빈 문자열)").padEnd(8);
     const startedAt = Date.now();
 
     try {
       const result = await lookup(word);
-      const ms = Date.now() - startedAt;
-
-      // 조사를 뗀 경우 표제어가 검색어와 다른 것이 정상이다.
-      const stem = stripParticle(word);
-      const ok = result.word === word || result.word === stem;
+      const ms = String(Date.now() - startedAt).padStart(5);
+      const ok = result.word === expected;
+      if (!ok) failed++;
 
       console.log(
-        `${ok ? "✓" : "✕"} ${label.padEnd(10)} ${String(ms).padStart(5)}ms  ` +
-          `[${result.word}]${result.word === stem ? " ←조사 제거" : ""} ` +
-          `${result.definition.slice(0, 46)}`,
+        `${ok ? "✓" : "✕"} ${label} ${ms}ms  [${result.word}] ${result.definition.slice(0, 40)}` +
+          (ok ? "" : `   ← 기대: ${expected ?? "not_found"}`),
       );
-      if (!ok) {
-        console.log(`     ⚠ 검색어와도 어간과도 다르다 — 엉뚱한 뜻일 수 있다`);
-      }
     } catch (error) {
-      const ms = Date.now() - startedAt;
-      if (error instanceof DictError) {
-        const expected = error.kind === "not_found";
-        console.log(
-          `${expected ? "✓" : "✕"} ${label.padEnd(10)} ${String(ms).padStart(5)}ms  ` +
-            `[${error.kind}] ${error.message}`,
-        );
-        continue;
-      }
-      throw error;
+      if (!(error instanceof DictError)) throw error;
+      const ms = String(Date.now() - startedAt).padStart(5);
+      const ok = expected === null && error.kind === "not_found";
+      if (!ok) failed++;
+
+      console.log(
+        `${ok ? "✓" : "✕"} ${label} ${ms}ms  [${error.kind}] ${error.message}` +
+          (ok ? "" : `   ← 기대: ${expected}`),
+      );
     }
   }
+
+  console.log(`\n${CASES.length - failed}/${CASES.length} 통과`);
+  if (failed) process.exitCode = 1;
 }
 
 main().catch((error: unknown) => {
