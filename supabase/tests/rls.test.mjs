@@ -16,6 +16,7 @@ const read = p => readFileSync(p, 'utf8');
 const T1 = '11111111-1111-1111-1111-111111111111'; // 교사, 반 C1 소유
 const T2 = '22222222-2222-2222-2222-222222222222'; // 교사, 반 C2 소유
 const S1 = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'; // 학생, C1
+const S2 = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'; // 학생, C1
 const S3 = 'cccccccc-cccc-cccc-cccc-cccccccccccc'; // 학생, C2
 
 const db = await PGlite.create();
@@ -24,6 +25,7 @@ const check = (name, ok, detail = '') => results.push({ name, ok, detail });
 
 // ── 적용 ─────────────────────────────────────────────
 await db.exec(read(join(FIXTURES, 'shim.sql')));
+await db.exec(read(join(FIXTURES, 'grants.sql'))); // 마이그레이션 전 — default privileges
 for (const f of readdirSync(MIGRATIONS).filter(f => f.endsWith('.sql')).sort()) {
   try {
     await db.exec(read(join(MIGRATIONS, f)));
@@ -32,7 +34,6 @@ for (const f of readdirSync(MIGRATIONS).filter(f => f.endsWith('.sql')).sort()) 
     process.exit(1);
   }
 }
-await db.exec(read(join(FIXTURES, 'grants.sql')));
 await db.exec(read(join(FIXTURES, 'seed.sql')));
 
 // 해당 사용자로 로그인한 것처럼 질의한다.
@@ -101,6 +102,39 @@ check('학생 본인 답변은 본인에게만 보인다',
   own.rows.length === 1 && own.rows[0].answer.includes('S1'), `${own.rows.length}행`);
 check('학생이 남의 답변을 조회하면 0행',
   (await as(S1, `select answer from verifications where student_id = '${S3}'`)).rows.length === 0);
+
+// ── issue #22: 학생은 verifications 에 쓸 수 없다 ────────
+// for all 정책이었을 때는 passed=true 행을 직접 넣어 반 랭킹을 올릴 수 있었다.
+async function denied(uid, sql) {
+  try { await as(uid, sql); return false; }
+  catch (e) { return /row-level security|permission denied/.test(e.message); }
+}
+const R1 = 'd0000000-0000-0000-0000-00000000000a'; // S1 의 독후감
+const G1 = 'e0000000-0000-0000-0000-00000000000a'; // 그 독후감의 gap
+
+const before = Number((await as(T1, `select * from v_class_ranking where label like '%한빛초%'`)).rows[0].verified_count);
+check('#22 학생이 verifications 에 통과 행을 insert 하면 거부',
+  await denied(S1, `insert into verifications (review_id, student_id, attempt_no, gap_id, question, passed, answered_at)
+                    values ('${R1}', '${S1}', 99, '${G1}', 'forged', true, now())`));
+// 정책이 없는 update/delete 는 에러가 아니라 0행으로 조용히 막힌다.
+const upd = await as(S1, `update verifications set asked_at = now() + interval '1 hour' where student_id = '${S1}'`);
+check('#22 학생이 자기 verifications 를 update 하면 0행 (asked_at 조작)', upd.affectedRows === 0, `${upd.affectedRows}행`);
+const del = await as(S1, `delete from verifications where student_id = '${S1}'`);
+check('#22 학생이 자기 verifications 를 delete 하면 0행', del.affectedRows === 0, `${del.affectedRows}행`);
+const after = Number((await as(T1, `select * from v_class_ranking where label like '%한빛초%'`)).rows[0].verified_count);
+check('#22 반 랭킹 verified_count 가 그대로다', before === after, `${before} → ${after}`);
+check('학생 본인 verifications 는 여전히 읽힌다',
+  (await as(S1, 'select id from verifications')).rows.length === 1);
+
+// reviews.status 는 컬럼 단위로 잠겨 있다. body 와 is_shared 는 계속 쓴다.
+check('#22 학생이 reviews.status 를 바꾸면 거부',
+  await denied(S1, `update reviews set status = 'passed' where student_id = '${S1}'`));
+check('#22 학생이 status 를 지정해 reviews 를 insert 하면 거부',
+  await denied(S1, `insert into reviews (student_id, book_id, status) values ('${S2}', 'b0000000-0000-0000-0000-000000000001', 'passed')`));
+check('학생은 reviews.body 를 여전히 쓴다',
+  !(await denied(S1, `update reviews set body = '고쳐 씀', char_count = 4, updated_at = now() where student_id = '${S1}'`)));
+check('학생은 초고를 여전히 만든다 (student_id, book_id 만)',
+  !(await denied(S2, `insert into reviews (student_id, book_id) values ('${S2}', 'b0000000-0000-0000-0000-000000000001')`)));
 
 // ── anon ─────────────────────────────────────────────
 let anonOk;
