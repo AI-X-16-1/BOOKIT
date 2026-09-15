@@ -1,32 +1,21 @@
 /**
- * 임시 장르 태그 매핑.
+ * 검색 결과용 키워드 기반 장르 태그 매핑.
  *
- * TODO(ai 모듈 복구 후 교체): `ai.normalizeGenreTags`로 이관한다
+ * `ai.normalizeGenreTags`(LLM 호출)로 바꾸지 않는다 — 검색 한 번에 새로 들어오는
+ * 책마다 LLM을 부르면 학생이 검색 결과를 그만큼 더 기다리게 된다.
+ * `normalizeGenreTags`는 원래 저장된 책을 나중에 배치로 재태깅하기 위한 함수다.
+ * TODO(나중에 배치 재태깅): `books` 테이블에 이미 들어온 행들을
+ * `ai.normalizeGenreTags`로 일괄 재분류하는 배치 작업을 별도로 만들 것
  * (docs/prompts.md §5, docs/superpowers/specs/2026-09-14-books-search-recommend-design.md).
- * 태그 목록은 그 문서의 고정 15개를 그대로 복제한 것이다 — 여기서 새 태그를 만들지 않는다.
+ *
+ * 태그 목록 자체는 복제하지 않고 `ai` 모듈 것을 그대로 쓴다 — `genre_stamps.genre`도
+ * 같은 목록을 기준으로 하므로, 목록이 두 곳이면 한쪽만 고쳤을 때 도장이 안 찍힌다.
  */
+import { GENRE_TAGS, type GenreTag } from "@/modules/ai";
 
-export const BOOK_GENRE_TAGS = [
-  "성장소설",
-  "판타지",
-  "SF",
-  "추리",
-  "동화",
-  "역사",
-  "과학",
-  "모험",
-  "우정",
-  "인물심리",
-  "가족",
-  "사회",
-  "자연",
-  "예술",
-  "고전",
-] as const;
+export { GENRE_TAGS, type GenreTag };
 
-export type BookGenreTag = (typeof BOOK_GENRE_TAGS)[number];
-
-const KEYWORD_RULES: Array<[BookGenreTag, RegExp]> = [
+const KEYWORD_RULES: Array<[GenreTag, RegExp]> = [
   ["판타지", /판타지|마법|요정/],
   ["SF", /SF|공상과학|우주/],
   ["추리", /추리|미스터리|탐정/],
@@ -41,12 +30,15 @@ const KEYWORD_RULES: Array<[BookGenreTag, RegExp]> = [
   ["자연", /자연|환경|동물|식물/],
   ["예술", /예술|미술|음악/],
   ["고전", /고전|명작/],
-  ["성장소설", /성장|청소년소설|한국소설/],
+  // "한국소설"은 뺐다 — 국내 소설이라는 이유만으로 성장소설을 붙이면 과다 태깅된다.
+  ["성장소설", /성장|청소년소설/],
 ];
 
-/** KDC 대분류(맨 앞자리)로 넓게 잡는 보조 규칙. 확신 없으면 태그를 붙이지 않는다 */
-const KDC_MAJOR_RULES: Record<string, BookGenreTag> = {
-  "8": "성장소설",
+/**
+ * KDC 대분류(맨 앞자리)로 넓게 잡는 보조 규칙. 확신 없으면 태그를 붙이지 않는다.
+ * "8"(문학 전체 — 시·수필까지 포함)은 뺐다 — 너무 넓어서 성장소설로 잘못 넘겨짚는다.
+ */
+const KDC_MAJOR_RULES: Record<string, GenreTag> = {
   "9": "역사",
   "4": "과학",
 };
@@ -54,8 +46,8 @@ const KDC_MAJOR_RULES: Record<string, BookGenreTag> = {
 export function mapToGenreTags(
   rawCategory: string | null,
   kdc: string | null,
-): BookGenreTag[] {
-  const tags = new Set<BookGenreTag>();
+): GenreTag[] {
+  const tags = new Set<GenreTag>();
 
   if (rawCategory) {
     for (const [tag, pattern] of KEYWORD_RULES) {
