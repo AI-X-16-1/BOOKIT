@@ -9,6 +9,7 @@
  *
  * 라우트 (docs/spec.md §5):
  *   GET   /auth/callback           구글 OAuth 콜백. 세션 쿠키를 심고 "/" 로 보낸다
+ *   GET   /privacy, /terms         개인정보처리방침·이용약관. 로그인 없이 본다 (#93)
  *   POST  /api/onboarding/student  { grade_level, join_code }             → { class }
  *   POST  /api/onboarding/teacher  { school_name, grade_level, class_no } → { class, join_code }
  *   GET   /api/profile                                                   → { display_name, role, grade_level, class_label }
@@ -22,6 +23,7 @@ export { LoginScreen } from "./components/LoginScreen";
 export { OnboardingScreen } from "./components/OnboardingScreen";
 export { SignOutButton } from "./components/SignOutButton";
 export { DeleteAccountButton } from "./components/DeleteAccountButton";
+export { LegalPage, type LegalKind } from "./components/LegalPage";
 
 export { GRADES, gradeLabel } from "./grades";
 

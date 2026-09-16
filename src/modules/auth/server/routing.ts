@@ -43,13 +43,19 @@ const TEACHER_PREFIXES = ["/teacher"] as const;
  * /auth  — 구글 OAuth 콜백. 여기서 쿠키를 심으므로 미들웨어가 끼어들면 안 된다
  * /api   — Route Handler 가 스스로 인증한다. 보호자 라우트는 애초에 인증이 없다
  * /guardian — 토큰만으로 보는 읽기 전용 화면 (docs/spec.md §3)
+ * /privacy, /terms — 개인정보처리방침·이용약관. 게시 의무라 누구나 봐야 한다 (#93)
  */
 const PUBLIC_PREFIXES = [
   AUTH_PATHS.login,
   "/auth",
   "/api",
   "/guardian",
+  "/privacy",
+  "/terms",
 ] as const;
+
+/** 로그인 상태와 무관하게 절대 리다이렉트하지 않는 경로 */
+const UNTOUCHED_PREFIXES = ["/auth", "/api", "/guardian", "/privacy", "/terms"] as const;
 
 function startsWithPath(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
@@ -67,12 +73,8 @@ export function redirectTargetFor(
   access: AccessState,
   pathname: string,
 ): string | null {
-  // 콜백·API·보호자 링크는 상태와 무관하게 건드리지 않는다
-  if (
-    startsWithPath(pathname, "/auth") ||
-    startsWithPath(pathname, "/api") ||
-    startsWithPath(pathname, "/guardian")
-  ) {
+  // 콜백·API·보호자 링크·법적 고지는 상태와 무관하게 건드리지 않는다
+  if (UNTOUCHED_PREFIXES.some((prefix) => startsWithPath(pathname, prefix))) {
     return null;
   }
 
