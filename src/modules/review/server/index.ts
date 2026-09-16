@@ -9,5 +9,6 @@
 
 export { openReview, saveDraft } from "./reviews";
 export { submitReview } from "./submit";
+export { writeHelperQuestion } from "./helper";
 export { loadWriteSession } from "./session";
 export type { ReviewResult } from "./result";
