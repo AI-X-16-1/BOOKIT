@@ -161,8 +161,10 @@ All under `/api`. All authenticated except the guardian route. All return `{ dat
 ```
 POST /api/onboarding/student   { grade_level, join_code }        → { class }
 POST /api/onboarding/teacher   { school_name, grade_level, class_no } → { class, join_code }
+GET   /auth/demo?as=student|teacher                             → 302 "/"   심사위원용 시연 로그인. DEMO_LOGIN_ENABLED 일 때만, 아니면 404. 시드 계정으로 세션을 심는다 (매직링크 토큰을 서버 안에서 소비)
+GET   /api/profile                                              → { display_name, role, grade_level, class_label }   내 정보. class_label 은 "5학년 2반" 꼴, 반이 없으면 null
 PATCH /api/profile             { grade_level }                   → { profile }
-DELETE /api/profile                                              → { deleted }   계정·데이터 전부 삭제(cascade), 세션 종료
+DELETE /api/profile                                              → { deleted }   계정·데이터 전부 삭제(cascade), 세션 종료. 시드 계정(@bookit.demo)은 403 demo_account
 ```
 
 ### books (이승환)
@@ -177,6 +179,7 @@ GET  /api/books/:id                          → { book }
 POST  /api/reviews             { book_id }                → { review }  (draft)
 PATCH /api/reviews/:id         { body }                   → { review }  autosave, debounce 2s
 POST  /api/reviews/:id/submit                             → { gaps[] }  triggers AI #2 + pre-generates AI #3
+                                                          0 gaps → AI #2b picks one `core_claim` row, flow continues (#14)
 POST  /api/reviews/:id/helper                             → { question }  AI #1. On failure the editor renders without the helper box
 ```
 `helper` returns an object so it can grow to `{ questions[] }` if #16 lands.
@@ -188,6 +191,8 @@ POST /api/verifications/:id/answer  { answer }      → { passed, scores, feedba
 POST /api/reviews/:id/retry                        → { verification_id, question, quote, seconds }
 ```
 The countdown starts client-side when the question renders, but `asked_at`/`answered_at` on the server are authoritative. Reject an answer arriving more than `ANSWER_WINDOW_SEC + 5` after `asked_at`.
+
+When no question can be built and the only gap is `core_claim`, these routes return `{ error: { code: "rewrite_needed" } }` and put the review back to `draft`: a gap-free review has no second gap to fall back to, so the editor reopens instead of dead-ending (#14, decided 2026-09-16). Failed attempts are kept.
 
 ### ai (강민구) — internal, not routed directly
 ```

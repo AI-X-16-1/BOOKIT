@@ -21,3 +21,4 @@
  */
 
 export { GuardianView } from "./components/GuardianView";
+export { GuardianShareCard } from "./components/GuardianShareCard";

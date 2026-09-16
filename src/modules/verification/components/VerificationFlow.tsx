@@ -28,6 +28,12 @@ export interface VerificationFlowProps {
   gaps: ReviewGapView[];
   streakDays: number;
   onDone: () => void;
+  /**
+   * 질문을 끝내 못 만들어서 작성 화면으로 돌려보내야 할 때 (서버 코드 rewrite_needed).
+   * 빈틈 0개라 core_claim 하나로 물어보던 독후감은 넘어갈 다음 빈틈이 없다 — 오류 문구만
+   * 띄우면 아이가 막다른 길에 선다. 인자로 온 문장을 작성 화면에 그대로 띄우면 된다.
+   */
+  onRewrite: (message: string) => void;
 }
 
 function messageOf(cause: unknown): string {
@@ -43,6 +49,7 @@ export function VerificationFlow({
   gaps,
   streakDays,
   onDone,
+  onRewrite,
 }: VerificationFlowProps) {
   const [stage, setStage] = useState<VerificationStage>("gaps");
   const [question, setQuestion] = useState<QuestionResponse | null>(null);
@@ -71,6 +78,11 @@ export function VerificationFlow({
     try {
       await task();
     } catch (cause) {
+      if (cause instanceof ApiClientError && cause.code === "rewrite_needed") {
+        // 서버가 이미 초고로 돌려놨다. 여기서는 작성 화면을 다시 열어 주기만 한다
+        onRewrite(cause.message);
+        return;
+      }
       setError(messageOf(cause));
     } finally {
       setBusy(false);

@@ -2,6 +2,7 @@
   "name": "bookit",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.9",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -20,6 +21,7 @@
     "ai:tags": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-tags.ts",
     "ai:retag": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-retag.ts",
     "ai:calibrate": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-calibrate.ts",
+    "ai:core-claim": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-core-claim.ts",
     "ai:question": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-question.ts",
     "reader:dict": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/dict-check.ts"
   },
