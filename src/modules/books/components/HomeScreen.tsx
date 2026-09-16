@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { libraryHref } from "@/modules/reader";
 import { apiGet } from "@/shared/api/client";
 import type {
   Book,
@@ -18,7 +19,10 @@ import { COVER, type CoverTone } from "../mock";
  * 홈. 목업 6 L127-140 (인사·검색), 목업 4 (책갈피·스트릭 카드).
  *
  * 검색·추천은 books API, 책갈피·스트릭·반 순위는 각 모듈의 API 를 읽는다.
- * 책 카드는 전부 /write?book=<id> 로 간다 — review 모듈이 그 책의 초고를 만든다.
+ * 책 카드는 /write?book=<id> 로 간다 — review 모듈이 그 책의 초고를 만든다.
+ * 책잇 서재에 원문이 있는 책(is_public_domain)은 추천 카드에 "서재에서 바로
+ * 읽기" 링크(reader 모듈의 libraryHref)도 같이 보여준다 — 조건 없이 바로 읽을
+ * 수 있는 유일한 경로다 (#58). 검색 결과 목록은 공간이 좁아 지금은 넣지 않았다.
  * "이어서 쓰기"는 /write 가 가장 최근 초고를 스스로 찾으므로 여기서는 링크만 둔다.
  */
 
@@ -232,8 +236,11 @@ export function HomeScreen() {
             </p>
             <div className="mt-3 flex flex-col gap-2.5">
               {(recommend?.books ?? []).slice(0, 5).map((b) => (
-                <Link key={b.id} href={`/write?book=${b.id}`} className="block">
-                  <Card className="flex items-center gap-3">
+                <Card key={b.id} className="flex flex-col gap-2.5">
+                  <Link
+                    href={`/write?book=${b.id}`}
+                    className="flex items-center gap-3"
+                  >
                     <Cover book={b} size="h-12 w-12" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[15px] font-bold text-ink">
@@ -244,8 +251,17 @@ export function HomeScreen() {
                       </div>
                     </div>
                     {b.tags[0] && <Chip tone="blue">{b.tags[0]}</Chip>}
-                  </Card>
-                </Link>
+                  </Link>
+                  {/* 책잇 서재에 원문이 있는 책만 — 조건 없이 바로 읽을 수 있는 유일한 경로 (#58) */}
+                  {b.is_public_domain && (
+                    <Link
+                      href={libraryHref(b.id)}
+                      className="flex min-h-12 items-center text-[13px] font-bold text-coral"
+                    >
+                      서재에서 바로 읽기 →
+                    </Link>
+                  )}
+                </Card>
               ))}
               {recommend && recommend.books.length === 0 && (
                 <p className="text-[14px] text-muted">
