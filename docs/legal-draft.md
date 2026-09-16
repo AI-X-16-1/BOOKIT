@@ -44,7 +44,12 @@ owner: 강민구 작성, 검토·게시는 김민경 (auth·배포). **법률 �
 | Supabase, Inc. | 미국 | 위 1항 전체 | 데이터베이스·인증 | 서비스 이용 시 | 위 3항과 같음 |
 | Vercel, Inc. | 미국 | 접속 기록 | 애플리케이션 호스팅 | 접속 시 | 위 3항과 같음 |
 
-유료 API 를 사용하며, 전송한 내용은 **모델 학습에 사용되지 않는다** (해당 사업자 약관 기준. 제출 전 최종 확인 — `submission-ai.md` §7).
+전송한 내용은 **모델 학습에 사용되지 않는다.** 설정으로 켜는 선택 사항이 아니라 상용 약관에 못 박힌 조항이다.
+
+> "Anthropic may not train models on Customer Content from Services."
+> — Anthropic Commercial Terms of Service, B. Customer Content (2026-09-16 확인)
+
+데이터 처리·보관 조건은 같은 약관이 참조하는 Data Processing Addendum 을 따른다. 보관 기간은 게시 전 확인한다.
 
 ### 5. 만 14세 미만 아동
 
