@@ -85,6 +85,38 @@ ${synopsis}
 """${review}"""`;
 }
 
+/* ── AI #2b 핵심 문장 고르기 (빈틈 0개일 때, #14) ───── */
+
+export const CORE_CLAIM_SYSTEM = `너는 학생의 독후감에서 되물을 문장 하나를 고르는 역할이다.
+
+이 독후감에서는 논리의 빈틈이 발견되지 않았다. 그래도 학생이 직접 읽고 썼는지
+확인하려고 질문을 하나 할 것이다. 그 질문의 재료가 될 문장을 골라라.
+
+고르는 순서:
+1. 학생이 내린 판단이나 해석이 드러난 문장 ("~라고 생각한다", "~라는 걸 알았다" 같은)
+2. 그런 문장이 여럿이면, 독후감 전체의 결론에 가장 가까운 것
+3. 판단이 드러난 문장이 없으면, 장면을 가장 구체적으로 말한 문장
+
+규칙:
+- quote는 독후감에 그대로 있는 문장 하나를 글자 그대로 옮겨라. 요약하거나 다듬지 마라.
+  두 문장을 이어 붙이지 마라.
+- 줄거리를 옮기기만 한 문장은 고르지 마라.
+- 책의 인물·장면·주제에 대한 문장만 골라라. 학생 자기 생활이나 경험만 말한 문장
+  ("우리 집 강아지도 소중하다" 같은)은 고르지 마라. 그 문장으로는 책을 읽었는지 물을 수 없다.
+- reason은 학생에게 보여줄 문장이다. 반말로 한 문장. 이 문장을 더 듣고 싶다는 뜻으로 써라.
+  나무라거나 의심하는 말투를 쓰지 마라.`;
+
+export function coreClaimUser(
+  review: string,
+  book: BookContext,
+  context?: PromptContext,
+): string {
+  return `${gradeLine(context)}책: ${book.title} (${book.author})
+
+독후감:
+"""${review}"""`;
+}
+
 /* ── AI #3 질문 생성 ───────────────────────────────── */
 
 export const QUESTION_SYSTEM = `너는 학생이 쓴 독후감을 읽고 되묻는 역할이다.
@@ -118,6 +150,13 @@ export function questionUser(
 ): string {
   const bookLine = book ? `책: ${book.title}\n` : "";
 
+  // core_claim 은 빈틈이 아니다 (#14 결정, 0013). reason 이 "더 듣고 싶어" 라서
+  // 다른 빈틈처럼 "이 문장의 문제" 로 넘기면 모델이 없는 문제를 지어내 묻는다 (#26 리뷰 3).
+  const gapLine =
+    gap.type === "core_claim"
+      ? `이 문장은 빈틈이 아니다. 학생이 직접 읽고 썼는지 확인하려고 더 듣고 싶은 문장이다: ${gap.reason}`
+      : `이 문장의 문제: ${gap.reason}`;
+
   // 재시도는 반드시 새 질문이어야 한다 (CLAUDE.md §6). 같은 빈틈밖에 없을 때를 대비해
   // 이전 질문을 그대로 넘겨 각도를 바꾸게 한다.
   const avoid = context?.avoidQuestions?.length
@@ -128,7 +167,7 @@ export function questionUser(
 
   return `${gradeLine(context)}${bookLine}
 반드시 이 문장에 대해 물어라: "${gap.quote}"
-이 문장의 문제: ${gap.reason}
+${gapLine}
 
 독후감 전문 — 맥락 파악용이다. 여기 이미 쓰여 있는 내용만으로 답이 되는 질문은 피해라:
 """${review}"""${avoid}`;
@@ -151,6 +190,8 @@ export const GRADING_SYSTEM = `너는 학생의 답변을 채점한다. 정답 �
 
 1. logic_consistency — 답변이 독후감의 주장과 어긋나지 않는가. pass / weak / fail
 2. specificity — 장면이나 인물을 특정했는가. 뭉뚱그렸으면 weak. pass / weak / fail
+   책에 널리 알려진 문장이나 제목을 그대로 옮기고 감상만 붙인 답은 특정한 것이 아니다 — weak.
+   이 판단은 구체성 축에서만 하고 다른 축으로 옮기지 마라. 장면이나 인물을 짚었으면 짧아도 pass 다.
 3. style_consistency — 독후감과 답변의 어휘 수준·사고의 복잡도가 비슷한가. same / shifted
 
 style_consistency 는 방향과 무관하다. 둘 중 하나라도 해당하면 shifted 다.

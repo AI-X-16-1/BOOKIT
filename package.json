@@ -2,6 +2,7 @@
   "name": "bookit",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.9",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,12 +14,14 @@
     "test:rls": "node supabase/tests/rls.test.mjs",
     "check:supabase": "node scripts/check-supabase.mjs",
     "books:smoke": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/books-smoke.ts",
-    "test:books": "node --conditions=react-server --import tsx --test src/modules/books/schema.test.ts src/modules/books/server/tags.test.ts src/modules/books/server/response.test.ts src/modules/books/server/source.test.ts src/modules/books/server/search.test.ts src/modules/books/server/recommend.test.ts",
+    "test:books": "node --conditions=react-server --import tsx --test src/modules/books/schema.test.ts src/modules/books/server/tags.test.ts src/modules/books/server/response.test.ts src/modules/books/server/source.test.ts src/modules/books/server/search.test.ts src/modules/books/server/recommend.test.ts src/modules/books/server/library-availability.test.ts",
     "ai:smoke": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-smoke.ts",
     "llm:models": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/llm-models.ts",
     "ai:gaps": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-gaps.ts",
     "ai:tags": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-tags.ts",
+    "ai:retag": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-retag.ts",
     "ai:calibrate": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-calibrate.ts",
+    "ai:core-claim": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-core-claim.ts",
     "ai:question": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-question.ts",
     "reader:dict": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/dict-check.ts"
   },

@@ -5,6 +5,8 @@
  *   POST /api/reviews/:id/submit → { gaps[] }
  *
  * AI #2(빈틈 분석)를 돌려 review_gaps 에 저장한다.
+ * 빈틈이 0개면 AI #2b(핵심 문장 고르기)로 한 문장을 골라 core_claim 빈틈으로 저장한다 —
+ * 검증을 건너뛰지 않는다 (issue #14, docs/prompts.md §2).
  *
  * AI #3(질문)은 여기서 만들지 않는다. spec 은 "submit 이 미리 만든다"고 적었지만,
  * 그러면 학생이 빈틈 화면을 보기 전에 LLM 호출 두 번을 연달아 기다려야 한다.
@@ -16,7 +18,7 @@
  */
 import "server-only";
 
-import { analyzeGaps, LlmError } from "@/modules/ai";
+import { analyzeGaps, LlmError, pickCoreClaim } from "@/modules/ai";
 import type { BookitClient } from "@/shared/supabase";
 import { createAdminClient } from "@/shared/supabase/admin";
 import type { Gap, ReviewStatus, SubmitReviewResponse } from "@/shared/types";
@@ -70,11 +72,21 @@ export async function submitReview(
   // 분석이 도는 동안 본문을 잠근다 (saveDraft 가 analyzing 을 거절한다)
   await setStatus(supabase, reviewId, "analyzing");
 
+  const gradeLevel = profileResult.data?.grade_level ?? undefined;
+
   let found: Gap[];
   try {
-    ({ gaps: found } = await analyzeGaps(review.body, bookResult.data, {
-      gradeLevel: profileResult.data?.grade_level ?? undefined,
-    }));
+    ({ gaps: found } = await analyzeGaps(review.body, bookResult.data, { gradeLevel }));
+
+    if (found.length === 0) {
+      // 빈틈이 0개라고 질문을 건너뛰지 않는다 (issue #14, 2026-09-15 결정).
+      // 잘 쓴 독후감일수록 빈틈이 0개로 나오는데(채점 기준 실측 5건 중 4건), 거기서 검증을
+      // 건너뛰면 대필한 글이 부정행위 방지 장치를 통째로 피한다. 대신 학생의 핵심 판단
+      // 한 문장을 골라 core_claim 빈틈으로 저장하고(0013) 평소 흐름을 그대로 태운다.
+      console.info(`[review:submit] 빈틈 0개 — core_claim 으로 질문한다. review ${reviewId}`);
+      const claim = await pickCoreClaim(review.body, bookResult.data, { gradeLevel });
+      if (claim) found = [claim];
+    }
   } catch (cause) {
     // 잠금을 풀어 학생이 계속 고치거나 다시 낼 수 있게 한다
     await setStatus(supabase, reviewId, "draft");
@@ -90,11 +102,10 @@ export async function submitReview(
   }
 
   if (found.length === 0) {
-    // ⚠️ docs/prompts.md §2 는 "빈틈 0개면 질문 없이 바로 통과"라고 한다.
-    //    그런데 통과 기록은 verifications 행이고, verifications.gap_id 는 not null 이다(0003).
-    //    빈틈 없이 통과시킬 방법이 스키마에 없어서, 결정이 날 때까지 초고로 돌려
-    //    학생이 한 문장 더 쓰고 다시 내게 한다. 드문 경우라고 했으니 로그로 빈도를 본다.
-    console.info(`[review:submit] 빈틈 0개 — review ${reviewId}`);
+    // 빈틈도 없고 되물을 문장도 못 골랐다 — 모델이 고른 문장이 독후감 원문에 없어
+    // pickCoreClaim 이 null 을 돌려준 경우다 (ai/server/core-claim 의 resolveQuote).
+    // 원문에 없는 문장을 하이라이트할 수는 없으니 초고로 돌려 한 줄 더 쓰게 한다.
+    console.info(`[review:submit] 빈틈 0개 + 핵심 문장도 못 고름 — review ${reviewId}`);
     await setStatus(supabase, reviewId, "draft");
     return { ok: true, data: { gaps: [] } };
   }

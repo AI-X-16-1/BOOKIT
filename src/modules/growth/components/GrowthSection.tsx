@@ -7,56 +7,13 @@ import { Card, Chip } from "@/shared/ui";
 import { TREE_STAGES } from "../schema";
 
 /**
- * 성장 — 책나무 · 장르 도장판 · 레벨/뱃지 · 독서성향 리포트.
- * 목업 5 #3 (L198-243) 의 리포트를 모바일 폭에 맞춰 재구성했다.
+ * 성장 — 책나무 · 장르 도장판.
  *
- * 시간이 부족하면 이 순서로 잘라낸다:
- * 독서성향 리포트 → 레벨/뱃지 → 책나무·도장판 (CLAUDE.md §11).
- *
- * ⚠️ 레벨/뱃지·독서성향 리포트는 docs/spec.md 스키마에 없다 — 백엔드가 없어
- * 여기 정적 데모 콘텐츠로만 남겨둔다. 책나무·스트릭·장르 도장판만 GET /api/growth 를 쓴다.
+ * #71 결정: 레벨/뱃지·독서성향 리포트는 docs/spec.md 스키마에 없는 정적 데모 값이라
+ * 뺐다 — 독후감을 한 편도 안 쓴 계정에도 "Lv.4 꾸준한 독서가", "독후감 12편을 모아
+ * 분석했어요" 같은 문구가 그대로 떴다. 책나무·스트릭·장르 도장판만 실제 데이터
+ * (GET /api/growth) 라 남긴다. CLAUDE.md §11 컷 순서(독서성향 리포트 → 레벨/뱃지)와도 맞는다.
  */
-const TONE_BAR = {
-  coral: "bg-coral",
-  yellow: "bg-yellow",
-  green: "bg-green-light",
-} as const;
-
-/** 레벨. 목업 5 L226-229. spec 에 없는 정적 데모 값 */
-const LEVEL = {
-  level: 4,
-  title: "꾸준한 독서가",
-  toNext: 260,
-  progress: 0.72,
-};
-
-/** 뱃지. 목업 5 L235-240. spec 에 없는 정적 데모 값 */
-const BADGES = [
-  { icon: "🔖", label: "첫 책갈피", earned: true },
-  { icon: "🔥", label: "7일 연속", earned: true },
-  { icon: "📖", label: "10권 완독", earned: true },
-  { icon: "🏆", label: "반 1위", earned: false },
-];
-
-/**
- * 독서성향 리포트. 목업 5 #3 (L198-232). spec 에 없는 정적 데모 값 —
- * 실제로는 누적된 독후감을 AI 가 요약해야 하지만 이 범위 밖이다 (CLAUDE.md §11).
- */
-const READING_PROFILE = {
-  summary: ["판타지를 좋아하고,", "인물 심리 해석에 강해요"],
-  reviewCount: 12,
-  axes: [
-    { label: "해석력", value: 0.88, tone: "coral" as const },
-    { label: "구체성", value: 0.64, tone: "yellow" as const },
-    { label: "어휘", value: 0.75, tone: "green" as const },
-  ],
-  topics: [
-    { label: "판타지", value: 0.86 },
-    { label: "인물 심리", value: 0.72 },
-    { label: "성장", value: 0.58 },
-    { label: "우정", value: 0.4 },
-  ],
-};
 
 export function GrowthSection() {
   const [g, setG] = useState<GrowthResponse | null>(null);
@@ -137,96 +94,6 @@ export function GrowthSection() {
             );
           })}
         </div>
-      </Card>
-
-      {/* 레벨 */}
-      <div className="rounded-card bg-yellow-bg p-[22px]">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-base font-bold text-ink">
-            Lv.{LEVEL.level} {LEVEL.title}
-          </span>
-          <span className="flex-none text-[13px] text-yellow-text-2">
-            다음 레벨까지 {LEVEL.toNext}
-          </span>
-        </div>
-        <div className="mt-3 h-2.5 rounded-full bg-yellow/40">
-          <div
-            className="h-2.5 rounded-full bg-coral-deep"
-            style={{ width: `${LEVEL.progress * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* 뱃지 */}
-      <Card>
-        <div className="text-[13px] text-muted">모은 뱃지</div>
-        <div className="mt-3.5 grid grid-cols-4 gap-3">
-          {BADGES.map((b) => (
-            <div key={b.label} className="text-center">
-              <div
-                className={`flex aspect-square w-full items-center justify-center rounded-[14px] text-[22px] ${
-                  b.earned ? "bg-yellow-bg" : "bg-sunken opacity-35"
-                }`}
-              >
-                {b.icon}
-              </div>
-              <div
-                className={`mt-[7px] text-[11px] ${b.earned ? "text-coral-text-2" : "text-faint"}`}
-              >
-                {b.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* 독서성향 리포트 */}
-      <div className="rounded-card bg-panel p-[22px]">
-        <div className="text-xs text-on-dark-2">한 줄 요약</div>
-        <div className="mt-2 text-[23px] leading-[1.45] font-bold text-on-dark">
-          {READING_PROFILE.summary[0]}
-          <br />
-          {READING_PROFILE.summary[1]}
-        </div>
-        <div className="mt-4">
-          {READING_PROFILE.axes.map((a) => (
-            <div key={a.label} className="flex items-center gap-2.5 py-1.5">
-              <span className="w-16 flex-none text-xs text-on-dark-2">
-                {a.label}
-              </span>
-              <span className="h-2 flex-1 rounded-full bg-panel-line">
-                <span
-                  className={`block h-2 rounded-full ${TONE_BAR[a.tone]}`}
-                  style={{ width: `${a.value * 100}%` }}
-                />
-              </span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-on-dark-2">
-          독후감 {READING_PROFILE.reviewCount}편을 모아 분석했어요 · 매월 1일 갱신
-        </p>
-      </div>
-
-      {/* 좋아하는 주제어 — 코랄 투명도 단계로 표현 */}
-      <Card>
-        <div className="text-[13px] text-muted">좋아하는 주제어</div>
-        <div className="mt-3.5 flex flex-col gap-2">
-          {READING_PROFILE.topics.map((t, i) => (
-            <div key={t.label} className="flex items-center gap-3">
-              <span className="w-[74px] flex-none text-sm text-ink-soft">
-                {t.label}
-              </span>
-              <span className="h-3 flex-1 rounded-full bg-border-soft">
-                <span
-                  className={`block h-3 rounded-full ${["bg-coral", "bg-coral/70", "bg-coral/45", "bg-coral/25"][i] ?? "bg-coral/25"}`}
-                  style={{ width: `${t.value * 100}%` }}
-                />
-              </span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-xs text-faint">데모에서는 시드 데이터로 채워요</p>
       </Card>
     </div>
   );

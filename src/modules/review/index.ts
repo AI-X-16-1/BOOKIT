@@ -11,6 +11,7 @@
  *   POST  /api/reviews             { book_id }  → { review }  (draft)
  *   PATCH /api/reviews/:id         { body }     → { review }  자동 저장, 2s 디바운스
  *   POST  /api/reviews/:id/submit               → { gaps[] }  AI #2 빈틈 분석
+ *   POST  /api/reviews/:id/helper               → { question } AI #1 글쓰기 도우미
  *
  * reviews.body 는 학생 본인에게만 보인다 — is_shared 를 켜지 않는 한
  * 교사도 보호자도 볼 수 없다 (CLAUDE.md §5).

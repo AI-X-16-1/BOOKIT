@@ -1,10 +1,12 @@
 /**
  * 외부 도서 소스 어댑터.
  *
- * 알라딘 오픈API는 2026-09-04 서비스 종료됨 — 국립중앙도서관(NLK)을 주 소스로,
- * 국립어린이청소년도서관(data.go.kr)을 보조로 쓴다. 둘 다 키가 없으면(지금 상태) mock.
- * 실제 키가 있는데 호출이 실패하면 mock으로 조용히 폴백하지 않고 에러를 그대로 올린다
- * (docs/superpowers/specs/2026-09-14-books-search-recommend-design.md).
+ * 알라딘 오픈API는 2026-09-04 서비스 종료됨 — 국립중앙도서관(NLK)과
+ * 국립어린이청소년도서관(data.go.kr)을 함께 쓴다. 둘 다 키가 있으면 두 소스를
+ * 동시에 조회해서 합친다(combineSources) — 하나만 있으면 그것만, 둘 다 없으면
+ * (지금 개발 환경 기본값) mock. 실제 키가 있는데 호출이 전부 실패하면 mock으로
+ * 조용히 폴백하지 않고 에러를 그대로 올린다. 하나만 실패하면 살아있는 소스의
+ * 결과는 보여준다 (docs/superpowers/specs/2026-09-14-books-search-recommend-design.md).
  *
  * nlkSource는 2026-09-15에 실제 NLK_API_KEY로 검증했다 — 요청 파라미터
  * (cert_key/result_style/page_no/page_size/title)와 최상위 필드명(docs/TITLE/
@@ -52,7 +54,7 @@ export interface RawBookHit {
 }
 
 export interface BookSource {
-  name: "nlk" | "data_go_kr" | "mock";
+  name: "nlk" | "data_go_kr" | "mock" | "combined";
   search(query: string): Promise<RawBookHit[]>;
 }
 
@@ -64,16 +66,6 @@ export class BookSourceError extends Error {
     super(message);
     this.name = "BookSourceError";
   }
-}
-
-/** 어떤 소스를 쓸지 결정하는 순수 함수 — env를 인자로 받아 테스트하기 쉽게 한다 */
-export function selectSourceKind(env: {
-  NLK_API_KEY?: string;
-  DATA_GO_KR_KEY?: string;
-}): "nlk" | "data_go_kr" | "mock" {
-  if (env.NLK_API_KEY) return "nlk";
-  if (env.DATA_GO_KR_KEY) return "data_go_kr";
-  return "mock";
 }
 
 export const mockSource: BookSource = {
@@ -301,12 +293,35 @@ export const dataGoKrSource: BookSource = {
   },
 };
 
+/**
+ * 여러 소스를 동시에 조회해서 결과를 합친다. 하나가 실패해도(타임아웃 등) 살아있는
+ * 소스의 결과는 보여준다 — 전부 실패했을 때만 첫 에러를 그대로 올려서, search.ts의
+ * BookSourceError 처리(시드 폴백 등)가 그대로 동작하게 한다.
+ */
+export function combineSources(sources: BookSource[]): BookSource {
+  return {
+    name: "combined",
+    async search(query) {
+      const settled = await Promise.allSettled(
+        sources.map((s) => s.search(query)),
+      );
+      const hits: RawBookHit[] = [];
+      const errors: unknown[] = [];
+      for (const result of settled) {
+        if (result.status === "fulfilled") hits.push(...result.value);
+        else errors.push(result.reason);
+      }
+      if (errors.length === settled.length && errors.length > 0) throw errors[0];
+      return hits;
+    },
+  };
+}
+
 export function getBookSource(): BookSource {
-  const kind = selectSourceKind({
-    NLK_API_KEY: process.env.NLK_API_KEY,
-    DATA_GO_KR_KEY: process.env.DATA_GO_KR_KEY,
-  });
-  if (kind === "nlk") return nlkSource;
-  if (kind === "data_go_kr") return dataGoKrSource;
-  return mockSource;
+  const sources: BookSource[] = [];
+  if (process.env.NLK_API_KEY) sources.push(nlkSource);
+  if (process.env.DATA_GO_KR_KEY) sources.push(dataGoKrSource);
+  if (sources.length === 0) return mockSource;
+  if (sources.length === 1) return sources[0];
+  return combineSources(sources);
 }

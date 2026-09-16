@@ -1,8 +1,9 @@
 /**
  * review/server/session — /write 화면이 처음 그릴 재료. owner: 박재경
  *
- * 읽기만 한다. 초고를 만드는 건 학생이 처음 저장할 때의 POST /api/reviews 다 —
- * 화면에 들어오기만 해도 빈 초고가 생기면 홈의 "이어서 쓰기"가 빈 독후감을 가리킨다.
+ * 읽기만 한다. 초고를 만드는 건 화면 쪽의 POST /api/reviews 다 — 글쓰기 도우미를
+ * 부르려면 초고 id 가 필요해서 작성 화면이 열릴 때 만든다 (components/WriteFlow).
+ * 그렇게 생긴 빈 초고는 findResumable 이 걸러서 홈의 "이어서 쓰기"에 뜨지 않는다.
  */
 import "server-only";
 

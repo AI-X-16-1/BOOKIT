@@ -23,15 +23,20 @@
  * 구현 완료: writingHelper(#1), analyzeGaps(#2), buildQuestion(#3), grade(#4),
  *            normalizeGenreTags(프롬프트 #5)
  *
+ * pickCoreClaim(#2b) — 빈틈이 0개일 때 되물을 문장 하나 (#14). Gap(type: core_claim)을 돌려주므로
+ *            review/server/submit.ts 가 review_gaps 에 그대로 저장한다. null 이면 초고로 돌려보낸다.
+ *
  * GENRE_TAGS 는 이 모듈이 주인이다. books.tags 와 genre_stamps.genre 가 같은
  * 어휘를 쓰므로, 태그를 다루는 모듈은 여기서 가져다 쓴다 (직접 문자열을 적지 말 것).
  */
 export { writingHelper } from "./server/writing-helper";
 export { analyzeGaps } from "./server/gaps";
+export { pickCoreClaim, type CoreClaim } from "./server/core-claim";
 export { buildQuestion } from "./server/question";
 export { grade, isPass, readThreshold } from "./server/grade";
 export { normalizeGenreTags } from "./server/genre-tags";
 export { GENRE_TAGS, type GenreTag } from "./schema";
+export { tagsFromKdcMajor, needsAiTagging } from "./kdc";
 export type { BookClassification, PassThreshold } from "./server/prompts";
 export { LlmError, type LlmErrorKind } from "./server/llm";
 export type { PromptContext } from "./server/prompts";
