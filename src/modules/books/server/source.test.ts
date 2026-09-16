@@ -2,25 +2,107 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  combineSources,
+  getBookSource,
   mockSource,
-  selectSourceKind,
   toRawBookHitFromDataGoKr,
   toRawBookHitFromNlk,
+  type BookSource,
+  type RawBookHit,
 } from "./source";
 
-test("키가 하나도 없으면 mock", () => {
-  assert.equal(selectSourceKind({}), "mock");
-});
+function hit(title: string): RawBookHit {
+  return {
+    isbn13: null,
+    title,
+    author: "저자",
+    publisher: null,
+    coverUrl: null,
+    rawCategory: null,
+    kdc: null,
+    targetGradeMin: null,
+    targetGradeMax: null,
+  };
+}
 
-test("NLK_API_KEY가 있으면 nlk 우선", () => {
-  assert.equal(
-    selectSourceKind({ NLK_API_KEY: "x", DATA_GO_KR_KEY: "y" }),
-    "nlk",
+function fakeSource(name: BookSource["name"], hits: RawBookHit[]): BookSource {
+  return {
+    name,
+    async search() {
+      return hits;
+    },
+  };
+}
+
+function failingSource(name: BookSource["name"], error: Error): BookSource {
+  return {
+    name,
+    async search() {
+      throw error;
+    },
+  };
+}
+
+test("combineSources는 여러 소스의 결과를 합친다", async () => {
+  const a = fakeSource("nlk", [hit("책A")]);
+  const b = fakeSource("data_go_kr", [hit("책B")]);
+  const hits = await combineSources([a, b]).search("아무거나");
+  assert.deepEqual(
+    hits.map((h) => h.title).sort(),
+    ["책A", "책B"],
   );
 });
 
-test("DATA_GO_KR_KEY만 있으면 data_go_kr", () => {
-  assert.equal(selectSourceKind({ DATA_GO_KR_KEY: "y" }), "data_go_kr");
+test("combineSources는 하나가 실패해도 살아있는 소스의 결과를 보여준다", async () => {
+  const ok = fakeSource("nlk", [hit("책A")]);
+  const broken = failingSource("data_go_kr", new Error("죽음"));
+  const hits = await combineSources([ok, broken]).search("아무거나");
+  assert.deepEqual(
+    hits.map((h) => h.title),
+    ["책A"],
+  );
+});
+
+test("combineSources는 전부 실패하면 에러를 그대로 올린다", async () => {
+  const err = new Error("전부 죽음");
+  const a = failingSource("nlk", err);
+  const b = failingSource("data_go_kr", new Error("다른 에러"));
+  await assert.rejects(() => combineSources([a, b]).search("아무거나"), err);
+});
+
+function withEnv(vars: Record<string, string | undefined>, fn: () => void) {
+  const original: Record<string, string | undefined> = {};
+  for (const key of Object.keys(vars)) original[key] = process.env[key];
+  try {
+    for (const [key, value] of Object.entries(vars)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    fn();
+  } finally {
+    for (const [key, value] of Object.entries(original)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+}
+
+test("getBookSource는 키가 하나도 없으면 mock", () => {
+  withEnv({ NLK_API_KEY: undefined, DATA_GO_KR_KEY: undefined }, () => {
+    assert.equal(getBookSource().name, "mock");
+  });
+});
+
+test("getBookSource는 키가 하나만 있으면 그 소스만", () => {
+  withEnv({ NLK_API_KEY: undefined, DATA_GO_KR_KEY: "y" }, () => {
+    assert.equal(getBookSource().name, "data_go_kr");
+  });
+});
+
+test("getBookSource는 둘 다 있으면 combined", () => {
+  withEnv({ NLK_API_KEY: "x", DATA_GO_KR_KEY: "y" }, () => {
+    assert.equal(getBookSource().name, "combined");
+  });
 });
 
 test("mockSource는 제목/저자로 찾는다", async () => {
