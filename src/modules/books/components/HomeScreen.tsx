@@ -198,7 +198,7 @@ export function HomeScreen({ draft }: { draft?: HomeDraft | null }) {
                       rel="noopener noreferrer"
                       className="flex min-h-12 items-center px-4 pb-3 text-[13px] font-bold text-coral"
                     >
-                      국립중앙도서관에서 원문 보기 (PC·뷰어 설치 필요) ↗
+                      국립중앙도서관에서 원문 보기 (외부 사이트, PC·뷰어 설치 필요) ↗
                     </a>
                   )}
                 </li>
@@ -299,7 +299,7 @@ export function HomeScreen({ draft }: { draft?: HomeDraft | null }) {
                       rel="noopener noreferrer"
                       className="flex min-h-12 items-center text-[13px] font-bold text-coral"
                     >
-                      국립중앙도서관에서 원문 보기 (PC·뷰어 설치 필요) ↗
+                      국립중앙도서관에서 원문 보기 (외부 사이트, PC·뷰어 설치 필요) ↗
                     </a>
                   )}
                 </Card>
