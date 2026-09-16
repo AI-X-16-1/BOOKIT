@@ -59,7 +59,46 @@ The core of the service. Finds where the review asserts without grounding.
 출력: {"gaps": [{"quote": "...", "type": "...", "reason": "..."}]}
 ```
 
-Note: if `gaps` is empty, do NOT pass without a question (issue #14, decided 2026-09-15). Pick the review's core claim sentence (call 5, `pickCoreClaim`, PR #26), store it as a `review_gaps` row with `gap_type = 'core_claim'`, and continue with the normal question → grading flow. The screen tells the student there were no gaps but one question is still asked. Log this case.
+Note: if `gaps` is empty, do NOT pass without a question (issue #14, decided 2026-09-15). Pick the review's core claim sentence (§2b, `pickCoreClaim`), store it as a `review_gaps` row with `gap_type = 'core_claim'`, and continue with the normal question → grading flow. The screen tells the student there were no gaps but one question is still asked. Log this case.
+
+This is not rare: calibration found 0 gaps in 4 of 5 well-written reviews. A well-written ghostwritten review also has 0 gaps — exactly the case that must not skip verification.
+
+---
+
+## 2b. Core claim (0 gaps only — #14)
+
+Called only when gap analysis returns no gaps. Picks the sentence the follow-up question will quote. `pickCoreClaim` in `modules/ai/server/core-claim.ts`.
+
+```
+너는 학생의 독후감에서 되물을 문장 하나를 고르는 역할이다.
+학년: {grade_level}학년 / 책: {title} ({author})
+
+이 독후감에서는 논리의 빈틈이 발견되지 않았다. 그래도 학생이 직접 읽고 썼는지
+확인하려고 질문을 하나 할 것이다. 그 질문의 재료가 될 문장을 골라라.
+
+독후감:
+"""{review_body}"""
+
+고르는 순서:
+1. 학생이 내린 판단이나 해석이 드러난 문장 ("~라고 생각한다", "~라는 걸 알았다" 같은)
+2. 그런 문장이 여럿이면, 독후감 전체의 결론에 가장 가까운 것
+3. 판단이 드러난 문장이 없으면, 장면을 가장 구체적으로 말한 문장
+
+규칙:
+- quote는 독후감에 그대로 있는 문장 하나를 글자 그대로 옮겨라. 요약하거나 다듬지 마라.
+  두 문장을 이어 붙이지 마라.
+- 줄거리를 옮기기만 한 문장은 고르지 마라.
+- 책의 인물·장면·주제에 대한 문장만 골라라. 학생 자기 생활이나 경험만 말한 문장
+  ("우리 집 강아지도 소중하다" 같은)은 고르지 마라. 그 문장으로는 책을 읽었는지 물을 수 없다.
+- reason은 학생에게 보여줄 문장이다. 반말로 한 문장. 이 문장을 더 듣고 싶다는 뜻으로 써라.
+  나무라거나 의심하는 말투를 쓰지 마라.
+
+출력: {"quote": "...", "reason": "..."}
+```
+
+The quote is checked against the review the same way as gap quotes. If it is not in the review, `pickCoreClaim` returns `null` and the caller returns the review to draft (asks for one more sentence), as before.
+
+`pickCoreClaim` returns a `Gap` with `type: "core_claim"`, so the caller stores it in `review_gaps` as is. The question (§3) and grading (§4) prompts run unchanged — they read `quote`, not `type`.
 
 ---
 
@@ -73,6 +112,7 @@ Takes one gap and turns it into the follow-up question. This is what makes ghost
 
 반드시 이 문장에 대해 물어라: "{gap.quote}"
 이 문장의 문제: {gap.reason}
+(gap.type == core_claim 이면 이 줄만 바뀐다 — "이 문장은 빈틈이 아니다. 학생이 직접 읽고 썼는지 확인하려고 더 듣고 싶은 문장이다: {gap.reason}")
 
 독후감 전문: """{review_body}"""
 
@@ -101,6 +141,8 @@ Takes one gap and turns it into the follow-up question. This is what makes ghost
 ```
 
 **The question does not repeat the quote.** The question screen already shows `quote` in its own "네가 쓴 문장" box right above the question (`POST /api/reviews/:id/question → { question, quote }`). Quoting it again showed the sentence twice and produced doubled particles like "…생각한다라고 했는데" in 7 of 10 test questions (issue #27). `buildQuestion` regenerates once if the question still echoes 12+ characters of the quote, and keeps the second result either way — an awkward question beats no question.
+
+**core_claim 은 문제가 아니다.** `core_claim` 의 `reason` 은 "이 문장을 더 듣고 싶어" 라는 안내 문장이라, 다른 빈틈과 같은 `이 문장의 문제:` 로 넘기면 모델이 없는 문제를 지어내 묻는다. `questionUser` 가 `gap.type` 으로 이 줄만 바꾼다 (§2b, PR #26 리뷰 3).
 
 Generate this **immediately after review submission**, while the gap-analysis screen is showing. The countdown starts only when the question is on screen.
 
