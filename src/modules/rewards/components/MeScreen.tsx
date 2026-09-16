@@ -9,6 +9,7 @@ import type {
 import { apiGet } from "@/shared/api/client";
 import { Card, Chip } from "@/shared/ui";
 import { COVER } from "@/modules/books";
+import { GuardianShareCard } from "@/modules/guardian";
 import { REASON_LABEL } from "../schema";
 
 /**
@@ -26,6 +27,9 @@ import { REASON_LABEL } from "../schema";
  * 발급할 방법이 없고, 대부분 초1~중3 은 국회도서관 이용 대상도 아니다) 교환 버튼을 뺐다.
  * API·원장(points_ledger)은 과거 기록 보존을 위해 그대로 둔다 — 새 소비처는 반 챌린지
  * 쪽으로 옮기기로 했다 (#58 논의, 로드맵).
+ *
+ * #81: POST /api/guardian/link 는 이미 구현돼 있었는데 부르는 화면이 없었다.
+ * GuardianShareCard 가 그 자리다.
  */
 const READ_BOOKS = [
   { title: "아몬드", score: 100, cover: "green" as const },
@@ -115,6 +119,9 @@ export function MeScreen() {
           <p className="mt-3 text-center text-[13px] text-yellow-text">{note}</p>
         )}
       </div>
+
+      {/* #81: 발급 API는 있었는데 부르는 화면이 없었다 */}
+      <GuardianShareCard />
 
       {/* 원장 — append-only 라 차감도 한 줄로 쌓인다 */}
       <Card>
