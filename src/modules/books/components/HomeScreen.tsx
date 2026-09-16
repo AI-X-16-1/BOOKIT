@@ -22,7 +22,10 @@ import { COVER, type CoverTone } from "../mock";
  * 책 카드는 /write?book=<id> 로 간다 — review 모듈이 그 책의 초고를 만든다.
  * 책잇 서재에 원문이 있는 책(is_public_domain)은 추천 카드에 "서재에서 바로
  * 읽기" 링크(reader 모듈의 libraryHref)도 같이 보여준다 — 조건 없이 바로 읽을
- * 수 있는 유일한 경로다 (#58). 검색 결과 목록은 공간이 좁아 지금은 넣지 않았다.
+ * 수 있는 유일한 경로다 (#58). library_url 이 있는 책(국립중앙도서관에 관외이용
+ * 무료 원문이 실제로 있는 책만, server/library-availability.ts 가 확인)은
+ * "국립중앙도서관에서 원문 보기" 링크도 같이 보여준다 (#72). 검색 결과 목록은
+ * 공간이 좁아 둘 다 지금은 넣지 않았다.
  * "이어서 쓰기"는 /write 가 가장 최근 초고를 스스로 찾으므로 여기서는 링크만 둔다.
  */
 
@@ -260,6 +263,18 @@ export function HomeScreen() {
                     >
                       서재에서 바로 읽기 →
                     </Link>
+                  )}
+                  {/* 관외이용 무료 원문이 실제로 있는 책만 — 없는데 뜨면 설치 안내만 보고
+                      막힌다 (#72). 새 창으로 연다: 뷰어 설치가 필요할 수 있어서다. */}
+                  {b.library_url && (
+                    <a
+                      href={b.library_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex min-h-12 items-center text-[13px] font-bold text-coral"
+                    >
+                      국립중앙도서관에서 원문 보기 ↗
+                    </a>
                   )}
                 </Card>
               ))}
