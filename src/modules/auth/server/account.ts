@@ -11,11 +11,23 @@
 
 import { createAdminClient } from "@/shared/supabase/admin";
 
+import { isDemoAccount } from "./demo";
 import type { OnboardingResult } from "./onboarding";
 
 export async function deleteAccount(
   userId: string,
+  email: string | null | undefined,
 ): Promise<OnboardingResult<{ deleted: true }>> {
+  // 시드 계정은 지우지 않는다 — 심사자가 '탈퇴' 를 누르면 데모가 통째로 사라진다 (server/demo.ts)
+  if (isDemoAccount(email)) {
+    return {
+      ok: false,
+      code: "demo_account",
+      message: "시연 계정은 탈퇴할 수 없어.",
+      status: 403,
+    };
+  }
+
   const admin = createAdminClient();
   const { error } = await admin.auth.admin.deleteUser(userId);
 

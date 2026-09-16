@@ -161,9 +161,10 @@ All under `/api`. All authenticated except the guardian route. All return `{ dat
 ```
 POST /api/onboarding/student   { grade_level, join_code }        → { class }
 POST /api/onboarding/teacher   { school_name, grade_level, class_no } → { class, join_code }
+GET   /auth/demo?as=student|teacher                             → 302 "/"   심사위원용 시연 로그인. DEMO_LOGIN_ENABLED 일 때만, 아니면 404. 시드 계정으로 세션을 심는다 (매직링크 토큰을 서버 안에서 소비)
 GET   /api/profile                                              → { display_name, role, grade_level, class_label }   내 정보. class_label 은 "5학년 2반" 꼴, 반이 없으면 null
 PATCH /api/profile             { grade_level }                   → { profile }
-DELETE /api/profile                                              → { deleted }   계정·데이터 전부 삭제(cascade), 세션 종료
+DELETE /api/profile                                              → { deleted }   계정·데이터 전부 삭제(cascade), 세션 종료. 시드 계정(@bookit.demo)은 403 demo_account
 ```
 
 ### books (이승환)
