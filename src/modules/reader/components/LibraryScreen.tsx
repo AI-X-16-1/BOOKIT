@@ -126,6 +126,21 @@ function gradeLabel(min: number | null, max: number | null): string | null {
   return `${label(min)}~${label(max)}`;
 }
 
+/**
+ * 내 학년 기준으로 책을 세 묶음으로 나눈다.
+ *
+ * 0 = 내 학년에 맞는 책 · 1 = 더 쉬운 책 · 2 = 더 어려운 책.
+ * 막지는 않는다 — 읽고 싶으면 읽으면 된다. 위로 넘보는 건 독서에서 자연스럽다.
+ * 다만 기본 화면에서는 내 학년 책이 먼저 보여야 한다. 서재가 29권이라
+ * 학년이 섞여 있으면 초1 이 중3 소설만 보게 된다.
+ */
+function gradeBucket(book: ShelfBook, myGrade: number | null): 0 | 1 | 2 {
+  if (myGrade === null || book.gradeMin === null) return 0;
+  if (book.gradeMin > myGrade) return 2;
+  if (book.gradeMax !== null && book.gradeMax < myGrade) return 1;
+  return 0;
+}
+
 function subtitleOf(book: ShelfBook): string {
   const grade = gradeLabel(book.gradeMin, book.gradeMax);
   return grade ? `${book.author} · ${grade}` : book.author;
@@ -158,10 +173,13 @@ type Reading = {
 export function LibraryScreen({
   books,
   initial,
+  myGrade = null,
 }: {
   books: ShelfBook[];
   /** /library?book=<id>&chapter=<n> 로 들어왔을 때 바로 펼칠 책 (libraryHref) */
   initial?: { bookId: string; chapterNo: number };
+  /** 로그인한 학생의 학년. 교사이거나 모르면 null — 그때는 원래 순서 그대로다 */
+  myGrade?: number | null;
 }) {
   // 주소로 책을 짚고 들어오면 목록을 거치지 않고 그 장을 바로 펼친다.
   // 서재에 없는 책이면 조용히 목록을 보여준다.
@@ -420,9 +438,15 @@ export function LibraryScreen({
   }
 
   // 폭이 바뀌어 쪽 수가 줄면 마지막 쪽으로 맞춘다
-  const pageCount = Math.max(1, Math.ceil(books.length / pageSize));
+  // 내 학년 책 → 쉬운 책 → 어려운 책. 같은 묶음 안에서는 서버가 준 순서(학년·제목)를 지킨다
+  const sorted =
+    myGrade === null
+      ? books
+      : [...books].sort((a, b) => gradeBucket(a, myGrade) - gradeBucket(b, myGrade));
+
+  const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(shelfPage, pageCount);
-  const pageBooks = books.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pageBooks = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="flex flex-col gap-4">
@@ -460,7 +484,11 @@ export function LibraryScreen({
                       {subtitleOf(book)}
                     </div>
                   </div>
-                  <Chip tone="green">무료</Chip>
+                  {gradeBucket(book, myGrade) === 2 ? (
+                    <Chip tone="yellow">조금 어려워</Chip>
+                  ) : (
+                    <Chip tone="green">무료</Chip>
+                  )}
                 </Card>
               </button>
             ))}
