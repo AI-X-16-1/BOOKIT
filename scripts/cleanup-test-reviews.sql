@@ -16,7 +16,8 @@
 -- ─────────────────────────────────────────────────────────────
 -- §0. 먼저 확인 — 지워질 독후감
 -- ─────────────────────────────────────────────────────────────
--- EMAIL 과 기간을 여기서 바꾼다. 기간을 넉넉히 잡으면 진짜 독후감까지 걸리니 좁게 둔다.
+-- 돌리기 전에 '<your-email>' 을 전부 자기 구글 계정 메일로 찾아 바꾼다 (7곳). repo 가 공개라 메일을 적어 두지 않는다.
+-- 기간도 여기서 바꾼다. 넉넉히 잡으면 진짜 독후감까지 걸리니 좁게 둔다.
 select r.id,
        r.status,
        r.created_at,
@@ -28,7 +29,7 @@ select r.id,
          where v.review_id = r.id and v.passed)                        as 통과
   from reviews r
   join books b on b.id = r.book_id
- where r.student_id = (select id from auth.users where email = 'parkjg0525@gmail.com')
+ where r.student_id = (select id from auth.users where email = '<your-email>')
    and r.created_at >= now() - interval '1 day'
  order by r.created_at desc;
 
@@ -41,7 +42,7 @@ begin;
 create temp table _doomed on commit drop as
 select r.id
   from reviews r
- where r.student_id = (select id from auth.users where email = 'parkjg0525@gmail.com')
+ where r.student_id = (select id from auth.users where email = '<your-email>')
    and r.created_at >= now() - interval '1 day';
 
 -- 1) 책갈피 원장. 통과 적립분만 지운다 (ref_id = verifications.id).
@@ -65,25 +66,25 @@ commit;
 -- 올린다. §1 은 원장 행만 지우므로 그 두 값은 그대로 남는다. 통과한 적이 없으면 건너뛴다.
 --
 -- 지금 값 보기:
---   select * from streaks      where student_id = (select id from auth.users where email = 'parkjg0525@gmail.com');
---   select * from genre_stamps where student_id = (select id from auth.users where email = 'parkjg0525@gmail.com')
+--   select * from streaks      where student_id = (select id from auth.users where email = '<your-email>');
+--   select * from genre_stamps where student_id = (select id from auth.users where email = '<your-email>')
 --    order by completed_count desc;
 --
 -- 도장은 통과한 책의 태그마다 1씩 올라갔으니 같은 만큼 내린다 (책 id 를 채워 넣는다):
 --   update genre_stamps
 --      set completed_count = greatest(completed_count - 1, 0)
---    where student_id = (select id from auth.users where email = 'parkjg0525@gmail.com')
+--    where student_id = (select id from auth.users where email = '<your-email>')
 --      and genre = any (select unnest(tags) from books where id = '여기에-책-id');
 --
 -- 스트릭은 "연속 일수"라 되돌릴 값이 기록에 남지 않는다. 테스트 계정이면 그냥 두거나,
 -- 원하는 값으로 직접 맞춘다:
 --   update streaks set current_days = 0, longest_days = 0, last_passed_on = null
---    where student_id = (select id from auth.users where email = 'parkjg0525@gmail.com');
+--    where student_id = (select id from auth.users where email = '<your-email>');
 
 -- ─────────────────────────────────────────────────────────────
 -- §3. 확인 — 0건이면 끝
 -- ─────────────────────────────────────────────────────────────
 select count(*) as 남은_테스트_독후감
   from reviews
- where student_id = (select id from auth.users where email = 'parkjg0525@gmail.com')
+ where student_id = (select id from auth.users where email = '<your-email>')
    and created_at >= now() - interval '1 day';
