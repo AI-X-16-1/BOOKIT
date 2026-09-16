@@ -174,8 +174,10 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
               <div className="mt-1.5 text-[28px] font-bold tracking-[0.2em] text-ink">
                 {issued}
               </div>
+              {/* 보호자 동의를 받는 주체는 학교다 (#94). 학생에게 자기 확인 체크박스를
+                  받는 건 법적 동의가 아니라서 학생 화면에는 두지 않는다 (개인정보보호법 §22-2) */}
               <p className="mt-2 text-[13px] text-yellow-text">
-                학생들에게 이 코드를 알려주세요
+                보호자 동의를 받은 학생에게만 이 코드를 알려주세요
               </p>
             </div>
           )}
