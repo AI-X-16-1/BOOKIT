@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type {
   ClassRankingResponse,
   GrowthResponse,
+  MeResponse,
   PointsResponse,
 } from "@/shared/types";
 import { apiGet } from "@/shared/api/client";
@@ -18,7 +19,7 @@ import { REASON_LABEL } from "../schema";
  *   - 책갈피 잔액/원장 — GET /api/points 로 연결 완료 (#30).
  *   - 우리 반 순위 — GET /api/ranking/class 로 연결 완료.
  *   - 연속 기록 — GET /api/growth 로 연결 완료 (#33 머지됨).
- *   - 이름·학반 — GET /api/profile 이 #85 로 올라왔다. 머지되면 이어서 연결한다 (#71).
+ *   - 이름·학반 — GET /api/profile 연결 완료 (#85 머지, #71).
  *
  * #58 결정: 국회도서관 ebook·오디오북 "열람권" 교환은 실제로 전달되는 게 없어(무료 열람권을
  * 발급할 방법이 없고, 대부분 초1~중3 은 국회도서관 이용 대상도 아니다) 교환 버튼을 뺐다.
@@ -35,12 +36,14 @@ import { REASON_LABEL } from "../schema";
  * GuardianShareCard 가 그 자리다.
  */
 export function MeScreen() {
+  const [profile, setProfile] = useState<MeResponse | null>(null);
   const [points, setPoints] = useState<PointsResponse | null>(null);
   const [rank, setRank] = useState<ClassRankingResponse | null>(null);
   const [growth, setGrowth] = useState<GrowthResponse | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
+    apiGet<MeResponse>("/api/profile").then(setProfile).catch(() => {});
     apiGet<PointsResponse>("/api/points").then(setPoints).catch(() => {
       setNote("책갈피를 불러오지 못했어.");
     });
@@ -56,9 +59,15 @@ export function MeScreen() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3.5">
         <div className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-yellow text-xl font-bold text-stamp-text">
-          민
+          {profile ? profile.display_name[0] : "—"}
         </div>
-        <div className="text-xl font-bold text-ink">민서 · 5학년 2반</div>
+        <div className="text-xl font-bold text-ink">
+          {profile
+            ? profile.class_label
+              ? `${profile.display_name} · ${profile.class_label}`
+              : profile.display_name
+            : "—"}
+        </div>
       </div>
 
       <div className="rounded-card bg-panel p-5">
