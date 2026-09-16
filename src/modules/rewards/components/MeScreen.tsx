@@ -8,6 +8,7 @@ import type {
 } from "@/shared/types";
 import { apiGet } from "@/shared/api/client";
 import { Card } from "@/shared/ui";
+import { GuardianShareCard } from "@/modules/guardian";
 import { REASON_LABEL } from "../schema";
 
 /**
@@ -29,6 +30,9 @@ import { REASON_LABEL } from "../schema";
  *
  * #71 (김민경 결정): 읽은 책(완독 점수 목록)은 제출 전엔 조회 API 를 안 만들기로 했다.
  * 고정 목록 대신 빈 상태로 둔다.
+ *
+ * #81: POST /api/guardian/link 는 이미 구현돼 있었는데 부르는 화면이 없었다.
+ * GuardianShareCard 가 그 자리다.
  */
 export function MeScreen() {
   const [points, setPoints] = useState<PointsResponse | null>(null);
@@ -95,6 +99,9 @@ export function MeScreen() {
           <p className="mt-3 text-center text-[13px] text-yellow-text">{note}</p>
         )}
       </div>
+
+      {/* #81: 발급 API는 있었는데 부르는 화면이 없었다 */}
+      <GuardianShareCard />
 
       {/* 원장 — append-only 라 차감도 한 줄로 쌓인다 */}
       <Card>
