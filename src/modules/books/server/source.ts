@@ -134,6 +134,13 @@ function classifyAudience(eaAddCode: string | null): {
   exclude: boolean;
 } {
   const readerCode = eaAddCode?.charAt(0);
+  // 3~5 자리 = 내용분류기호(KDC 대분류). 7xx 는 어학이다 — 독후감을 쓸 책이 아니라
+  // 한글·영어 학습 교재가 여기 모여 있다. 운영 DB 표본 40권 실측(2026-09-16):
+  // 7xx 8권이 전부 학습지였다 (문해력 PT K37, E&F English Student Book, 동화탐험대,
+  // 뽀로로 ㄱㄴㄷ 팝업북, 한글방글 K3 6호 …). 같은 표본에서 일반 도서는 8xx(문학)였다.
+  if (eaAddCode?.charAt(2) === "7") {
+    return { targetGradeMin: null, targetGradeMax: null, exclude: true };
+  }
   // 둘째 자리 = 발행형태기호. 7=그림책·만화. 청소년(4)+만화는 성인 취향 만화가
   // 그대로 들어온다 ("아몬" → Go Nagai 데빌맨류, 47830). 아동(7)+7 은 그림책이라 둔다.
   if (readerCode === "4" && eaAddCode?.charAt(1) === "7") {

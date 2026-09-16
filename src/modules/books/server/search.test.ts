@@ -154,6 +154,29 @@ test("제목·저자에 검색어가 없는 외부 결과는 버린다 (NLK 의 
   if (result.ok) assert.deepEqual(result.books.map((b) => b.title), ["아몬드"]);
 });
 
+test("한글·영어 학습 교재와 웹툰은 제목으로 거른다 — 학습만화는 남긴다", () => {
+  // 운영 DB 에 실제로 올라와 있던 제목들 (2026-09-16)
+  for (const t of [
+    "아이와 함께 하는 글자 놀이터 ㅊ․ㅎ",
+    "[웹툰] 아몬 : 헤아릴 수 없는 (연재합본)",
+    "E&F English 1-2 Student Book",
+    "뽀롱뽀롱 뽀로로 ㄱㄴㄷ 팝업북 ㄱ",
+    "우리글깨비 자음과 모음 10 ㅊ",
+    "한글공부 ㄱ,ㄴ,ㄷ",
+  ]) {
+    assert.equal(isDerivative(t), true, t);
+  }
+  // 학습만화는 초등학생이 실제로 읽고 독후감을 쓰는 책이다 — 거르지 않는다
+  for (const t of [
+    "Why? 우주",
+    "만화로 보는 그리스 로마 신화 1",
+    "흔한남매 10",
+    "설민석의 한국사 대모험",
+  ]) {
+    assert.equal(isDerivative(t), false, t);
+  }
+});
+
 test("워크북·스티커북·퍼즐북 같은 파생물은 제목으로 거른다", () => {
   for (const t of ["마당을 나온 암탉 색칠놀이", "마당을 나온 암탉(워크북)", "마당을 나온 암탉 미니스티커북 패키지", "PlayFACTO 도형꾸러미 퍼즐북 헥시아몬드", "초등 국어 문제집"]) {
     assert.equal(isDerivative(t), true, t);

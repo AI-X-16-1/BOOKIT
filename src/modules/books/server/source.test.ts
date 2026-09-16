@@ -178,6 +178,38 @@ test("EA_ADD_CODE 0(교양)은 제외한다 — 웹소설·성인 교양이 여�
   assert.equal(hit, null);
 });
 
+test("EA_ADD_CODE 내용분류 7xx(어학)은 제외한다 — 아동 대상이어도 한글·영어 학습 교재다", () => {
+  // 운영 DB 실측(2026-09-16): 표본 40권 중 7xx 8권이 전부 학습지였다
+  for (const code of ["73700", "74740", "74710"]) {
+    const hit = toRawBookHitFromNlk({
+      PUBLISHER: "핀란드문해력연구소",
+      AUTHOR: "편집부",
+      TITLE: "핀란드 문해력연구소 문해력 PT K43",
+      EA_ISBN: "9791199999999",
+      EA_ADD_CODE: code,
+      TITLE_URL: "",
+      SUBJECT: "7",
+      KDC: "",
+    });
+    assert.equal(hit, null, code);
+  }
+});
+
+test("EA_ADD_CODE 내용분류 8xx(문학)은 통과한다 — 같은 아동 대상이라도 읽을 책이다", () => {
+  const hit = toRawBookHitFromNlk({
+    PUBLISHER: "웅진주니어",
+    AUTHOR: "지은이: 아무개",
+    TITLE: "내 꼬마 몬스터가 크게 자라면",
+    EA_ISBN: "9791188888888",
+    EA_ADD_CODE: "74880",
+    TITLE_URL: "",
+    SUBJECT: "8",
+    KDC: "",
+  });
+  assert.notEqual(hit, null);
+  assert.equal(hit?.targetGradeMin, 1);
+});
+
 test("EA_ADD_CODE 7(아동)은 1~6학년으로 매핑한다", () => {
   const hit = toRawBookHitFromNlk({
     PUBLISHER: "사계절",

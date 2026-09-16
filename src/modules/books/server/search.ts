@@ -20,8 +20,20 @@ type IsbnHit = RawBookHit & { isbn13: string };
 const DERIVATIVE_RE =
   /워크북|스티커|색칠|퍼즐|문제집|학습지|활동지|놀이북|만들기|따라\s*그리기|컬러링|미니북|패키지|세트|전\s*\d+\s*권|\d+\s*권\s*세트/;
 
+/**
+ * 읽을 거리가 아닌 자료 — 한글·영어 학습 교재와 웹툰. 부가기호로 대부분 걸리지만
+ * (source.ts 의 내용분류 7xx 제외) 6xx 로 잘못 매겨진 것들이 남아 제목으로 한 번 더 본다.
+ * 운영 DB 에서 실제로 올라와 있던 제목들이다: "아이와 함께 하는 글자 놀이터 ㅊ․ㅎ"(73650),
+ * "[웹툰] 아몬 : 헤아릴 수 없는 (연재합본)".
+ *
+ * 학습만화(Why?·흔한남매 같은)는 일부러 빼지 않는다 — 초등학생이 실제로 읽고
+ * 독후감을 쓰는 책이다. 그래서 "만화" 라는 낱말 자체는 규칙에 넣지 않았다.
+ */
+const NOT_A_READING_BOOK_RE =
+  /웹툰|연재합본|Student\s*Book|Work\s*Book|Activity\s*Book|단어장|워크시트|받아쓰기|따라\s*쓰기|한글\s*(공부|떼기)|자음과\s*모음|글자\s*놀이|팝업북/i;
+
 export function isDerivative(title: string): boolean {
-  return DERIVATIVE_RE.test(title);
+  return DERIVATIVE_RE.test(title) || NOT_A_READING_BOOK_RE.test(title);
 }
 
 export function rawHitToBookInsert(
