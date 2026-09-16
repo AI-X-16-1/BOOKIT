@@ -1,4 +1,5 @@
 /**
+ * GET    /api/profile               → { display_name, role, grade_level, class_label }
  * PATCH  /api/profile  { grade_level } → { profile }
  * DELETE /api/profile               → { deleted }   계정과 모든 데이터 삭제, 세션 종료
  *
@@ -7,7 +8,12 @@
 
 import type { NextRequest, NextResponse } from "next/server";
 
-import { deleteAccount, updateGradeLevel, updateProfileSchema } from "@/modules/auth";
+import {
+  deleteAccount,
+  getMyProfile,
+  updateGradeLevel,
+  updateProfileSchema,
+} from "@/modules/auth";
 import {
   fail,
   invalidBody,
@@ -19,8 +25,22 @@ import { createServerSupabase } from "@/shared/supabase/server";
 import type {
   ApiResponse,
   DeleteProfileResponse,
+  MeResponse,
   UpdateProfileResponse,
 } from "@/shared/types";
+
+export async function GET(): Promise<NextResponse<ApiResponse<MeResponse>>> {
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return unauthorized();
+
+  const result = await getMyProfile(supabase, user.id);
+  if (!result.ok) return fail(result.code, result.message, result.status);
+
+  return ok(result.data);
+}
 
 export async function PATCH(
   request: NextRequest,

@@ -11,6 +11,7 @@
  *   GET   /auth/callback           구글 OAuth 콜백. 세션 쿠키를 심고 "/" 로 보낸다
  *   POST  /api/onboarding/student  { grade_level, join_code }             → { class }
  *   POST  /api/onboarding/teacher  { school_name, grade_level, class_no } → { class, join_code }
+ *   GET   /api/profile                                                   → { display_name, role, grade_level, class_label }
  *   PATCH /api/profile             { grade_level }                        → { profile }
  *
  * 학교/학급 자유 입력은 허용하지 않는다 — 6자리 join_code로만 가입 (CLAUDE.md §4).
@@ -44,3 +45,5 @@ export {
 } from "./server/onboarding";
 
 export { deleteAccount } from "./server/account";
+
+export { getMyProfile } from "./server/profile";

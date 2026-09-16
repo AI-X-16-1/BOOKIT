@@ -17,6 +17,7 @@ import type {
   GradeLevel,
   PointReason,
   Profile,
+  ProfileRole,
   Review,
   ScoreAxis,
   StyleAxis,
@@ -49,6 +50,19 @@ export interface TeacherOnboardingRequest {
 export interface TeacherOnboardingResponse {
   class: Class;
   join_code: string;
+}
+
+/**
+ * GET /api/profile — 로그인한 사람의 정보. '나' 화면 머리글용 (#71).
+ * class_label 은 학생이면 들어간 반, 교사면 자기 반. 아직 온보딩 전이면 null.
+ */
+export interface MeResponse {
+  display_name: string;
+  role: ProfileRole;
+  /** 교사는 null */
+  grade_level: GradeLevel | null;
+  /** 예: "5학년 2반" */
+  class_label: string | null;
 }
 
 export interface UpdateProfileRequest {

@@ -167,6 +167,7 @@ Not right-or-wrong. Three axes.
 
 1. logic_consistency — 답변이 독후감의 주장과 어긋나지 않는가. pass / weak / fail
 2. specificity — 장면이나 인물을 특정했는가. 뭉뚱그렸으면 weak. pass / weak / fail
+   책에 널리 알려진 문장이나 제목을 그대로 옮기고 감상만 붙인 답은 특정한 것이 아니다 — weak. 이 판단은 구체성 축에서만 하고 다른 축으로 옮기지 마라. 장면이나 인물을 짚었으면 짧아도 pass 다.
 3. style_consistency — 독후감과 답변의 어휘 수준·사고의 복잡도가 비슷한가. same / shifted
 
 style_consistency 는 방향과 무관하다. 둘 중 하나라도 해당하면 shifted 다.
