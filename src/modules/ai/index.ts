@@ -32,6 +32,7 @@ export { buildQuestion } from "./server/question";
 export { grade, isPass, readThreshold } from "./server/grade";
 export { normalizeGenreTags } from "./server/genre-tags";
 export { GENRE_TAGS, type GenreTag } from "./schema";
+export { tagsFromKdcMajor, needsAiTagging } from "./kdc";
 export type { BookClassification, PassThreshold } from "./server/prompts";
 export { LlmError, type LlmErrorKind } from "./server/llm";
 export type { PromptContext } from "./server/prompts";

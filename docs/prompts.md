@@ -161,6 +161,11 @@ style_consistency 는 방향과 무관하다. 둘 중 하나라도 해당하면 
 
 ## 5. Genre tag normalization
 
+**When this runs.** Not in the search path — `search.ts` inserts up to 10 books per search, so one LLM call per result would be 10 calls a search. It runs as a batch over stored rows instead: `npm run ai:retag` (preview) / `-- --write` (apply).
+
+**What the batch is for.** Measured 2026-09-16 on 360 real NLK responses: the search source's classification field (`SUBJECT`) is a single KDC major digit, so only non-fiction is decidable from it (`modules/ai/kdc.ts` — 역사·예술·과학·인물심리). Literature is 29% of results and every fiction genre we use (동화·성장소설·판타지·추리·모험·우정·가족·고전) sits under KDC 8. The full classification number does not separate them either — 「마당을 나온 암탉」 (동화) and 「아몬드」 (청소년 소설) are both 813.7. So fiction genres come from this prompt, and only from this prompt.
+
+
 Batch job, not user-facing. Maps 알라딘 category strings and KDC codes onto the app's fixed tag set.
 
 Fixed tags: 성장소설, 판타지, SF, 추리, 동화, 역사, 과학, 모험, 우정, 인물심리, 가족, 사회, 자연, 예술, 고전.
