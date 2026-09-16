@@ -55,10 +55,10 @@ Module internals: `components/`, `server/`, `schema.ts`, `index.ts`.
 | `reader` | 강민구 | 책잇 서재 — public-domain text rendering, word-tap dictionary (국립국어원 API) |
 | `auth` | 김민경 | Google OAuth, profiles, role split, onboarding, class codes, RLS policies, PWA, deploy |
 | `teacher` | 김민경 | Class ranking aggregation, per-student progress view (desktop only) |
-| `books` | 이승환 | 알라딘 / 국립어린이청소년도서관 / 국립중앙도서관 APIs, search, genre-adjacent recommendation, 국회도서관 handoff |
+| `books` | 이승환 | 알라딘 / 국립어린이청소년도서관 / 국립중앙도서관 APIs, search, genre-adjacent recommendation, link-out to 책잇 서재 for public-domain books |
 | `review` | 박재경 | Review editor, autosave, draft state |
 | `verification` | 박재경 | Gap-analysis screen, timed question screen, grading result, retry flow |
-| `rewards` | 문민재 | 책갈피 ledger, 열람권 exchange, 알라딘 links |
+| `rewards` | 문민재 | 책갈피 ledger, 알라딘 links. (열람권 exchange retired — #58; ledger enum kept for history) |
 | `growth` | 문민재 | Streak, 책나무, genre stamp board, levels/badges |
 | `ranking` | 문민재 | Class-vs-class ranking (student side), challenges |
 | `guardian` | 문민재 | Read-only guardian share link |
