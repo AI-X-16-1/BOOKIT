@@ -13,7 +13,7 @@ import { createClient } from "@/shared/supabase/client";
  * 구글 하나만 쓴다 (CLAUDE.md §1). 버튼을 누르면 구글로 갔다가
  * /auth/callback 으로 돌아오고, 거기서 세션 쿠키가 심어진다.
  */
-function LoginCard() {
+function LoginCard({ demo }: { demo: boolean }) {
   const searchParams = useSearchParams();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(
@@ -90,6 +90,29 @@ function LoginCard() {
         거쳐요 ✎
       </p>
 
+      {demo && (
+        // 심사위원용. 구글 계정 없이 시드 계정으로 바로 들어간다 (auth/server/demo.ts)
+        <div className="mt-6 w-full rounded-card bg-yellow-bg p-4">
+          <p className="text-center text-[13px] font-bold text-yellow-text">
+            심사위원 둘러보기 — 로그인 없이 바로
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <a
+              href="/auth/demo?as=student"
+              className="flex min-h-12 items-center justify-center rounded-btn bg-card text-[15px] font-bold text-ink"
+            >
+              학생으로
+            </a>
+            <a
+              href="/auth/demo?as=teacher"
+              className="flex min-h-12 items-center justify-center rounded-btn bg-card text-[15px] font-bold text-ink"
+            >
+              선생님으로
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* 게시 의무 (개인정보보호법 §30). 로그인 전에 보여야 해서 여기 둔다 (#93) */}
       <p className="mt-4 flex gap-3 text-[13px] text-faint">
         <Link href="/privacy" className="underline">
@@ -103,7 +126,7 @@ function LoginCard() {
   );
 }
 
-export function LoginScreen() {
+export function LoginScreen({ demo = false }: { demo?: boolean }) {
   return (
     <div className="relative flex min-h-dvh items-center justify-center bg-notebook px-6">
       {/* 형광펜 자국과 별 — 목업 L37-40 */}
@@ -118,7 +141,7 @@ export function LoginScreen() {
 
       {/* useSearchParams 는 Suspense 경계가 필요하다 */}
       <Suspense>
-        <LoginCard />
+        <LoginCard demo={demo} />
       </Suspense>
     </div>
   );

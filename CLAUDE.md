@@ -13,7 +13,7 @@ Contest: 원티드 AI Championship 2026. Submit by 2026-09-20. Deployed link mus
 |---|---|
 | Framework | Next.js (App Router, TypeScript) |
 | DB | Supabase PostgreSQL (RLS always on) |
-| Auth | Supabase Auth, Google OAuth only |
+| Auth | Supabase Auth, Google OAuth only. (Judging exception: `/auth/demo` signs the seeded demo student/teacher in without Google while `DEMO_LOGIN_ENABLED=true`, closes after 2026-10-17 — see `modules/auth/server/demo.ts`) |
 | Serverless | Vercel Route Handlers only. NO Supabase Edge Functions |
 | LLM | Anthropic Claude, `claude-sonnet-5`. One vendor only, server-side only. (Switched from Gemini on 2026-09-16 — Google's generative-AI terms bar services likely to be accessed by under-18s, both Gemini API and Vertex AI. See #54) |
 | Deploy | Vercel |

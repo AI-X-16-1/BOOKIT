@@ -10,6 +10,7 @@
  * 라우트 (docs/spec.md §5):
  *   GET   /auth/callback           구글 OAuth 콜백. 세션 쿠키를 심고 "/" 로 보낸다
  *   GET   /privacy, /terms         개인정보처리방침·이용약관. 로그인 없이 본다 (#93)
+ *   GET   /auth/demo?as=role       심사위원용 시연 로그인. DEMO_LOGIN_ENABLED 일 때만 (server/demo.ts)
  *   POST  /api/onboarding/student  { grade_level, join_code }             → { class }
  *   POST  /api/onboarding/teacher  { school_name, grade_level, class_no } → { class, join_code }
  *   GET   /api/profile                                                   → { display_name, role, grade_level, class_label }
@@ -47,5 +48,12 @@ export {
 } from "./server/onboarding";
 
 export { deleteAccount } from "./server/account";
+
+export {
+  demoLoginEnabled,
+  demoEmailFor,
+  isDemoAccount,
+  parseDemoRole,
+} from "./server/demo";
 
 export { getMyProfile } from "./server/profile";

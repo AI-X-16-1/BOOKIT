@@ -73,7 +73,7 @@ export async function DELETE(): Promise<
   } = await supabase.auth.getUser();
   if (!user) return unauthorized();
 
-  const result = await deleteAccount(user.id);
+  const result = await deleteAccount(user.id, user.email);
   if (!result.ok) return fail(result.code, result.message, result.status);
 
   // auth.users 가 지워져 토큰은 이미 죽었지만, 브라우저 쿠키는 여기서 걷어낸다
