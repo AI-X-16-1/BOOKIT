@@ -161,6 +161,7 @@ All under `/api`. All authenticated except the guardian route. All return `{ dat
 ```
 POST /api/onboarding/student   { grade_level, join_code }        → { class }
 POST /api/onboarding/teacher   { school_name, grade_level, class_no } → { class, join_code }
+GET   /api/profile                                              → { display_name, role, grade_level, class_label }   내 정보. class_label 은 "5학년 2반" 꼴, 반이 없으면 null
 PATCH /api/profile             { grade_level }                   → { profile }
 DELETE /api/profile                                              → { deleted }   계정·데이터 전부 삭제(cascade), 세션 종료
 ```
