@@ -139,6 +139,17 @@ async function createAttempt(
 
   if (!question || !gap) {
     console.error("[verification] 모든 빈틈에서 질문 생성 실패", lastError);
+
+    // 빈틈이 여러 개면 여기까지 오는 길에 폴백이 그만큼 겹쳐 있다. 그런데 빈틈 0개라
+    // core_claim 하나만 있는 독후감은 넘어갈 다음 빈틈이 없어서 한 겹뿐이다 —
+    // 잘 써서 빈틈이 없던 아이만 막다른 길에 서게 되고, issue #14 가 고치려던
+    // "잘 쓸수록 손해"가 재시도 쪽에 그대로 남는다. 그래서 오류로 세워 두는 대신
+    // 초고로 돌려 한 줄 더 쓰고 다시 오게 한다 (#14 댓글, 2026-09-16 (c) 합의).
+    if (gaps.every((candidate) => candidate.gap_type === "core_claim")) {
+      await reopenDraft(review.id);
+      return failure("rewrite_needed", "질문을 못 만들었어. 한 줄만 더 써줄래?", 503);
+    }
+
     return failure(
       "question_unavailable",
       mode === "retry"
@@ -187,6 +198,23 @@ async function createAttempt(
       seconds: answerWindowSeconds(),
     },
   };
+}
+
+/**
+ * 초고로 되돌려 작성 화면을 다시 연다.
+ *
+ * 이미 낸 답과 채점 기록(verifications)은 건드리지 않는다 — 실패한 시도는 지우지 않는다(0003).
+ * reviews_one_active_per_student_book 은 draft·analyzing·questioning 을 활성으로 세므로,
+ * 같은 책에 다른 활성 독후감이 있으면 이 update 가 23505 로 막힌다. 그때는 상태를 그대로 두고
+ * 안내만 내보낸다 — 화면은 어차피 작성으로 돌아가고, 학생은 그 다른 독후감을 이어 쓰면 된다.
+ */
+async function reopenDraft(reviewId: string): Promise<void> {
+  const { error } = await createAdminClient()
+    .from("reviews")
+    .update({ status: "draft", updated_at: new Date().toISOString() })
+    .eq("id", reviewId);
+
+  if (error && error.code !== "23505") throw error;
 }
 
 /**
