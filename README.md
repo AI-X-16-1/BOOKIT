@@ -25,16 +25,16 @@
 | LLM | Anthropic Claude `claude-sonnet-5` — 1개 벤더로 통일, 서버에서만 호출 (Gemini 에서 전환, #54) |
 | 배포 | Vercel |
 | 스토리지 | 사용 안 함 (업로드 기능 없음) |
-| 패키지 매니저 | pnpm |
+| 패키지 매니저 | npm (#7) |
 
 ---
 
 ## 시작하기
 
 ```bash
-pnpm install
+npm ci
 cp .env.example .env.local   # 값은 김민경에게 요청
-pnpm dev
+npm run dev
 ```
 
 필요한 환경변수는 `.env.example`에 전부 적혀 있습니다. 변수를 추가했다면 `.env.example`도 같이 갱신해주세요. `.env.local`은 절대 커밋하지 않습니다.

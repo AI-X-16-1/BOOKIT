@@ -18,7 +18,7 @@ Contest: 원티드 AI Championship 2026. Submit by 2026-09-20. Deployed link mus
 | LLM | Anthropic Claude, `claude-sonnet-5`. One vendor only, server-side only. (Switched from Gemini on 2026-09-16 — Google's generative-AI terms bar services likely to be accessed by under-18s, both Gemini API and Vertex AI. See #54) |
 | Deploy | Vercel |
 | Storage | Not used. No file uploads anywhere |
-| Package manager | pnpm |
+| Package manager | npm (`package-lock.json` is the lockfile; CI runs `npm ci`. Decided in #7 — do not add a pnpm/yarn lockfile) |
 
 Never call the LLM from the client. Never expose API keys to the browser. All LLM calls go through an authenticated Route Handler.
 
