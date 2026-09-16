@@ -42,6 +42,10 @@ const STALE_ANALYZING_MS = 90_000;
 /**
  * 이어서 쓸 독후감을 찾는다. 쓰던 초고가 먼저고, 없으면 가장 최근에 손댄 것.
  * bookId 가 없으면 책과 상관없이 찾는다 — 홈의 "이어서 쓰기" 가 이 경로다.
+ *
+ * 한 글자도 없는 초고는 뺀다. 작성 화면이 글쓰기 도우미(AI #1)를 부르려고 초고를
+ * 먼저 만들기 때문에, 책만 열어 보고 나간 자리에도 빈 초고가 남는다 —
+ * 그건 "이어서 쓸 것"이 아니다. 다시 그 책으로 들어오면 openReview 가 이 행을 그대로 쓴다.
  */
 export async function findResumable(
   supabase: BookitClient,
@@ -60,7 +64,7 @@ export async function findResumable(
     .limit(20);
 
   if (error) throw error;
-  const rows = data ?? [];
+  const rows = (data ?? []).filter((row) => row.body.trim().length > 0);
   return rows.find((row) => EDITABLE.includes(row.status)) ?? rows[0] ?? null;
 }
 

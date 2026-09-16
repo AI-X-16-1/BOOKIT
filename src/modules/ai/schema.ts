@@ -33,6 +33,21 @@ export const gapSchema = z.object({
 });
 
 /**
+ * AI #2b 핵심 문장 고르기 (#14). 빈틈이 0개일 때만 부른다.
+ *
+ * 모델은 quote·reason 만 돌려준다. type("core_claim")은 pickCoreClaim 이 붙인다 —
+ * 빈틈 분석의 3종 enum 에 넣으면 모델이 빈틈 대신 그걸 고르기 시작한다.
+ */
+export const coreClaimSchema = z.object({
+  /** 독후감에 그대로 있는 문장 하나. 요약·윤문 금지 */
+  quote: z.string().min(1),
+  /** 학생에게 보여줄 한 문장. 빈틈이 없었다는 것과 이 문장을 더 듣고 싶다는 뜻 */
+  reason: z.string().min(1),
+});
+
+export type CoreClaimOutput = z.infer<typeof coreClaimSchema>;
+
+/**
  * AI #2 빈틈 분석.
  *
  * 개수 상한(3개)은 스키마로 막지 않는다. 4개가 왔다고 통째로 버리고 재시도하면

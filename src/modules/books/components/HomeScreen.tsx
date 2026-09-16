@@ -28,18 +28,23 @@ import { COVER, type CoverTone } from "../mock";
  * 새로 들어오는 책에만 돌아가고 그 책은 curated가 아니라 추천 카드엔 안 뜨므로,
  * 검색 결과 목록에도 같은 링크를 넣었다 — 서재 링크는 curated 책 전용이라 여전히
  * 추천 카드에만 있다(공간이 좁아서가 아니라 애초에 검색 결과에는 뜰 일이 없다).
- * "이어서 쓰기"는 /write 가 가장 최근 초고를 스스로 찾으므로 여기서는 링크만 둔다.
+ * "쓰던 독후감" 카드는 초고가 실제로 있을 때만 그린다 — 초고 여부는 서버 컴포넌트
+ * (app/(main)/home/page.tsx)가 review 모듈에 물어 draft 로 내려준다. 예전에는 카드를
+ * 늘 그려서, 쓰던 글이 없는 학생에게도 뜨고 누르면 /write 로 넘어갔다.
  */
 
 const TONES: CoverTone[] = ["green", "coral", "blue", "yellow"];
 
+/** 표지를 그리는 데 필요한 것만. 쓰던 독후감 카드는 책 전체를 받지 않는다 */
+type CoverBook = Pick<Book, "id" | "cover_url">;
+
 /** 표지 URL 이 없으면 id 로 정해지는 토큰 그라데이션 (CLAUDE.md §10) */
-function coverClass(book: Book): string {
+function coverClass(book: CoverBook): string {
   const n = book.id.split("").reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
   return COVER[TONES[n % TONES.length]];
 }
 
-function Cover({ book, size }: { book: Book; size: string }) {
+function Cover({ book, size }: { book: CoverBook; size: string }) {
   if (book.cover_url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- 외부 표지 URL, 크기 미상
@@ -55,7 +60,14 @@ function Cover({ book, size }: { book: Book; size: string }) {
   );
 }
 
-export function HomeScreen() {
+/** 쓰던 독후감 카드에 필요한 것. null 이면 카드를 그리지 않는다 */
+export interface HomeDraft {
+  id: string;
+  title: string;
+  cover_url: string | null;
+}
+
+export function HomeScreen({ draft }: { draft?: HomeDraft | null }) {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<Book[]>([]);
   const [searching, setSearching] = useState(false);
@@ -226,23 +238,23 @@ export function HomeScreen() {
             </Card>
           </div>
 
-          {/* 이어서 쓰기 — /write 가 가장 최근 초고를 연다 */}
-          <Link href="/write" className="block">
-            <Card raised className="flex items-center gap-3">
-              <div
-                className={`h-12 w-12 flex-none rounded-[10px] ${COVER.green}`}
-              />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[15px] font-bold text-ink">
-                  쓰던 독후감
+          {/* 쓰던 독후감 — 초고가 있을 때만. /write 가 그 초고를 연다 */}
+          {draft && (
+            <Link href="/write" className="block">
+              <Card raised className="flex items-center gap-3">
+                <Cover book={draft} size="h-12 w-12" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[15px] font-bold text-ink">
+                    {draft.title}
+                  </div>
+                  <div className="mt-1 text-[13px] text-muted">
+                    이어서 쓰러 가기 →
+                  </div>
                 </div>
-                <div className="mt-1 text-[13px] text-muted">
-                  이어서 쓰러 가기 →
-                </div>
-              </div>
-              <Chip tone="yellow">초고</Chip>
-            </Card>
-          </Link>
+                <Chip tone="yellow">초고</Chip>
+              </Card>
+            </Link>
+          )}
 
           <div>
             <h2 className="text-[17px] font-bold text-ink">이런 책은 어때?</h2>

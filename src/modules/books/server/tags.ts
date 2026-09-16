@@ -3,15 +3,14 @@
  *
  * `ai.normalizeGenreTags`(LLM 호출)로 바꾸지 않는다 — 검색 한 번에 새로 들어오는
  * 책마다 LLM을 부르면 학생이 검색 결과를 그만큼 더 기다리게 된다.
- * `normalizeGenreTags`는 원래 저장된 책을 나중에 배치로 재태깅하기 위한 함수다.
- * TODO(나중에 배치 재태깅): `books` 테이블에 이미 들어온 행들을
- * `ai.normalizeGenreTags`로 일괄 재분류하는 배치 작업을 별도로 만들 것
- * (docs/prompts.md §5, docs/superpowers/specs/2026-09-14-books-search-recommend-design.md).
+ * `normalizeGenreTags`는 저장된 책을 배치로 재태깅하는 함수다 — `npm run ai:retag`.
+ * 여기서 잡는 것은 KDC 대분류로 확실한 비문학(역사·예술·과학·인물심리)뿐이고,
+ * 문학 장르(동화·성장소설·판타지·추리…)는 그 배치가 채운다 (docs/prompts.md §5).
  *
  * 태그 목록 자체는 복제하지 않고 `ai` 모듈 것을 그대로 쓴다 — `genre_stamps.genre`도
  * 같은 목록을 기준으로 하므로, 목록이 두 곳이면 한쪽만 고쳤을 때 도장이 안 찍힌다.
  */
-import { GENRE_TAGS, type GenreTag } from "@/modules/ai";
+import { GENRE_TAGS, tagsFromKdcMajor, type GenreTag } from "@/modules/ai";
 
 export { GENRE_TAGS, type GenreTag };
 
@@ -34,15 +33,6 @@ const KEYWORD_RULES: Array<[GenreTag, RegExp]> = [
   ["성장소설", /성장|청소년소설/],
 ];
 
-/**
- * KDC 대분류(맨 앞자리)로 넓게 잡는 보조 규칙. 확신 없으면 태그를 붙이지 않는다.
- * "8"(문학 전체 — 시·수필까지 포함)은 뺐다 — 너무 넓어서 성장소설로 잘못 넘겨짚는다.
- */
-const KDC_MAJOR_RULES: Record<string, GenreTag> = {
-  "9": "역사",
-  "4": "과학",
-};
-
 export function mapToGenreTags(
   rawCategory: string | null,
   kdc: string | null,
@@ -55,10 +45,11 @@ export function mapToGenreTags(
     }
   }
 
-  if (tags.size === 0 && kdc) {
-    const major = kdc.trim().charAt(0);
-    const tag = KDC_MAJOR_RULES[major];
-    if (tag) tags.add(tag);
+  // NLK SEOJI 의 SUBJECT 는 분류 '이름' 이 아니라 KDC 대분류 한 자리 숫자다 ("8", "3").
+  // 실응답 360건에서 98% 가 숫자였고, 그래서 위 키워드 규칙은 사실상 한 건도 걸리지 않았다
+  // (태그 0개 359/360). 숫자 매핑은 ai 모듈이 주인이다 (modules/ai/kdc.ts).
+  for (const code of [rawCategory, kdc]) {
+    for (const tag of tagsFromKdcMajor(code)) tags.add(tag);
   }
 
   return Array.from(tags).slice(0, 4);
