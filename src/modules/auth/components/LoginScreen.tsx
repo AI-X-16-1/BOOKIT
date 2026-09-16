@@ -110,6 +110,10 @@ function LoginCard({ demo }: { demo: boolean }) {
               선생님으로
             </a>
           </div>
+          {/* 구글로 직접 가입해 보는 심사자를 위해 — 시드 반 코드 (seed.sql, #97) */}
+          <p className="mt-3 text-center text-[13px] text-yellow-text-2">
+            구글 계정으로 직접 가입해 볼 땐 반 코드 <b>HBCLSA</b>
+          </p>
         </div>
       )}
 
