@@ -15,7 +15,7 @@ Contest: 원티드 AI Championship 2026. Submit by 2026-09-20. Deployed link mus
 | DB | Supabase PostgreSQL (RLS always on) |
 | Auth | Supabase Auth, Google OAuth only |
 | Serverless | Vercel Route Handlers only. NO Supabase Edge Functions |
-| LLM | Google Gemini, `gemini-3.5-flash` (paid tier). One vendor only, server-side only |
+| LLM | Anthropic Claude, `claude-sonnet-5`. One vendor only, server-side only. (Switched from Gemini on 2026-09-16 — Google's generative-AI terms bar services likely to be accessed by under-18s, both Gemini API and Vertex AI. See #54) |
 | Deploy | Vercel |
 | Storage | Not used. No file uploads anywhere |
 | Package manager | pnpm |

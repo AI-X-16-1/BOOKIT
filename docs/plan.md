@@ -58,7 +58,7 @@ No file uploads anywhere. No behavioral ad targeting (regulated for minors in Ko
 
 ## 6. Stack
 
-Next.js (App Router, TypeScript) · Supabase PostgreSQL + Auth (Google only) · Vercel Route Handlers (no Edge Functions) · one LLM vendor, server-side only (Google Gemini, `gemini-3.5-flash`) · Vercel · no Storage.
+Next.js (App Router, TypeScript) · Supabase PostgreSQL + Auth (Google only) · Vercel Route Handlers (no Edge Functions) · one LLM vendor, server-side only (Anthropic Claude, `claude-sonnet-5` — switched from Gemini 2026-09-16, #54: Google's generative-AI terms bar under-18 services) · Vercel · no Storage.
 
 Key risks: serverless timeout on long AI calls (stream, cap output tokens, paid plan), perceived latency during the countdown (pre-generate the question, start the timer only when it renders), Supabase free-tier project pausing during judging (upgrade or ping), and grading calibration (threshold in an env var, tunable up to demo time).
 
