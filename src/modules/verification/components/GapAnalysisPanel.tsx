@@ -2,13 +2,16 @@
 
 import type { ReviewGapView } from "@/shared/types";
 import { Button, Card, Chip } from "@/shared/ui";
-import { GAP_LABEL, GAP_TONE } from "./labels";
+import { GAP_CARD_TEXT, GAP_HIGHLIGHT, GAP_LABEL, GAP_TONE, type GapTone } from "./labels";
 
 /**
  * 빈틈 분석 결과. 목업 2 #3 (docs/mockups/2 독후감 작성.dc.html L97-127).
  *
  * 독후감 본문에서 지적된 문장을 그대로 하이라이트한다.
  * 코랄 = 근거 없이 단정, 옐로 = 나머지.
+ *
+ * 빈틈이 0개였던 독후감은 core_claim 한 줄만 들어온다 (issue #14). 그때는 지적이 아니라
+ * 칭찬이라 초록으로 바꾸고 "빈틈 0곳"이라고 적는다 — 질문은 그대로 하나 받는다.
  */
 export interface GapAnalysisPanelProps {
   bookTitle: string;
@@ -20,9 +23,12 @@ export interface GapAnalysisPanelProps {
   error?: string | null;
 }
 
+/** 빈틈 0개 — 아이가 그대로 읽는 문장이다 (CLAUDE.md §9, issue #14 댓글 문구). */
+const NO_GAPS_NOTICE = "이번엔 빈틈이 없었어! 그래도 하나만 물어볼게.";
+
 /** 본문에서 각 빈틈 인용문을 찾아 하이라이트한 조각으로 쪼갠다. */
 function highlight(body: string, gaps: ReviewGapView[]) {
-  const parts: Array<{ text: string; tone?: "coral" | "yellow" }> = [];
+  const parts: Array<{ text: string; tone?: GapTone }> = [];
   let rest = body;
 
   while (rest.length > 0) {
@@ -56,6 +62,8 @@ export function GapAnalysisPanel({
   error = null,
 }: GapAnalysisPanelProps) {
   const parts = highlight(reviewBody, gaps);
+  // 빈틈이 0개여서 핵심 문장 하나만 물어보는 경우 (issue #14)
+  const noGaps = gaps.length > 0 && gaps.every((g) => g.type === "core_claim");
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -67,18 +75,22 @@ export function GapAnalysisPanel({
             {bookTitle} · 독후감
           </div>
         </div>
-        <Chip tone="blue">{gaps.length}곳</Chip>
+        {noGaps ? (
+          <Chip tone="green">빈틈 0곳</Chip>
+        ) : (
+          <Chip tone="blue">{gaps.length}곳</Chip>
+        )}
       </div>
+
+      {noGaps && (
+        <p className="mt-3 text-sm font-bold text-green-text">{NO_GAPS_NOTICE}</p>
+      )}
 
       {/* 본문 + 하이라이트 */}
       <div className="mt-4 rounded-[14px] border border-border-soft bg-card p-[18px] text-[15px] leading-[2] text-ink-soft">
         {parts.map((p, i) =>
-          p.tone === "coral" ? (
-            <span key={i} className="border-b-2 border-b-coral bg-coral-bg-2">
-              {p.text}
-            </span>
-          ) : p.tone === "yellow" ? (
-            <span key={i} className="border-b-2 border-b-yellow bg-yellow-bg">
+          p.tone ? (
+            <span key={i} className={GAP_HIGHLIGHT[p.tone]}>
               {p.text}
             </span>
           ) : (
@@ -91,16 +103,16 @@ export function GapAnalysisPanel({
       <div className="mt-4 flex flex-col gap-2.5">
         {gaps.map((g) => {
           const tone = GAP_TONE[g.type];
+          const text = GAP_CARD_TEXT[tone];
           return (
             <Card key={g.id} accent={tone}>
-              <div
-                className={`text-[13px] font-bold ${tone === "coral" ? "text-coral-text" : "text-yellow-text"}`}
-              >
-                {String(g.ord).padStart(2, "0")} · {GAP_LABEL[g.type]}
+              <div className={`text-[13px] font-bold ${text.title}`}>
+                {/* core_claim 은 빈틈이 아니라 번호를 붙이지 않는다 */}
+                {g.type === "core_claim"
+                  ? GAP_LABEL[g.type]
+                  : `${String(g.ord).padStart(2, "0")} · ${GAP_LABEL[g.type]}`}
               </div>
-              <p
-                className={`mt-1.5 text-sm leading-relaxed ${tone === "coral" ? "text-coral-text-2" : "text-yellow-text-2"}`}
-              >
+              <p className={`mt-1.5 text-sm leading-relaxed ${text.body}`}>
                 &ldquo;{g.quote}&rdquo;
                 <br />
                 {g.reason}

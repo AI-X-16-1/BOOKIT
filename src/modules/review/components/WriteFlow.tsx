@@ -25,8 +25,8 @@ import { ReviewEditor } from "./ReviewEditor";
 export type WriteFlowProps = WriteSession;
 
 /**
- * 빈틈이 0개일 때. docs/prompts.md §2 는 "바로 통과"라고 하지만 통과 기록에
- * gap_id 가 필요해서 지금은 한 문장 더 쓰게 한다 — review/server/submit 참고.
+ * 빈틈도 0개인데 되물을 핵심 문장까지 못 고른 드문 경우.
+ * 빈틈 0개 자체는 core_claim 질문 하나로 이어진다 (issue #14) — review/server/submit 참고.
  */
 const NO_GAPS_NOTICE =
   "빈틈을 하나도 못 찾았어! 가장 기억에 남는 장면을 한 줄만 더 써주면 질문을 만들어 볼게.";
@@ -104,6 +104,15 @@ export function WriteFlow({ book, review, gaps: savedGaps, streakDays }: WriteFl
     }
   };
 
+  /**
+   * 질문을 끝내 못 만든 경우. 검증 화면을 닫고 작성으로 돌아간다 —
+   * 서버가 이미 초고로 돌려놨으니 자동 저장도 다시 열린다 (verification/server/question).
+   */
+  const rewrite = (message: string) => {
+    setChecked(null);
+    setNotice(message);
+  };
+
   const editor = (
     <ReviewEditor
       bookTitle={book.title}
@@ -135,6 +144,7 @@ export function WriteFlow({ book, review, gaps: savedGaps, streakDays }: WriteFl
           gaps={checked.gaps}
           streakDays={streakDays}
           onDone={() => router.push("/home")}
+          onRewrite={rewrite}
         />
       </div>
     </div>

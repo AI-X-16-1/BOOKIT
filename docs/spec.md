@@ -177,6 +177,7 @@ GET  /api/books/:id                          → { book }
 POST  /api/reviews             { book_id }                → { review }  (draft)
 PATCH /api/reviews/:id         { body }                   → { review }  autosave, debounce 2s
 POST  /api/reviews/:id/submit                             → { gaps[] }  triggers AI #2 + pre-generates AI #3
+                                                          0 gaps → AI #2b picks one `core_claim` row, flow continues (#14)
 POST  /api/reviews/:id/helper                             → { question }  AI #1. On failure the editor renders without the helper box
 ```
 `helper` returns an object so it can grow to `{ questions[] }` if #16 lands.
@@ -188,6 +189,8 @@ POST /api/verifications/:id/answer  { answer }      → { passed, scores, feedba
 POST /api/reviews/:id/retry                        → { verification_id, question, quote, seconds }
 ```
 The countdown starts client-side when the question renders, but `asked_at`/`answered_at` on the server are authoritative. Reject an answer arriving more than `ANSWER_WINDOW_SEC + 5` after `asked_at`.
+
+When no question can be built and the only gap is `core_claim`, these routes return `{ error: { code: "rewrite_needed" } }` and put the review back to `draft`: a gap-free review has no second gap to fall back to, so the editor reopens instead of dead-ending (#14, decided 2026-09-16). Failed attempts are kept.
 
 ### ai (강민구) — internal, not routed directly
 ```
