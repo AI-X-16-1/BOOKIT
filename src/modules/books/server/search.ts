@@ -3,6 +3,7 @@ import "server-only";
 
 import type { Book } from "@/shared/types";
 import type { BookInsertRow, BooksAdminPort } from "./db";
+import { checkNlkLibraryAvailability } from "./library-availability";
 import { BookSourceError, type BookSource, type RawBookHit } from "./source";
 import { mapToGenreTags } from "./tags";
 
@@ -11,15 +12,6 @@ export type SearchResult =
   | { ok: false; code: string; message: string; status: number };
 
 type IsbnHit = RawBookHit & { isbn13: string };
-
-/**
- * TODO: 국회전자도서관 실제 검색 딥링크 URL 패턴 확인 후 채운다.
- * docs/superpowers/specs/2026-09-14-books-search-recommend-design.md 후속 작업 참고.
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- params kept for future implementation, see TODO above
-export function buildLibraryUrl(_title: string, _isbn13: string): string | null {
-  return null;
-}
 
 /**
  * 읽고 독후감을 쓸 책이 아닌 파생물 — 원작 제목이 그대로 붙어 검색에 딸려온다
@@ -32,7 +24,10 @@ export function isDerivative(title: string): boolean {
   return DERIVATIVE_RE.test(title);
 }
 
-export function rawHitToBookInsert(hit: IsbnHit): BookInsertRow {
+export function rawHitToBookInsert(
+  hit: IsbnHit,
+  libraryUrl: string | null,
+): BookInsertRow {
   return {
     isbn13: hit.isbn13,
     title: hit.title,
@@ -47,7 +42,7 @@ export function rawHitToBookInsert(hit: IsbnHit): BookInsertRow {
     target_grade_min: hit.targetGradeMin,
     target_grade_max: hit.targetGradeMax,
     is_public_domain: false,
-    library_url: buildLibraryUrl(hit.title, hit.isbn13),
+    library_url: libraryUrl,
     aladin_url: null,
   };
 }
@@ -55,7 +50,9 @@ export function rawHitToBookInsert(hit: IsbnHit): BookInsertRow {
 async function upsertHit(port: BooksAdminPort, hit: IsbnHit): Promise<Book> {
   const existing = await port.findByIsbn(hit.isbn13);
   if (existing) return existing;
-  return port.insertBook(rawHitToBookInsert(hit));
+  // 새로 저장하는 책만 확인한다 — 이미 저장된 책은 재확인하지 않아 호출이 안 늘어난다.
+  const libraryUrl = await checkNlkLibraryAvailability(hit.isbn13);
+  return port.insertBook(rawHitToBookInsert(hit, libraryUrl));
 }
 
 const MAX_RESULTS = 10;

@@ -22,7 +22,12 @@ import { COVER, type CoverTone } from "../mock";
  * 책 카드는 /write?book=<id> 로 간다 — review 모듈이 그 책의 초고를 만든다.
  * 책잇 서재에 원문이 있는 책(is_public_domain)은 추천 카드에 "서재에서 바로
  * 읽기" 링크(reader 모듈의 libraryHref)도 같이 보여준다 — 조건 없이 바로 읽을
- * 수 있는 유일한 경로다 (#58). 검색 결과 목록은 공간이 좁아 지금은 넣지 않았다.
+ * 수 있는 유일한 경로다 (#58). library_url 이 있는 책(국립중앙도서관에 관외이용
+ * 무료 원문이 실제로 있는 책만, server/library-availability.ts 가 확인)은
+ * "국립중앙도서관에서 원문 보기" 링크도 같이 보여준다 (#72). 이 확인은 검색으로
+ * 새로 들어오는 책에만 돌아가고 그 책은 curated가 아니라 추천 카드엔 안 뜨므로,
+ * 검색 결과 목록에도 같은 링크를 넣었다 — 서재 링크는 curated 책 전용이라 여전히
+ * 추천 카드에만 있다(공간이 좁아서가 아니라 애초에 검색 결과에는 뜰 일이 없다).
  * "이어서 쓰기"는 /write 가 가장 최근 초고를 스스로 찾으므로 여기서는 링크만 둔다.
  */
 
@@ -172,6 +177,18 @@ export function HomeScreen() {
                     </span>
                     <span className="text-[13px] text-muted">{b.author}</span>
                   </Link>
+                  {/* 검색으로 새로 들어온 책만 국립중앙도서관 확인이 돈다(server/search.ts) —
+                      추천 카드(curated 전용)에는 뜨지 않는 책이라 여기 별도로 보여준다 (#72) */}
+                  {b.library_url && (
+                    <a
+                      href={b.library_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex min-h-12 items-center px-4 pb-3 text-[13px] font-bold text-coral"
+                    >
+                      국립중앙도서관에서 원문 보기 (PC·뷰어 설치 필요) ↗
+                    </a>
+                  )}
                 </li>
               ))}
               {hits.length === 0 && !searching && (
@@ -260,6 +277,18 @@ export function HomeScreen() {
                     >
                       서재에서 바로 읽기 →
                     </Link>
+                  )}
+                  {/* 관외이용 무료 원문이 실제로 있는 책만 — 없는데 뜨면 설치 안내만 보고
+                      막힌다 (#72). 새 창으로 연다: 뷰어 설치가 필요할 수 있어서다. */}
+                  {b.library_url && (
+                    <a
+                      href={b.library_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex min-h-12 items-center text-[13px] font-bold text-coral"
+                    >
+                      국립중앙도서관에서 원문 보기 (PC·뷰어 설치 필요) ↗
+                    </a>
                   )}
                 </Card>
               ))}
