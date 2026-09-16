@@ -147,6 +147,66 @@ AI 로 쓴 독후감, 다른 AI 창에 질문을 붙여넣는 답변을 막는 �
 
 ---
 
+## 6-1. LLM 벤더 — Gemini 에서 Anthropic 으로 바꿨다 (#54, 2026-09-16 확정)
+
+Gemini 로는 이 서비스를 운영할 수 없다. 약관에 초·중학생 대상 서비스가 금지돼 있고, **창구를 바꿔도 피할 수 없다**.
+
+| 창구 | 조항 |
+|---|---|
+| Gemini Developer API | Additional Terms — "You must be 18 years of age or older to use the APIs" · API Client 가 "directed towards or is likely to be accessed by individuals under the age of 18" 이면 안 된다 |
+| Google Cloud Vertex AI | Service Specific Terms **§20(d) Age Restrictions** — 같은 문장. §20(f) 는 위반이 **의심되면** 즉시 중단할 수 있다고 한다 |
+
+심사 기간(~10/5) 내내 링크가 살아 있어야 하므로, 약관 위반을 안고 가는 것은 선택지가 아니었다.
+
+세 벤더의 약관을 직접 확인했다. **전면 금지는 Google 뿐이고, 업계 표준이 아니다.**
+
+| 벤더 | 미성년 대상 서비스 | 약관 근거 (2026-09-16 전문 확인) |
+|---|---|---|
+| **Google** | **금지** | Gemini API Additional Terms · Cloud Service Specific Terms §20(d) |
+| OpenAI | 허용 — **보호자 동의 조건** | Services Agreement 금지행위 — "allow minors to use OpenAI Services **without** consent from their parent or guardian" |
+| **Anthropic** | 허용 — **안전장치 조건** | Commercial Terms 에 나이 조항 없음 · AUP 가 "products serving minors" 를 별도 가이드라인이 있는 정상 유스케이스로 명시 |
+
+Google 이 유독 엄격한 이유는 채널을 분리했기 때문으로 보인다 — 미성년자용 AI 는 학교 관리자 콘솔과 관리자 동의 체계를 갖춘 Workspace for Education 으로 따로 제공하고, 범용 개발자 API 는 막는다. 학교 계약 없이 K-12 를 대상으로 하는 서비스는 그 구조에 들어갈 자리가 없다.
+
+즉 **벤더 선택은 성능 비교가 아니라 "이 서비스를 계약상 운영할 수 있는가" 의 문제였다.**
+
+### 확정된 것 (CLAUDE.md §1, `.env.example`)
+
+| | 값 |
+|---|---|
+| 벤더 | Anthropic |
+| 모델 | `claude-sonnet-5` |
+| 대체 모델 (503·429 때) | `claude-haiku-4-5` |
+
+### Anthropic 이 요구하는 것과 책잇의 대응
+
+금지 대신 가이드라인을 따르게 한다 — 연령 확인, 콘텐츠 필터링, 모니터링·신고 경로, **AI 와 대화 중임을 알리기**, 아동 개인정보 법규 준수.
+
+| 요구 | 책잇의 대응 |
+|---|---|
+| 연령 확인 | 교사가 만든 반 코드로만 가입 · 온보딩에서 학년 입력 (자유 입력 불가) |
+| AI 고지 | 검증 화면이 "AI 가 네 문장을 보고 묻는다" 를 전제로 설계돼 있다. 이용약관 초안에도 명시했다 |
+| 콘텐츠 필터링 | 모든 호출이 JSON 스키마로 제약되고, 거부(`refusal`)는 코드가 따로 처리한다 |
+| 모니터링 | 실패한 검증도 `verifications` 에 남는다 (+0점) |
+| 아동 개인정보 | 만 14세 미만 법정대리인 동의는 **미구현** — 교사 반 코드 구조를 전제로 한 간소화 상태다 (처리방침 초안, #94) |
+
+### 데이터 학습 미사용은 옵션이 아니라 조항이다
+
+> "Anthropic may not train models on Customer Content from Services."
+> — Anthropic Commercial Terms of Service, B. Customer Content (2026-09-16 확인)
+
+Gemini 는 "무료 티어면 학습에 쓰이고 유료면 아니다" 라는 티어 조건이었다. Anthropic 은 켜고 끄는 설정이 아니라 계약상 기본값이다. 보관 기간은 같은 약관이 참조하는 DPA 소관이라 제출 전 확인한다.
+
+### 남은 것
+
+전환 비용은 코드가 아니라 측정이다. `LLM_PROVIDER=anthropic` 은 이미 동작한다 (`providers.ts` — `output_config.format` 으로 JSON 스키마를 강제하고 `refusal` 을 따로 처리한다).
+
+- **§5 의 20건 검증을 `claude-sonnet-5` 로 다시 돌려야 한다.** 그 전까지 §5 수치는 `gemini-3.5-flash` 기준이다
+- Anthropic API 키와 결제가 필요하다 (#54)
+- 대체 모델(`claude-haiku-4-5`)로 채점이 넘어간 경우는 캘리브레이션 대상이 아니다. 과부하로 폴백하면 그 순간의 채점 기준이 달라질 수 있다는 뜻이다 — 심사 중 실제로 일어나면 통과율이 흔들린다. 20건 재측정 뒤에 폴백 모델을 유지할지 다시 본다
+
+---
+
 ## 7. 제출 전 팀 확인 필요
 
 - **`docs/plan-ko.md` 안에서 모델 요금제가 서로 다르다.** §5 는 "대회 기간 `gemini-3.5-flash` 유료 티어", §10 "LLM 전송 데이터" 는 "대회 기간에는 Gemini 무료 티어를 쓴다. 무료 티어는 입력·출력이 모델 학습에 사용된다" 로 남아 있다. #29 에서 §5 만 바뀐 것으로 보인다. 제출 서류에 개인정보 처리를 쓸 거라면 §10 을 먼저 맞춰야 한다 (문서 소유 확인 필요)
