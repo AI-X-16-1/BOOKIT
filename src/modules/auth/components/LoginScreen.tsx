@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
@@ -87,6 +88,16 @@ function LoginCard() {
         만 13세 미만은 구글 보호자 인증을
         <br />
         거쳐요 ✎
+      </p>
+
+      {/* 게시 의무 (개인정보보호법 §30). 로그인 전에 보여야 해서 여기 둔다 (#93) */}
+      <p className="mt-4 flex gap-3 text-[13px] text-faint">
+        <Link href="/privacy" className="underline">
+          개인정보처리방침
+        </Link>
+        <Link href="/terms" className="underline">
+          이용약관
+        </Link>
       </p>
     </div>
   );
