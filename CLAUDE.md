@@ -13,12 +13,12 @@ Contest: 원티드 AI Championship 2026. Submit by 2026-09-20. Deployed link mus
 |---|---|
 | Framework | Next.js (App Router, TypeScript) |
 | DB | Supabase PostgreSQL (RLS always on) |
-| Auth | Supabase Auth, Google OAuth only |
+| Auth | Supabase Auth, Google OAuth only. (Judging exception: `/auth/demo` signs the seeded demo student/teacher in without Google while `DEMO_LOGIN_ENABLED=true`, closes after 2026-10-17 — see `modules/auth/server/demo.ts`) |
 | Serverless | Vercel Route Handlers only. NO Supabase Edge Functions |
-| LLM | Google Gemini, `gemini-3.5-flash` (paid tier). One vendor only, server-side only |
+| LLM | Anthropic Claude, `claude-sonnet-5`. One vendor only, server-side only. (Switched from Gemini on 2026-09-16 — Google's generative-AI terms bar services likely to be accessed by under-18s, both Gemini API and Vertex AI. See #54) |
 | Deploy | Vercel |
 | Storage | Not used. No file uploads anywhere |
-| Package manager | pnpm |
+| Package manager | npm (`package-lock.json` is the lockfile; CI runs `npm ci`. Decided in #7 — do not add a pnpm/yarn lockfile) |
 
 Never call the LLM from the client. Never expose API keys to the browser. All LLM calls go through an authenticated Route Handler.
 
@@ -55,10 +55,10 @@ Module internals: `components/`, `server/`, `schema.ts`, `index.ts`.
 | `reader` | 강민구 | 책잇 서재 — public-domain text rendering, word-tap dictionary (국립국어원 API) |
 | `auth` | 김민경 | Google OAuth, profiles, role split, onboarding, class codes, RLS policies, PWA, deploy |
 | `teacher` | 김민경 | Class ranking aggregation, per-student progress view (desktop only) |
-| `books` | 이승환 | 알라딘 / 국립어린이청소년도서관 / 국립중앙도서관 APIs, search, genre-adjacent recommendation, 국회도서관 handoff |
+| `books` | 이승환 | 알라딘 / 국립어린이청소년도서관 / 국립중앙도서관 APIs, search, genre-adjacent recommendation, link-out to 책잇 서재 for public-domain books |
 | `review` | 박재경 | Review editor, autosave, draft state |
 | `verification` | 박재경 | Gap-analysis screen, timed question screen, grading result, retry flow |
-| `rewards` | 문민재 | 책갈피 ledger, 열람권 exchange, 알라딘 links |
+| `rewards` | 문민재 | 책갈피 ledger, 알라딘 links. (열람권 exchange retired — #58; ledger enum kept for history) |
 | `growth` | 문민재 | Streak, 책나무, genre stamp board, levels/badges |
 | `ranking` | 문민재 | Class-vs-class ranking (student side), challenges |
 | `guardian` | 문민재 | Read-only guardian share link |
@@ -175,3 +175,13 @@ Ship first: verification flow (gap analysis → question → grading → retry),
 Cut in this order if time runs short: 챌린지 → 독서성향 리포트 → levels/badges → 책나무·도장판 → genre-adjacent recommendation (degrade to a plain same-tag list).
 
 Do not add features not listed in `docs/spec.md`. If something seems missing, raise it rather than building it.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
