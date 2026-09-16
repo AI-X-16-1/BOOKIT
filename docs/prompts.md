@@ -112,6 +112,7 @@ Takes one gap and turns it into the follow-up question. This is what makes ghost
 
 반드시 이 문장에 대해 물어라: "{gap.quote}"
 이 문장의 문제: {gap.reason}
+(gap.type == core_claim 이면 이 줄만 바뀐다 — "이 문장은 빈틈이 아니다. 학생이 직접 읽고 썼는지 확인하려고 더 듣고 싶은 문장이다: {gap.reason}")
 
 독후감 전문: """{review_body}"""
 
@@ -140,6 +141,8 @@ Takes one gap and turns it into the follow-up question. This is what makes ghost
 ```
 
 **The question does not repeat the quote.** The question screen already shows `quote` in its own "네가 쓴 문장" box right above the question (`POST /api/reviews/:id/question → { question, quote }`). Quoting it again showed the sentence twice and produced doubled particles like "…생각한다라고 했는데" in 7 of 10 test questions (issue #27). `buildQuestion` regenerates once if the question still echoes 12+ characters of the quote, and keeps the second result either way — an awkward question beats no question.
+
+**core_claim 은 문제가 아니다.** `core_claim` 의 `reason` 은 "이 문장을 더 듣고 싶어" 라는 안내 문장이라, 다른 빈틈과 같은 `이 문장의 문제:` 로 넘기면 모델이 없는 문제를 지어내 묻는다. `questionUser` 가 `gap.type` 으로 이 줄만 바꾼다 (§2b, PR #26 리뷰 3).
 
 Generate this **immediately after review submission**, while the gap-analysis screen is showing. The countdown starts only when the question is on screen.
 

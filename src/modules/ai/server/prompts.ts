@@ -150,6 +150,13 @@ export function questionUser(
 ): string {
   const bookLine = book ? `책: ${book.title}\n` : "";
 
+  // core_claim 은 빈틈이 아니다 (#14 결정, 0013). reason 이 "더 듣고 싶어" 라서
+  // 다른 빈틈처럼 "이 문장의 문제" 로 넘기면 모델이 없는 문제를 지어내 묻는다 (#26 리뷰 3).
+  const gapLine =
+    gap.type === "core_claim"
+      ? `이 문장은 빈틈이 아니다. 학생이 직접 읽고 썼는지 확인하려고 더 듣고 싶은 문장이다: ${gap.reason}`
+      : `이 문장의 문제: ${gap.reason}`;
+
   // 재시도는 반드시 새 질문이어야 한다 (CLAUDE.md §6). 같은 빈틈밖에 없을 때를 대비해
   // 이전 질문을 그대로 넘겨 각도를 바꾸게 한다.
   const avoid = context?.avoidQuestions?.length
@@ -160,7 +167,7 @@ export function questionUser(
 
   return `${gradeLine(context)}${bookLine}
 반드시 이 문장에 대해 물어라: "${gap.quote}"
-이 문장의 문제: ${gap.reason}
+${gapLine}
 
 독후감 전문 — 맥락 파악용이다. 여기 이미 쓰여 있는 내용만으로 답이 되는 질문은 피해라:
 """${review}"""${avoid}`;
