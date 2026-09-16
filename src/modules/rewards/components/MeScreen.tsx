@@ -8,7 +8,6 @@ import type {
 } from "@/shared/types";
 import { apiGet } from "@/shared/api/client";
 import { Card } from "@/shared/ui";
-import { COVER } from "@/modules/books";
 import { REASON_LABEL } from "../schema";
 
 /**
@@ -18,9 +17,7 @@ import { REASON_LABEL } from "../schema";
  *   - 책갈피 잔액/원장 — GET /api/points 로 연결 완료 (#30).
  *   - 우리 반 순위 — GET /api/ranking/class 로 연결 완료.
  *   - 연속 기록 — GET /api/growth 로 연결 완료 (#33 머지됨).
- *   - 이름·학반 — GET /api/profile 계약이 spec 에 없어 아직 못 붙인다 (#38, 김민경 담당).
- *   - 읽은 책(완독 점수 목록) — docs/spec.md 에 없는 엔드포인트라 새로 만들지 않는다 (CLAUDE.md §11).
- *     아직 고정 데이터.
+ *   - 이름·학반 — GET /api/profile 이 #85 로 올라왔다. 머지되면 이어서 연결한다 (#71).
  *
  * #58 결정: 국회도서관 ebook·오디오북 "열람권" 교환은 실제로 전달되는 게 없어(무료 열람권을
  * 발급할 방법이 없고, 대부분 초1~중3 은 국회도서관 이용 대상도 아니다) 교환 버튼을 뺐다.
@@ -29,13 +26,10 @@ import { REASON_LABEL } from "../schema";
  *
  * #71 결정: 레벨·뱃지 칩("Lv.4 꾸준한 독서가", "🏅 첫 책갈피")은 docs/spec.md 에 없는
  * 정적 데모 값이라 뺐다 — 독후감을 한 편도 안 쓴 계정에도 그대로 떴다 (GrowthSection.tsx 동일 결정).
+ *
+ * #71 (김민경 결정): 읽은 책(완독 점수 목록)은 제출 전엔 조회 API 를 안 만들기로 했다.
+ * 고정 목록 대신 빈 상태로 둔다.
  */
-const READ_BOOKS = [
-  { title: "아몬드", score: 100, cover: "green" as const },
-  { title: "완득이", score: 83, cover: "coral" as const },
-  { title: "마당을 나온 암탉", score: 100, cover: "yellow" as const },
-];
-
 export function MeScreen() {
   const [points, setPoints] = useState<PointsResponse | null>(null);
   const [rank, setRank] = useState<ClassRankingResponse | null>(null);
@@ -87,18 +81,7 @@ export function MeScreen() {
 
       <Card>
         <div className="text-[13px] text-muted">읽은 책</div>
-        {READ_BOOKS.map((b) => (
-          <div
-            key={b.title}
-            className="flex items-center gap-3 border-b border-border-soft py-2.5 last:border-b-0"
-          >
-            <div className={`h-8 w-8 flex-none rounded-lg ${COVER[b.cover]}`} />
-            <span className="flex-1 truncate text-base font-bold text-ink">
-              {b.title}
-            </span>
-            <span className="text-sm text-green">{b.score}점</span>
-          </div>
-        ))}
+        <p className="mt-2 text-sm text-muted">독후감을 통과하면 여기 모여.</p>
       </Card>
 
       {/* #58: 국회도서관 열람권 교환은 실제로 전달되는 게 없어 뺐다 — 준비 중 안내만 남긴다 */}
