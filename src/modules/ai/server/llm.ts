@@ -173,6 +173,7 @@ export async function callJson<T>(opts: CallJsonOptions<T>): Promise<T> {
         : `${user}\n\n(직전 응답이 형식을 어겼다: ${lastProblem}\n설명이나 코드펜스 없이 JSON 객체 하나만 출력해라.)`;
 
     let response;
+    const startedAt = Date.now();
     try {
       response = await call(config.provider, config.apiKey, {
         model: config.model,
@@ -188,6 +189,16 @@ export async function callJson<T>(opts: CallJsonOptions<T>): Promise<T> {
     } catch (error) {
       throw toLlmError(error, label);
     }
+
+    // 어느 모델이 실제로 답했는지 한 줄 남긴다. 과부하로 대체 모델에 넘어가면
+    // 채점 기준이 달라질 수 있는데(캘리브레이션은 기본 모델로만 잰다) 지금은
+    // 그 사실이 아무 데도 안 남아, 심사 중 통과율이 흔들려도 원인을 못 짚는다.
+    //
+    // 학생이 쓴 글은 절대 남기지 않는다 — 모델명·소요 시간·호출 종류뿐이다
+    // (처리방침의 수집 최소화 원칙).
+    console.log(
+      `[ai:${label}] ${response.model ?? config.model} ${Date.now() - startedAt}ms`,
+    );
 
     if (response.stop === "refusal") {
       throw new LlmError(
