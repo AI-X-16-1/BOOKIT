@@ -16,7 +16,7 @@
  * 넣기 전에 사람이 본문을 확인한다. 옛 작품에는 초등학생 화면에 띄우기 곤란한
  * 표현이 섞여 있다 — 미리보기가 각 장의 첫 문장을 찍는 이유다.
  */
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import candidates from "./fixtures/shelf-candidates.json";
 
@@ -107,10 +107,38 @@ function toChapters(text: string): string[] {
   return chapters;
 }
 
-/** 시드와 같은 모양의 고정 id — 운영 DB 와 seed.sql 이 같은 값을 쓰게 한다 */
-function bookId(index: number): string {
-  const n = String(index + 101).padStart(3, "0");
+/**
+ * 시드와 같은 모양의 고정 id — 운영 DB 와 seed.sql 이 같은 값을 쓰게 한다.
+ *
+ * 자리는 **후보 목록 전체**에서의 순번으로 정한다. 걸러낸 목록의 순번을 쓰면
+ * `--only "땡볕"` 처럼 한 권만 다시 돌릴 때 그 책이 0번이 되어 `0000b101`(겁쟁이 도적)을
+ * 덮어쓴다 — `on conflict (id) do update` 라 조용히 지워진다 (#108 리뷰, 문민재).
+ *
+ * 그래서 후보는 **뒤에만 추가**한다. 중간에 끼워 넣으면 뒷 책들의 id 가 밀리는데,
+ * 그건 아래 assertSlotMatches 가 막는다.
+ */
+function bookId(indexInCandidates: number): string {
+  const n = String(indexInCandidates + 101).padStart(3, "0");
   return `0000b${n}-0000-4000-8000-000000000${n}`;
+}
+
+/**
+ * 이 id 자리에 이미 다른 책이 들어 있으면 멈춘다.
+ *
+ * 후보 목록을 중간에 끼워 넣거나 순서를 바꾸면 id 가 밀려 남의 책을 덮어쓴다.
+ * 제목이 다르면 쓰지 않고 건너뛴다 — 데이터를 잃는 것보다 한 권 못 넣는 게 낫다.
+ */
+async function slotIsFree(
+  db: SupabaseClient,
+  id: string,
+  title: string,
+): Promise<boolean> {
+  const { data } = await db.from("books").select("title").eq("id", id).maybeSingle();
+  if (!data || data.title === title) return true;
+  console.log(
+    `      ✕ ${id} 자리에 이미 "${data.title}" 가 있다. 후보 순서가 바뀐 것 같다 — 넣지 않는다`,
+  );
+  return false;
 }
 
 async function main() {
@@ -129,8 +157,9 @@ async function main() {
       })
     : null;
 
+  const all = candidates as Candidate[];
   let ok = 0;
-  for (const [i, c] of list.entries()) {
+  for (const c of list) {
     const title = c.title ?? c.src;
     const raw = await fetchPlainText(c.src);
     await sleep(SPACING_MS);
@@ -151,15 +180,17 @@ async function main() {
     const chapters = toChapters(text);
     ok += 1;
     const gradeLabel = `${c.grade[0] <= 6 ? `초${c.grade[0]}` : `중${c.grade[0] - 6}`}~${c.grade[1] <= 6 ? `초${c.grade[1]}` : `중${c.grade[1] - 6}`}`;
+    const slot = all.indexOf(c);
     console.log(
-      `${String(i + 1).padStart(2)}. ${title.padEnd(16)} ${c.author}  ${gradeLabel.padEnd(8)} ${chapters.length}장 ${Math.round(text.length / 1000)}k자`,
+      `${String(slot + 1).padStart(2)}. ${title.padEnd(16)} ${c.author}  ${gradeLabel.padEnd(8)} ${chapters.length}장 ${Math.round(text.length / 1000)}k자  ${bookId(slot).slice(0, 8)}`,
     );
     for (const [ci, ch] of chapters.entries()) {
       console.log(`      ${ci + 1}장: ${ch.slice(0, 60).replace(/\n/g, " ")}…`);
     }
 
     if (db) {
-      const id = bookId(i);
+      const id = bookId(slot);
+      if (!(await slotIsFree(db, id, title))) continue;
       const { error: be } = await db.from("books").upsert({
         id,
         title,
