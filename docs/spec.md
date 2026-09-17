@@ -187,7 +187,7 @@ POST  /api/reviews/:id/helper                             → { question }  AI #
 ### verification (박재경 · uses 강민구's ai module)
 ```
 POST /api/reviews/:id/question                     → { verification_id, question, quote, seconds }
-POST /api/verifications/:id/answer  { answer }      → { passed, scores, feedback, points }
+POST /api/verifications/:id/answer  { answer }      → { passed, scores, feedback, points }   서재 책이면 본문(≤12k자)을 채점에 넘긴다 — 책과 무관한 답은 logic fail (#120)
 POST /api/reviews/:id/retry                        → { verification_id, question, quote, seconds }
 ```
 The countdown starts client-side when the question renders, but `asked_at`/`answered_at` on the server are authoritative. Reject an answer arriving more than `ANSWER_WINDOW_SEC + 5` after `asked_at`.

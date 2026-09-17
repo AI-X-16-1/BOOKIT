@@ -27,10 +27,31 @@ export interface PromptContext {
   synopsis?: string;
   /** 재시도 때 넘긴다. 여기 있는 질문과 같은 질문을 다시 내지 않는다. */
   avoidQuestions?: string[];
+  /**
+   * 책 본문 (#120). 서재 책은 모델이 줄거리를 모르는 1920년대 단편이라, 이게 없으면
+   * 책과 무관한 답도 논리만 맞으면 통과한다. reader 의 readBookText 가 만든다.
+   * 없으면 제목(과 synopsis)만으로 간다 — 저작권 있는 책이 그렇다.
+   */
+  excerpt?: string;
 }
 
 function gradeLine(context: PromptContext | undefined): string {
   return context?.gradeLevel ? `학년: ${context.gradeLevel}학년 / ` : "";
+}
+
+/**
+ * 본문이 있으면 프롬프트 끝에 붙인다 — 채점에만 쓴다 (#120).
+ * 질문 생성에도 넣어 봤더니 모델이 본문 장면을 보기로 나열하는 양자택일 질문을 만들었다
+ * ("밤에 움직이던 때야, 아니면 벽 더듬던 때야?") — 힌트가 되어 검증이 약해진다.
+ * 질문은 지금처럼 독후감만 보고 만들고, 답이 책과 맞는지는 채점이 본문으로 확인한다.
+ */
+function excerptBlock(context: PromptContext | undefined): string {
+  return context?.excerpt
+    ? `
+
+책 본문 — 질문과 판정의 근거는 여기서 찾아라:
+"""${context.excerpt}"""`
+    : "";
 }
 
 /* ── AI #1 글쓰기 도우미 ───────────────────────────── */
@@ -189,6 +210,14 @@ export const GRADING_SYSTEM = `너는 학생의 답변을 채점한다. 정답 �
 세 가지를 판정하라.
 
 1. logic_consistency — 답변이 독후감의 주장과 어긋나지 않는가. pass / weak / fail
+   책 본문이 주어지면 답변이 본문과 어긋나는지도 여기서 본다. 기준은 "읽었다면 할 수 없는
+   답"이다 — 본문에 전혀 없는 인물·사건을 근거로 삼거나, 본문의 낱말을 다른 뜻으로 쓴
+   답변(예: 총 쏘는 사냥꾼 '포수'를 야구 포수로)은 독후감과 말이 맞아도 fail 이다.
+   fail 은 답변이 통째로 책과 무관할 때만이다. 본문에 실제로 있는 장면·인물을 하나라도
+   맞게 짚었으면, 나머지가 틀리거나 지어낸 대목이 섞여 있어도 fail 이 아니라 weak 이다 —
+   읽고도 기억이 흐려질 수 있고, 여기서 보는 것은 읽었는지이지 암기했는지가 아니다.
+   장면의 순서·정확한 표현·누가 먼저 했는지가 틀린 정도는 pass 다.
+   본문이 없으면 이 판단은 하지 않는다.
 2. specificity — 장면이나 인물을 특정했는가. 뭉뚱그렸으면 weak. pass / weak / fail
    책에 널리 알려진 문장이나 제목을 그대로 옮기고 감상만 붙인 답은 특정한 것이 아니다 — weak.
    이 판단은 구체성 축에서만 하고 다른 축으로 옮기지 마라. 장면이나 인물을 짚었으면 짧아도 pass 다.
@@ -209,6 +238,8 @@ style_consistency 는 방향과 무관하다. 둘 중 하나라도 해당하면 
 - feedback은 학생에게 보여줄 문장이다. 반말로 두 문장 이내.
   통과면 무엇을 잘했는지 구체적으로, 미통과면 무엇을 더하면 되는지 알려줘라.
   절대 나무라지 마라.
+- 책 본문이 주어졌어도 feedback 에 본문의 장면을 대신 말해주지 마라. 다시 시도하면 새
+  질문을 받으므로, "책에서 포수가 사냥하는 부분을 다시 읽어봐" 정도로 어디를 볼지만 알려줘라.
 - passed 는 네가 정하지 말고 세 축 판정에만 집중해라. 통과 여부는 서버가 정한다.`;
 
 export function gradingUser(
@@ -230,7 +261,7 @@ export function gradingUser(
 질문: ${question}
 
 학생 답변:
-"""${answer}"""`;
+"""${answer}"""${excerptBlock(context)}`;
 }
 
 /* ── 프롬프트 #5 장르 태그 정규화 ──────────────────── */
