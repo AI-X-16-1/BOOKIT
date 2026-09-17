@@ -60,7 +60,7 @@ export async function gradeAnswer(
   const loaded = await loadContext(supabase, userId, attempt.review_id);
   if (!loaded.ok) return loaded;
 
-  const { review, book, gaps, gradeLevel } = loaded.data;
+  const { review, book, gaps, gradeLevel, excerpt } = loaded.data;
   const gap = gaps.find((candidate) => candidate.id === attempt.gap_id);
   if (!gap) {
     // 빈틈이 다시 만들어져 이 시도의 근거가 사라진 경우. 채점할 기준이 없다
@@ -75,7 +75,7 @@ export async function gradeAnswer(
         attempt.question,
         answer,
         book,
-        { gradeLevel },
+        { gradeLevel, excerpt },
       );
 
   const saved = await persist(attempt.id, userId, answer, result);

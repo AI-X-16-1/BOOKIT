@@ -8,6 +8,7 @@
  */
 import "server-only";
 
+import { readBookText } from "@/modules/reader/server";
 import type { BookitClient } from "@/shared/supabase";
 import type { BookContext, GradeLevel, Review, ReviewGap, Verification } from "@/shared/types";
 
@@ -22,6 +23,11 @@ export type AttemptSummary = Pick<
 export interface VerificationContext {
   review: Pick<Review, "id" | "student_id" | "body" | "status" | "book_id">;
   book: BookContext;
+  /**
+   * 서재 책이면 본문 (#120). 질문·채점이 실제 장면을 전제로 돌게 한다 — 이게 없으면
+   * 모델이 모르는 책에서 책과 무관한 답도 통과한다. 저작권 있는 책은 undefined.
+   */
+  excerpt: string | undefined;
   gradeLevel: GradeLevel | undefined;
   /** ord 오름차순. ord 1 이 가장 중요한 빈틈이다 */
   gaps: ReviewGap[];
@@ -62,7 +68,7 @@ export async function loadContext(
   const [bookResult, gapsResult, attemptsResult, profileResult] = await Promise.all([
     supabase
       .from("books")
-      .select("title, author, tags")
+      .select("title, author, tags, is_public_domain")
       .eq("id", review.book_id)
       .maybeSingle(),
     supabase
@@ -96,11 +102,19 @@ export async function loadContext(
     );
   }
 
+  // 본문은 서재 책일 때만 읽는다. 저작권 있는 책은 RLS 가 어차피 비워 주지만
+  // 쿼리를 한 번 아끼려고 여기서 먼저 거른다
+  const { is_public_domain, ...book } = bookResult.data;
+  const excerpt = is_public_domain
+    ? ((await readBookText(supabase, review.book_id)) ?? undefined)
+    : undefined;
+
   return {
     ok: true,
     data: {
       review,
-      book: bookResult.data,
+      book,
+      excerpt,
       gradeLevel: profileResult.data?.grade_level ?? undefined,
       gaps,
       attempts: attemptsResult.data ?? [],
