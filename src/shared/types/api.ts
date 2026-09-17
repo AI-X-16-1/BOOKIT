@@ -163,11 +163,19 @@ export interface ReaderChapterResponse {
   body: string;
 }
 
+/** 사전 뜻 하나. 문맥을 보지 않으므로 여러 개를 주고 아이가 고른다 (#43) */
+export interface DictSense {
+  definition: string;
+}
+
 export interface DictResponse {
   word: string;
+  /** = senses[0]. 뜻 하나만 아는 쪽이 깨지지 않게 남긴다 */
   definition: string;
   /** 국립국어원 한국어기초사전 */
   source: string;
+  /** 쉬운 등급의 표제어부터, 사전에 적힌 순서대로. 1~5개 (#43) */
+  senses: DictSense[];
 }
 
 /* ── rewards / growth / ranking / guardian (문민재) ── */
