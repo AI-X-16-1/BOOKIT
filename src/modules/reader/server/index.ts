@@ -14,6 +14,6 @@ export {
   ChapterError,
   type ChapterErrorKind,
 } from "./chapter";
-export { listShelf } from "./shelf";
+export { listShelf, readMyGrade } from "./shelf";
 export { lookup, DictError, type DictErrorKind } from "./dict";
 export type { DictSense, ReaderDictResponse } from "../schema";

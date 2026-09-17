@@ -56,3 +56,27 @@ export async function listShelf(supabase: BookitClient): Promise<ShelfBook[]> {
         a.title.localeCompare(b.title, "ko"),
     );
 }
+
+/**
+ * 서재 목록을 내 학년에 맞춰 보여주기 위해 학년만 읽는다.
+ *
+ * profiles 는 auth 모듈 소유라 값을 바꾸지 않고 한 칸만 읽는다. RLS 가 본인 행만
+ * 내주므로 남의 학년은 못 본다. auth 가 나중에 학년을 담은 헬퍼를 내보내면 그걸로 바꾼다.
+ * 교사이거나 아직 학년이 없으면 null — 그때 서재는 원래 순서 그대로다.
+ */
+export async function readMyGrade(
+  supabase: BookitClient,
+  userId: string,
+): Promise<number | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("grade_level")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn("[reader] 학년을 읽지 못해 서재를 기본 순서로 보여준다", error);
+    return null;
+  }
+  return data?.grade_level ?? null;
+}
