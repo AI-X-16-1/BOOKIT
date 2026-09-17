@@ -209,7 +209,17 @@ async function main() {
       const { error: ce } = await db.from("book_contents").insert(
         chapters.map((body, ci) => ({ book_id: id, chapter_no: ci + 1, title: `${ci + 1}장`, body })),
       );
-      if (ce) console.log(`      ✕ 본문 저장 실패: ${ce.message}`);
+      if (ce) {
+        // 본문 없이 is_public_domain=true 로 남으면 "서재에 있어" 라고 표시되는데
+        // 눌러도 못 읽는 책이 된다 (#116 리뷰, 이승환). 트랜잭션이 없으니 되돌린다.
+        console.log(`      ✕ 본문 저장 실패: ${ce.message} — 책 행도 되돌린다`);
+        const { error: re } = await db.from("books").delete().eq("id", id);
+        if (re) {
+          console.log(
+            `      ✕✕ 되돌리기도 실패했다: ${re.message}. ${id} 를 손으로 지워야 한다`,
+          );
+        }
+      }
     }
   }
   console.log(`\n가져온 책 ${ok}/${list.length}${write ? " · 저장 완료" : ""}`);

@@ -90,6 +90,9 @@ export function PickBookFirst() {
                   <span className="truncate text-[13px] text-muted">{book.author}</span>
                   {/* 서재에 있는 책이면 "직접 작성" 이 아니다 — 읽을 수 있는데 쓰기로만
                       보내면 이 화면이 막으려던 것과 같은 증상이 된다 (#116 리뷰) */}
+                  {/* 본문 유무는 검색 응답에 없어서 is_public_domain 으로 대신한다.
+                      그 둘이 어긋나지 않는다는 불변식은 시드와 reader:import 가 지킨다 —
+                      근본 해결은 #117 (응답에 본문 유무를 담기) */}
                   {book.is_public_domain ? (
                     <Chip tone="green">서재에 있어</Chip>
                   ) : (

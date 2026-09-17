@@ -74,6 +74,8 @@ export function HomeScreen({ draft }: { draft?: HomeDraft | null }) {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<Book[]>([]);
   const [searching, setSearching] = useState(false);
+  /** 디바운스가 돌기 전에는 searching 이 아직 false 다. 한 번 물어본 뒤에만 빈 상태를 띄운다 */
+  const [settled, setSettled] = useState(false);
   const [recommend, setRecommend] = useState<BookRecommendResponse | null>(
     null,
   );
@@ -106,6 +108,7 @@ export function HomeScreen({ draft }: { draft?: HomeDraft | null }) {
         if (!query) {
           setHits([]);
           setSearching(false);
+          setSettled(false);
           return;
         }
         setSearching(true);
@@ -119,7 +122,9 @@ export function HomeScreen({ draft }: { draft?: HomeDraft | null }) {
             if (alive) setHits([]);
           })
           .finally(() => {
-            if (alive) setSearching(false);
+            if (!alive) return;
+            setSearching(false);
+            setSettled(true);
           });
       },
       query ? 300 : 0,
@@ -190,10 +195,16 @@ export function HomeScreen({ draft }: { draft?: HomeDraft | null }) {
                     <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-ink">
                       {b.title}
                     </span>
-                    <span className="truncate text-[13px] text-muted">{b.author}</span>
+                    <span className="min-w-0 truncate text-[13px] text-muted">{b.author}</span>
                     {/* 검색 결과는 서재에 없는 책이 대부분이라 "직접 작성" 으로 간다고
                         알려준다. 다만 검색은 curated 책을 is_public_domain 구분 없이
                         매칭하므로 서재 책도 뜬다 — 그 경우 읽기 기회를 먼저 준다 (#106) */}
+                    {/* is_public_domain 만 보고 "서재에 있어" 를 띄운다. 본문 유무는
+                        검색 응답에 없다 — Book 타입에 그 칸이 없고 shared 는 auth 소유다.
+                        지금은 불변식으로 버틴다: is_public_domain=true 인 책은 시드와
+                        reader:import 두 경로로만 들어오고, 둘 다 본문을 같이 넣는다
+                        (import 는 본문 저장이 실패하면 책 행을 되돌린다). 응답에 본문
+                        유무를 담는 게 근본 해결이고 #117 로 올렸다 (#116 리뷰, 이승환) */}
                     {b.is_public_domain ? (
                       <Chip tone="green">서재에 있어</Chip>
                     ) : (
@@ -222,7 +233,7 @@ export function HomeScreen({ draft }: { draft?: HomeDraft | null }) {
                   )}
                 </li>
               ))}
-              {hits.length === 0 && !searching && (
+              {hits.length === 0 && !searching && settled && (
                 <li className="px-4 py-3 text-[14px] text-muted">
                   그 책은 못 찾았어. 다른 제목으로 찾아볼까?
                 </li>
