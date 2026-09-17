@@ -191,10 +191,23 @@ export function HomeScreen({ draft }: { draft?: HomeDraft | null }) {
                       {b.title}
                     </span>
                     <span className="truncate text-[13px] text-muted">{b.author}</span>
-                    {/* 검색 결과는 서재에 없는 책이 대부분이다 — 누르면 읽기가 아니라
-                        직접 작성으로 간다는 걸 라벨로 알려준다 (#106) */}
-                    <Chip tone="yellow">직접 작성</Chip>
+                    {/* 검색 결과는 서재에 없는 책이 대부분이라 "직접 작성" 으로 간다고
+                        알려준다. 다만 검색은 curated 책을 is_public_domain 구분 없이
+                        매칭하므로 서재 책도 뜬다 — 그 경우 읽기 기회를 먼저 준다 (#106) */}
+                    {b.is_public_domain ? (
+                      <Chip tone="green">서재에 있어</Chip>
+                    ) : (
+                      <Chip tone="yellow">직접 작성</Chip>
+                    )}
                   </Link>
+                  {b.is_public_domain && (
+                    <Link
+                      href={libraryHref(b.id)}
+                      className="flex min-h-12 items-center px-4 pb-3 text-[13px] font-bold text-coral"
+                    >
+                      서재에서 먼저 읽기 →
+                    </Link>
+                  )}
                   {/* 검색으로 새로 들어온 책만 국립중앙도서관 확인이 돈다(server/search.ts) —
                       추천 카드(curated 전용)에는 뜨지 않는 책이라 여기 별도로 보여준다 (#72) */}
                   {b.library_url && (

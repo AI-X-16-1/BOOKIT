@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
+import { libraryHref } from "@/modules/reader";
 import { apiGet } from "@/shared/api/client";
 import type { Book, BookSearchResponse } from "@/shared/types";
 import { Card, Chip } from "@/shared/ui";
@@ -22,6 +23,8 @@ export function PickBookFirst() {
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<Book[]>([]);
   const [searching, setSearching] = useState(false);
+  /** 디바운스 후 실제로 한 번 물어본 뒤에만 "못 찾았어" 를 띄운다 */
+  const [settled, setSettled] = useState(false);
 
   // 홈과 같은 300ms 디바운스. 늦게 온 이전 응답은 버린다
   useEffect(() => {
@@ -32,6 +35,7 @@ export function PickBookFirst() {
         if (!query) {
           setHits([]);
           setSearching(false);
+          setSettled(false);
           return;
         }
         setSearching(true);
@@ -43,7 +47,9 @@ export function PickBookFirst() {
             if (alive) setHits([]);
           })
           .finally(() => {
-            if (alive) setSearching(false);
+            if (!alive) return;
+            setSearching(false);
+            setSettled(true);
           });
       },
       query ? 300 : 0,
@@ -68,7 +74,7 @@ export function PickBookFirst() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="예: 마당을 나온 암탉"
-          className="min-h-12 w-full rounded-btn border border-border bg-surface px-4 text-[16px] text-ink placeholder:text-faint"
+          className="min-h-12 w-full rounded-btn border border-border bg-card px-4 text-[16px] text-ink placeholder:text-faint"
         />
       </label>
 
@@ -76,21 +82,40 @@ export function PickBookFirst() {
         <ul className="mt-3 space-y-2">
           {hits.map((book) => (
             <li key={book.id}>
-              <Link href={`/write?book=${book.id}`} className="block">
-                <Card className="flex min-h-12 items-center gap-3">
+              <Card className="flex flex-col gap-2">
+                <Link href={`/write?book=${book.id}`} className="flex min-h-12 items-center gap-3">
                   <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-ink">
                     {book.title}
                   </span>
                   <span className="truncate text-[13px] text-muted">{book.author}</span>
-                  <Chip tone="yellow">직접 작성</Chip>
-                </Card>
-              </Link>
+                  {/* 서재에 있는 책이면 "직접 작성" 이 아니다 — 읽을 수 있는데 쓰기로만
+                      보내면 이 화면이 막으려던 것과 같은 증상이 된다 (#116 리뷰) */}
+                  {book.is_public_domain ? (
+                    <Chip tone="green">서재에 있어</Chip>
+                  ) : (
+                    <Chip tone="yellow">직접 작성</Chip>
+                  )}
+                </Link>
+                {book.is_public_domain && (
+                  <Link
+                    href={libraryHref(book.id)}
+                    className="flex min-h-12 items-center text-[13px] font-bold text-coral"
+                  >
+                    서재에서 먼저 읽기 →
+                  </Link>
+                )}
+              </Card>
             </li>
           ))}
 
-          {hits.length === 0 && (
+          {/* 디바운스가 돌기 전에는 searching 이 아직 false 다. 그대로 두면 한 글자 칠
+              때마다 "못 찾았어" 가 깜빡인다 — 아이가 보는 화면이다 (#116 리뷰) */}
+          {searching && hits.length === 0 && (
+            <li className="px-1 py-3 text-[14px] text-muted">찾는 중이야…</li>
+          )}
+          {!searching && settled && hits.length === 0 && (
             <li className="px-1 py-3 text-[14px] text-muted">
-              {searching ? "찾는 중이야…" : "그 책은 못 찾았어. 다른 제목으로 찾아볼까?"}
+              그 책은 못 찾았어. 다른 제목으로 찾아볼까?
             </li>
           )}
         </ul>
