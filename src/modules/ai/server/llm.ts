@@ -71,7 +71,11 @@ export interface LlmConfig {
  * 모듈 스코프에서 읽으면 키 없는 CI 빌드가 깨진다(.github/workflows/ci.yml 참고).
  */
 export function readConfig(): LlmConfig {
-  const raw = process.env.LLM_PROVIDER?.trim() || "gemini";
+  // 기본값은 anthropic 이다 (CLAUDE.md §1, #54). 예전 기본값은 gemini 였는데,
+  // 환경변수를 빠뜨린 배포가 조용히 Gemini 로 돌면 약관 위반이 된다 — Google 은
+  // 개발자 API 와 Vertex 양쪽에서 18세 미만 대상 서비스를 금지하고, 위반이
+  // 의심되면 즉시 중단할 수 있다(Cloud SST §20(f)). 빠뜨렸을 때 안전한 쪽으로 둔다.
+  const raw = process.env.LLM_PROVIDER?.trim() || "anthropic";
   if (!PROVIDERS.includes(raw as Provider)) {
     throw new LlmError(
       "not_configured",
