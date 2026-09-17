@@ -57,6 +57,12 @@ export interface ProviderResponse {
   stop: "ok" | "refusal" | "max_tokens";
   /** 거부 사유 등, 로그에 남길 부가 정보. */
   detail?: string;
+  /**
+   * 실제로 응답한 모델. 요청한 모델과 다를 수 있다 — 과부하로 대체 모델에 넘어간
+   * 경우다. 채점 기준은 기본 모델로만 재기 때문에(제출 서류 §5), 폴백이 실제로
+   * 일어났는지는 이 값으로만 알 수 있다.
+   */
+  model?: string;
 }
 
 /** 벤더 호출이 실패했을 때 llm.ts 가 분류할 수 있게 상태 코드를 보존한다. */
@@ -129,6 +135,7 @@ async function callGemini(
       text,
       stop: refused ? "refusal" : finish === "MAX_TOKENS" ? "max_tokens" : "ok",
       detail: refused ? String(finish) : undefined,
+      model: response.modelVersion ?? req.model,
     };
   } catch (error) {
     if (controller.signal.aborted) {
@@ -198,6 +205,7 @@ async function callAnthropic(
             ? "max_tokens"
             : "ok",
       detail: message.stop_details?.category ?? undefined,
+      model: message.model,
     };
   } catch (error) {
     if (error instanceof Anthropic.APIError) {
