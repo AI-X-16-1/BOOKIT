@@ -1,0 +1,44 @@
+# 심사 기간(2026-09-20 ~ 10-17) 동안 서비스가 살아 있는지 매일 확인하고, 그 확인 자체로
+# Supabase 무료 플랜의 "7일 비활동 시 일시정지"를 막는다 (plan-ko.md §5-3 위험 표).
+#
+# 시연 로그인(/auth/demo)은 auth.users 조회 + 세션 발급 + profiles/classes 읽기를 하므로
+# DB 활동으로 잡힌다. 그 뒤 /library 는 서버 컴포넌트가 books/book_contents 를 읽는다.
+# 응답이 기대와 다르면 잡을 실패시킨다 — GitHub 가 메일로 알려준다 (저장소 소유자).
+#
+# 데모데이(10/17) 뒤에는 DEMO_LOGIN_ENABLED 를 지우면 /auth/demo 가 404 라 이 잡도
+# 같이 실패하기 시작한다. 그때 이 파일을 지운다.
+name: keepalive
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 매일 09:00 KST
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: demo login → library (Supabase auth + DB 를 건드린다)
+        run: |
+          set -euo pipefail
+          BASE="https://bookit-edu.vercel.app"
+          JAR="$(mktemp)"
+
+          code=$(curl -sS -o /dev/null -w "%{http_code}" "$BASE/login")
+          echo "GET /login → $code"
+          [ "$code" = "200" ] || { echo "::error::로그인 화면이 $code"; exit 1; }
+
+          code=$(curl -sS -c "$JAR" -b "$JAR" -o /dev/null -w "%{http_code}" "$BASE/auth/demo?as=student")
+          echo "GET /auth/demo?as=student → $code"
+          [ "$code" = "307" ] || { echo "::error::시연 로그인이 $code (DEMO_LOGIN_ENABLED 꺼졌거나 Supabase 문제)"; exit 1; }
+
+          profile=$(curl -sS -b "$JAR" "$BASE/api/profile")
+          echo "GET /api/profile → ${profile:0:80}"
+          echo "$profile" | grep -q '"display_name"' || { echo "::error::프로필 조회 실패 — DB 응답 없음"; exit 1; }
+
+          code=$(curl -sS -b "$JAR" -o /dev/null -w "%{http_code}" "$BASE/library")
+          echo "GET /library → $code"
+          [ "$code" = "200" ] || { echo "::error::서재가 $code"; exit 1; }
+
+          echo "OK — Supabase 활동 기록됨 ($(date -u +%FT%TZ))"
