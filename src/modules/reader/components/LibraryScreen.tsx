@@ -492,6 +492,19 @@ export function LibraryScreen({
                 </Card>
               </button>
             ))}
+            {/* 마지막 쪽처럼 책이 pageSize 보다 적으면 빈 칸을 같은 높이로 채운다.
+                안 그러면 쪽을 넘길 때 번호 버튼이 위로 튀어 올라온다 (CLS). 보이지 않고 눌리지도 않는다 */}
+            {Array.from({ length: Math.max(0, pageSize - pageBooks.length) }).map((_, i) => (
+              <div key={`pad-${i}`} aria-hidden className="invisible">
+                <Card className="flex items-center gap-3">
+                  <div className="h-14 w-11 flex-none" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[15px] font-bold">&nbsp;</div>
+                    <div className="mt-1 text-[13px]">&nbsp;</div>
+                  </div>
+                </Card>
+              </div>
+            ))}
           </div>
 
           <ShelfPagination
