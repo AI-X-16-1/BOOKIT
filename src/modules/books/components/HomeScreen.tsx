@@ -19,6 +19,9 @@ import { COVER, type CoverTone } from "../mock";
  * 홈. 목업 6 L127-140 (인사·검색), 목업 4 (책갈피·스트릭 카드).
  *
  * 검색·추천은 books API, 책갈피·스트릭·반 순위는 각 모듈의 API 를 읽는다.
+ * 추천 카드는 **본문이 있는 책만** 나온다 (#106, server/db.ts 의 listByGrade). 홈은
+ * "읽고 나서 쓰는" 자리라, 서재에서 읽을 수 없는 책이 여기 뜨면 누르는 순간 읽기가
+ * 아니라 작성으로 빠진다. 밖에서 읽고 온 책은 검색해서 "직접 작성" 으로 쓴다.
  * 책 카드는 /write?book=<id> 로 간다 — review 모듈이 그 책의 초고를 만든다.
  * 책잇 서재에 원문이 있는 책(is_public_domain)은 추천 카드에 "서재에서 바로
  * 읽기" 링크(reader 모듈의 libraryHref)도 같이 보여준다 — 조건 없이 바로 읽을
@@ -184,11 +187,27 @@ export function HomeScreen({ draft }: { draft?: HomeDraft | null }) {
                     className="flex min-h-12 items-center gap-3 px-4 py-3"
                   >
                     <Cover book={b} size="h-8 w-8" />
-                    <span className="flex-1 truncate text-[15px] font-bold text-ink">
+                    <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-ink">
                       {b.title}
                     </span>
-                    <span className="text-[13px] text-muted">{b.author}</span>
+                    <span className="truncate text-[13px] text-muted">{b.author}</span>
+                    {/* 검색 결과는 서재에 없는 책이 대부분이라 "직접 작성" 으로 간다고
+                        알려준다. 다만 검색은 curated 책을 is_public_domain 구분 없이
+                        매칭하므로 서재 책도 뜬다 — 그 경우 읽기 기회를 먼저 준다 (#106) */}
+                    {b.is_public_domain ? (
+                      <Chip tone="green">서재에 있어</Chip>
+                    ) : (
+                      <Chip tone="yellow">직접 작성</Chip>
+                    )}
                   </Link>
+                  {b.is_public_domain && (
+                    <Link
+                      href={libraryHref(b.id)}
+                      className="flex min-h-12 items-center px-4 pb-3 text-[13px] font-bold text-coral"
+                    >
+                      서재에서 먼저 읽기 →
+                    </Link>
+                  )}
                   {/* 검색으로 새로 들어온 책만 국립중앙도서관 확인이 돈다(server/search.ts) —
                       추천 카드(curated 전용)에는 뜨지 않는 책이라 여기 별도로 보여준다 (#72) */}
                   {b.library_url && (
