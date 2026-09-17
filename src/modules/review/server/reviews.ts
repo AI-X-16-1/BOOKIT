@@ -64,7 +64,13 @@ export async function findResumable(
     .limit(20);
 
   if (error) throw error;
-  const rows = (data ?? []).filter((row) => row.body.trim().length > 0);
+  // 빈 초고는 홈의 "이어서 쓰기"(bookId 없음)에서만 뺀다. 책을 정해서 들어온 경우(openReview)
+  // 에는 반드시 포함해야 한다 — 빈 초고도 reviews_one_active_per_student_book 에서는
+  // 활성이라, 여기서 걸러 버리면 insert 가 23505 로 터져 작성 화면이 500 이 된다.
+  // 프로덕션에서 실제로 났다: 책만 열어 보고 나갔다가 다시 들어오면 작성 화면이 안 열렸다 (#123).
+  const rows = bookId
+    ? (data ?? [])
+    : (data ?? []).filter((row) => row.body.trim().length > 0);
   return rows.find((row) => EDITABLE.includes(row.status)) ?? rows[0] ?? null;
 }
 
