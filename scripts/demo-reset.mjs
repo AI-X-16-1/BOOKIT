@@ -23,6 +23,8 @@ const SEED_CUTOFF = "2026-09-16T00:00:00Z";
 const BOOK_GOLD_AXE = "0000b017-0000-4000-8000-000000000017"; // 금도끼 — 부화·퍼즐 완성
 const BOOK_LUCKY_DAY = "0000b001-0000-4000-8000-000000000001"; // 운수 좋은 날 — 알·1장
 const STAMPS = { 성장소설: 6, 고전: 3, 동화: 1 };
+/** seed.sql 의 i=12 초고 본문. 시드 초고가 통과로 덮였을 때 되돌린다 (#159 ③) */
+const SEED_DRAFT_BODY = "오늘부터 이 책을 읽기 시작했다. 아직 앞부분밖에 못 읽었는데";
 const EXPECTED_BALANCE = 1240;
 /** 통과작 9 + 금도끼(부화) + 운수 좋은 날(알). seed.sql §7b */
 const EXPECTED_CHARACTERS = 11;
@@ -79,6 +81,74 @@ await run("독후감", async () => {
   if (!reviewIds.length) return 0;
   if (!WRITE) return reviewIds.length;
   return (await db.from("reviews").delete().in("id", reviewIds).select()).data?.length ?? 0;
+});
+
+/* ── 1b. 시드 독후감에 붙은 테스트 흔적 (#159 ③) ─────────── */
+// §1 은 "기준일 이후에 만들어진 **독후감**" 만 본다. 그런데 심사자나 우리가 시연 연습으로
+// **시드 초고**(「운수 좋은 날」, 09-03)를 통과시키면 그 독후감 자신은 시드 데이터라 남아야
+// 하지만 거기 붙은 검증·원장·빈틈은 테스트 흔적이다. 부모가 기준일 이전이어서 §1 의
+// 그물에 걸리지 않았고, 그 결과 잔액이 1,290 으로 남고 초고가 passed 로 고착됐다.
+// 여기서는 **행 자신의 created_at** 으로 잡는다.
+//
+// §1 이 이미 기준일 이후 독후감을 지웠으므로, 지금 남아 있는 "기준일 이후 검증" 은
+// 정의상 시드 독후감에 붙은 것들이다.
+// 시각 기준은 asked_at 이다 — verifications 에는 created_at 이 없다 (0003_reviews.sql).
+// 이 select 의 error 를 확인하지 않으면, 컬럼을 틀려도 0건으로 조용히 넘어간다.
+// 처음에 created_at 으로 썼다가 정확히 그렇게 지나갔다 — #159 ②와 같은 함정이다.
+const { data: staleVerifs, error: svErr } = await db
+  .from("verifications").select("id, review_id")
+  .eq("student_id", DEMO).gte("asked_at", SEED_CUTOFF);
+if (svErr) throw svErr;
+const staleVerifIds = (staleVerifs ?? []).map((v) => v.id);
+const touchedReviewIds = [...new Set((staleVerifs ?? []).map((v) => v.review_id))];
+
+await run("시드 독후감의 책갈피 원장", async () => {
+  if (!staleVerifIds.length) return 0;
+  if (!WRITE) return (await db.from("points_ledger").select("id").in("ref_id", staleVerifIds)).data?.length ?? 0;
+  return wrote(db.from("points_ledger").delete().in("ref_id", staleVerifIds));
+});
+await run("시드 독후감의 검증 시도", async () => {
+  if (!staleVerifIds.length) return 0;
+  if (!WRITE) return staleVerifIds.length;
+  // 빈틈보다 먼저 — verifications.gap_id 가 review_gaps 를 참조한다 (FK 23503)
+  return wrote(db.from("verifications").delete().in("id", staleVerifIds));
+});
+
+// 상태를 남은 검증으로 다시 정한다. 시드 초고는 검증이 하나도 없으므로 draft 로 돌아가고,
+// 시드의 통과·실패 독후감은 자기 시드 검증이 남아 있어 그대로다. 본문은 초고만 덮어쓸 수
+// 있으므로(saveDraft 가 draft 행만 고친다) draft 로 돌아간 것만 시드 본문으로 되돌린다.
+await run("시드 독후감 상태·본문 복원", async () => {
+  if (!touchedReviewIds.length) return 0;
+  let n = 0;
+  for (const id of touchedReviewIds) {
+    const { data: left, error: lvErr } = await db
+      .from("verifications").select("passed").eq("review_id", id);
+    if (lvErr) throw lvErr;
+    const status = !left?.length ? "draft" : left.some((v) => v.passed) ? "passed" : "failed";
+    const { data: row, error: rowErr } = await db
+      .from("reviews").select("status, body").eq("id", id).maybeSingle();
+    if (rowErr) throw rowErr;
+    if (!row) continue;
+
+    const body = status === "draft" ? SEED_DRAFT_BODY : row.body;
+    if (row.status === status && row.body === body) continue;
+
+    log(`  - 독후감 ${id.slice(0, 8)} ${row.status} → ${status}${body === row.body ? "" : ", 본문 복원"}`);
+    if (WRITE) {
+      const { error } = await db
+        .from("reviews")
+        .update({ body, char_count: [...body].length, status, is_shared: false })
+        .eq("id", id);
+      if (error) throw error;
+      // draft 로 돌아갔으면 빈틈도 테스트 흔적이다 (시드 초고에는 빈틈이 없다)
+      if (status === "draft") {
+        const { error: gErr } = await db.from("review_gaps").delete().eq("review_id", id);
+        if (gErr) throw gErr;
+      }
+    }
+    n += 1;
+  }
+  return n;
 });
 
 /* ── 2. 게임화 기록 (기준일 이후) ─────────────────────── */
