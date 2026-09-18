@@ -11110,10 +11110,13 @@ declare
     '0000b008-0000-4000-8000-000000000008',
     '0000b009-0000-4000-8000-000000000009',
     '0000b010-0000-4000-8000-000000000010',
-    '0000b011-0000-4000-8000-000000000011',
+    -- b011('harry')·b014('squirrel')는 검색 픽스처다 (0012, 위 1번 주석). 여기 두면
+    -- 데모 학생의 통과한 독후감 목록과 도감에 '데모 저자'의 'harry' 가 그대로 뜬다.
+    -- 진짜 책 두 권으로 바꾼다 — 캐릭터도 붙어 있어 통과 9건 = 도감 9마리가 맞는다
+    '0000b002-0000-4000-8000-000000000002',  -- 메밀꽃 필 무렵
     '0000b012-0000-4000-8000-000000000012',
     '0000b013-0000-4000-8000-000000000013',
-    '0000b014-0000-4000-8000-000000000014',
+    '0000b004-0000-4000-8000-000000000004',  -- 동백꽃
     '0000b015-0000-4000-8000-000000000015',
     '0000b001-0000-4000-8000-000000000001'
   ]::uuid[];
@@ -11123,7 +11126,10 @@ declare
   v_spec     score_axis;
   v_style    style_axis;
   v_passed   boolean;
+  v_attempt  int;
+  v_gap2     uuid;
   i          int;
+  j          int;
 begin
   for i in 1..12 loop
     -- 1~3번: 완독(통과). 4~9번: 통과 이력. 10~11번: 실패. 12번: 작성 중.
@@ -11162,8 +11168,9 @@ begin
     insert into review_gaps (id, review_id, ord, quote, gap_type, reason) values
       (v_gap, v_review, 1, '주인공은 결국 변화했다.',
        'unsupported_claim', '어느 장면을 근거로 했는지 없어요');
+    v_gap2 := gen_random_uuid();
     insert into review_gaps (id, review_id, ord, quote, gap_type, reason) values
-      (gen_random_uuid(), v_review, 2, '여러 사건이 있었다.',
+      (v_gap2, v_review, 2, '여러 사건이 있었다.',
        'vague_statement', '어떤 사건인지 특정되지 않았어요');
     insert into review_gaps (id, review_id, ord, quote, gap_type, reason) values
       (gen_random_uuid(), v_review, 3, '감동적이었다.',
@@ -11179,13 +11186,37 @@ begin
       v_logic := 'weak'; v_spec := 'fail'; v_style := 'same';
     end if;
 
+    -- 도감의 ★ 는 "몇 번째 시도에 잡았나" 다 — 한 번에 잡으면 ★★★
+    -- (verification/server/characters.ts 의 starsFor, 목업 7 #5 각주).
+    -- 전부 한 번에 통과시키면 도감에 ★★★ 만 남아 그 규칙이 화면에서 안 보인다.
+    -- 그래서 두 권만 재도전 끝에 통과한 이력으로 둔다 — 4번 ★★, 8번 ★.
+    v_attempt := case when not v_passed then 1 when i = 4 then 2 when i = 8 then 3 else 1 end;
+
+    -- 통과 앞의 실패 시도들. 재도전은 늘 다른 빈틈에서 새 질문을 만든다 (CLAUDE.md §6)
+    for j in 1..(v_attempt - 1) loop
+      insert into verifications (
+        review_id, student_id, attempt_no, gap_id, question, answer,
+        logic_consistency, specificity, style_consistency, passed, feedback,
+        points_awarded, asked_at, answered_at
+      ) values (
+        v_review, v_student, j, v_gap2,
+        '"여러 사건이 있었다"고 했는데, 그중에 제일 기억에 남는 건 뭐야?',
+        '음… 다 재밌어서 하나만 못 고르겠어요.',
+        'weak', 'fail', 'same', false,
+        '조금만 더! 장면 하나만 골라서 말해주면 훨씬 분명해질 거야.',
+        0,
+        now() - (i || ' days')::interval - (j || ' hours')::interval,
+        now() - (i || ' days')::interval - (j || ' hours')::interval + interval '44 seconds'
+      );
+    end loop;
+
     v_verif := gen_random_uuid();
     insert into verifications (
       id, review_id, student_id, attempt_no, gap_id, question, answer,
       logic_consistency, specificity, style_consistency, passed, feedback,
       points_awarded, asked_at, answered_at
     ) values (
-      v_verif, v_review, v_student, 1, v_gap,
+      v_verif, v_review, v_student, v_attempt, v_gap,
       '"주인공은 결국 변화했다"고 썼는데, 어느 장면을 보고 그렇게 생각했어?',
       case when v_passed
         then '곤이가 윤재한테 처음으로 먼저 말을 거는 장면에서요. ' ||
