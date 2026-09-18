@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { CoverPuzzle } from "@/modules/review";
 import type { ReaderChapterResponse } from "@/shared/types";
 import { ApiClientError } from "@/shared/api/client";
 import { BottomSheet, Button, Card, Chip } from "@/shared/ui";
@@ -195,12 +196,19 @@ export function LibraryScreen({
   books,
   initial,
   myGrade = null,
+  readChapters = {},
 }: {
   books: ShelfBook[];
   /** /library?book=<id>&chapter=<n> 로 들어왔을 때 바로 펼칠 책 (libraryHref) */
   initial?: { bookId: string; chapterNo: number };
   /** 로그인한 학생의 학년. 교사이거나 모르면 null — 그때는 원래 순서 그대로다 */
   myGrade?: number | null;
+  /**
+   * 책 id → 읽은 장 수. 표지 퍼즐을 그리는 데 쓴다 (sprint-0918 ①).
+   * 서버 컴포넌트가 채운다 (review 의 loadPuzzleCounts). 없는 책은 퍼즐을 안 그린다 —
+   * 한 장도 안 읽은 책에 잠긴 조각만 9개 보여줄 이유가 없다.
+   */
+  readChapters?: Record<string, number>;
 }) {
   // 주소로 책을 짚고 들어오면 목록을 거치지 않고 그 장을 바로 펼친다.
   // 서재에 없는 책이면 조용히 목록을 보여준다.
@@ -390,6 +398,21 @@ export function LibraryScreen({
 
           {/* 768px 이상 — 우측 사이드 패널 */}
           <aside className="hidden w-[270px] flex-none md:block">
+            {/* 표지 퍼즐 — 목업 7 #4 · 목업 8 #5 (sprint-0918 ①, 박재경).
+                사전 패널 위에 둔다. 사전이 뜨면 뜻이 우선이라 접는다 */}
+            {entry.state === "idle" && readChapters[book.id] !== undefined && (
+              <div className="mb-4">
+                <div className="mb-2 text-[13px] font-bold text-ink">
+                  읽을수록 표지가 드러나요
+                </div>
+                <CoverPuzzle
+                  coverUrl={null}
+                  readChapters={readChapters[book.id]}
+                  totalChapters={book.chapterCount}
+                />
+              </div>
+            )}
+
             {entry.state === "idle" ? (
               <p className="text-xs text-faint">낱말을 누르면 여기 뜻이 떠요</p>
             ) : (
