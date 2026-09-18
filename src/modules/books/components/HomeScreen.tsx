@@ -201,6 +201,17 @@ export function HomeScreen({ draft, reading }: HomeScreenProps) {
           종이책으로 읽은 책도 여기서 제목을 찾아 쓸 수 있어
         </div>
       </Link>
+
+      {/* 도감 입구 (sprint-0918 ②). 목업 7 은 탭바의 챌린지 자리를 도감으로 바꾸지만
+          TabBar 는 shared/ui 라 김민경 몫이다 (CLAUDE.md §2) — 탭이 바뀌기 전까지 홈에서
+          들어간다. 두 갈래 카드보다 가볍게 한 줄로 둔다. 보스전 통과 화면에도 입구가 있다 */}
+      <Link
+        href="/collection"
+        className="flex min-h-12 items-center justify-between gap-3 rounded-[18px] border border-border-soft bg-card px-5 py-3.5"
+      >
+        <span className="text-sm font-bold text-ink">◈ 나의 도감</span>
+        <span className="text-xs text-muted">포획한 캐릭터 보기 →</span>
+      </Link>
     </div>
   );
 }

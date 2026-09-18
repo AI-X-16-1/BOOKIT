@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import type { AnswerResponse } from "@/shared/types";
 import { Button } from "@/shared/ui";
 import {
@@ -231,9 +233,15 @@ export function ResultCard({
       <div className="mt-3 flex gap-2.5">
         {passed ? (
           <>
-            {/* 목업의 "도감에서 보기" 는 도감(②)이 붙은 뒤에 연결한다 — 지금 걸면
-                아무 데도 없는 화면으로 보낸다 */}
-            <Button onClick={onDone}>다음 책 보러가기</Button>
+            {/* 목업 7 #2 의 주 버튼. ②(도감)가 붙어서 이제 연결한다 —
+                방금 잡은 캐릭터는 트리거가 이미 stage 2 로 올려 둔 뒤라 (0014)
+                도감을 열면 바로 보인다. "다음 책" 은 탭바의 홈·서재가 받는다 */}
+            <Link
+              href="/collection"
+              className="min-h-12 w-full rounded-btn bg-coral px-5 py-[19px] text-center text-[17px] font-bold text-white active:opacity-80"
+            >
+              도감에서 보기
+            </Link>
             <Button
               variant="dark"
               fullWidth={false}

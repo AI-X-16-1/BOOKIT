@@ -102,20 +102,49 @@ export async function loadContinueReading(
 
   if (error) throw error;
 
+  // 최근 순서를 지키면서 책별로 한 번씩만
+  const candidates: { bookId: string; book: NonNullable<(typeof data)[number]["books"]> }[] = [];
   const seen = new Set<string>();
   for (const row of data ?? []) {
-    if (seen.has(row.book_id)) continue;
+    if (seen.has(row.book_id) || !row.books) continue;
     seen.add(row.book_id);
+    candidates.push({ bookId: row.book_id, book: row.books });
+  }
+  if (candidates.length === 0) return null;
 
-    const book = row.books;
-    if (!book) continue;
+  /*
+   * 후보를 하나씩 물어보지 않는다. 완독한 책이 앞에 쌓여 있으면 (완독 → 다음 날
+   * 홈 열기 가 흔한 순서다) 책마다 왕복 두 번이 홈 화면 응답에 직렬로 붙는다.
+   * 읽은 장 수와 전체 장 수를 각각 한 번에 받아 와서 메모리에서 고른다.
+   */
+  const [readCounts, chapterRows] = await Promise.all([
+    loadPuzzleCounts(supabase, userId),
+    supabase
+      .from("book_contents")
+      .select("book_id")
+      .in(
+        "book_id",
+        candidates.map((c) => c.bookId),
+      ),
+  ]);
 
-    const progress = await loadReadingProgress(supabase, userId, row.book_id);
-    if (!progress || progress.totalChapters === 0) continue;
-    if (progress.readChapters >= progress.totalChapters) continue;
+  if (chapterRows.error) throw chapterRows.error;
+
+  const totals: Record<string, number> = {};
+  for (const row of chapterRows.data ?? []) {
+    totals[row.book_id] = (totals[row.book_id] ?? 0) + 1;
+  }
+
+  for (const { bookId, book } of candidates) {
+    const totalChapters = totals[bookId] ?? 0;
+    const readChapters = readCounts[bookId] ?? 0;
+    // 서재 밖 책(본문 없음)과 완독한 책은 "이어서 읽기" 가 아니다
+    if (totalChapters === 0 || readChapters >= totalChapters) continue;
 
     return {
-      ...progress,
+      bookId,
+      readChapters,
+      totalChapters,
       title: book.title,
       author: book.author,
       coverUrl: book.cover_url,

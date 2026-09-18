@@ -8,4 +8,10 @@
 export { issueQuestion, type QuestionMode } from "./question";
 export { gradeAnswer } from "./answer";
 export { answerWindowSeconds, pointsPerPass, GRACE_SECONDS } from "./window";
+export {
+  loadCollection,
+  loadMyCharacters,
+  type Collection,
+  type CollectionEntry,
+} from "./characters";
 export type { VerificationResult } from "./result";
