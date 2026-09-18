@@ -25,6 +25,8 @@ export { OnboardingScreen } from "./components/OnboardingScreen";
 export { SignOutButton } from "./components/SignOutButton";
 export { DeleteAccountButton } from "./components/DeleteAccountButton";
 export { LegalPage, type LegalKind } from "./components/LegalPage";
+export { ExplorerRankPicker } from "./components/ExplorerRankPicker";
+export { ExplorerRankSettings } from "./components/ExplorerRankSettings";
 
 export { GRADES, gradeLabel } from "./grades";
 export { EXPLORER_RANKS } from "./explorer";
