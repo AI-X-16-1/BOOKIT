@@ -10,8 +10,8 @@ import type {
   TeacherOnboardingResponse,
 } from "@/shared/types";
 import { Button, Chip, cn } from "@/shared/ui";
-import { EXPLORER_RANKS } from "../explorer";
 import { GRADES, gradeLabel } from "../grades";
+import { ExplorerRankPicker } from "./ExplorerRankPicker";
 
 /**
  * 온보딩. 목업 1 #2 (L60-96).
@@ -145,39 +145,29 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
 
       {role === "student" ? (
         <>
-          {/* 탐험가 등급 — 자기 선언, 건너뛰어도 된다. 화면 톤에만 쓴다 (spec §2b) */}
-          <div className="mt-6 text-[15px] font-bold text-coral-text-2">
-            너는 어떤 탐험가야?{" "}
-            <span className="text-[13px] font-normal text-faint">(안 골라도 돼)</span>
+          {/* 탐험가 등급 — 자기 선언, 건너뛰어도 된다. 화면 톤에만 쓴다 (spec §2b, 목업 7 #8) */}
+          <div className="mt-6 flex items-baseline justify-between gap-3">
+            <span className="text-[15px] font-bold text-coral-text-2">탐험가 등급을 골라줘</span>
+            <span className="text-[12px] text-faint">안 골라도 돼</span>
           </div>
-          <div className="mt-2.5 grid grid-cols-3 gap-2.5">
-            {EXPLORER_RANKS.map((r) => (
-              <button
-                key={r.value}
-                type="button"
-                aria-pressed={rank === r.value}
-                onClick={() => setRank(rank === r.value ? null : r.value)}
-                className={cn(
-                  "flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-2 py-3",
-                  rank === r.value
-                    ? "bg-coral text-white"
-                    : "bg-yellow-bg text-coral-text-2",
-                )}
-              >
-                <span className="text-[22px] leading-none" aria-hidden>
-                  {r.emoji}
-                </span>
-                <span className="text-[15px] font-bold">{r.value}</span>
-                <span
-                  className={cn(
-                    "text-[11px] leading-tight",
-                    rank === r.value ? "text-white/85" : "text-muted",
-                  )}
-                >
-                  {r.blurb}
-                </span>
-              </button>
-            ))}
+          <div className="mt-3">
+            <ExplorerRankPicker value={rank} onChange={setRank} disabled={busy} />
+          </div>
+
+          {/* 목업 7 #8 의 알 안내 — 첫 장을 읽으면 알을 받고, 검증(포획)을 통과하면 최종 진화한다 (spec §2b) */}
+          <div className="mt-4 flex items-center gap-3.5 rounded-card bg-yellow-bg p-[18px]">
+            <span
+              aria-hidden
+              className="flex h-11 w-11 flex-none items-center justify-center rounded-[14px] bg-card text-xl"
+            >
+              🥚
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold text-ink">책을 펼치면 동료 알을 받아</span>
+              <span className="mt-[3px] block text-[13px] text-yellow-text-2">
+                보스전(이해도 확인)을 통과하면 진화해
+              </span>
+            </span>
           </div>
 
           <div className="mt-6 text-[13px] text-muted">반 참여 코드</div>
@@ -237,7 +227,7 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
             disabled={busy || code.length !== 6}
             onClick={submitStudent}
           >
-            {busy ? "확인하는 중…" : "책잇 시작하기"}
+            {busy ? "확인하는 중…" : "탐험 시작하기"}
           </Button>
         ) : issued ? (
           <Button variant="dark" onClick={() => router.push("/teacher")}>
