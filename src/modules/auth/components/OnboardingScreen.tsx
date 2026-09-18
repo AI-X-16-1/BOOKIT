@@ -33,6 +33,12 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
   const [code, setCode] = useState("");
   /** 탐험가 등급 — 선택. 안 고르면 null 로 보낸다 (spec §2b) */
   const [rank, setRank] = useState<ExplorerRank | null>(null);
+  /**
+   * 가입하고 바로 읽기 수준을 볼지 (spec §2c). 기본값은 "할래" 다 —
+   * 학년만 고르고 들어가면 그 값이 곧 책 난이도가 되는데, 학년은 나이지 읽기 수준이
+   * 아니다. 대신 끄기가 한 번 누르는 것이고, 안 해도 '나' 화면에서 언제든 할 수 있다.
+   */
+  const [levelTest, setLevelTest] = useState(true);
   // 기본값을 비운다 — "한빛초" 가 채워져 있으면 그대로 제출돼 남의 학교로 반이 생겼다 (#131)
   const [school, setSchool] = useState("");
   const [classNo, setClassNo] = useState(2);
@@ -50,18 +56,18 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
         explorer_rank: rank,
       });
       /*
-       * 온보딩 다음은 레벨테스트다 (spec §2c, plan-ko §14-2 의 4번).
+       * 가입 화면에서 고른 대로 간다 (spec §2c).
        *
-       * 단계를 하나 더 그리지 않는다 — /level-test 의 첫 화면이 이미
-       * "해볼래 / 나중에 할래" 안내이고, 나중에를 누르면 /home 으로 간다.
-       * 그래서 이 한 줄이 곧 "건너뛸 수 있는 선택 단계" 다.
+       * 전에는 무조건 /level-test 로 보냈는데, 그건 선택이 아니라 떠밀기였다 —
+       * 진단 화면에 "나중에 할래" 가 있어도 가입 흐름에서는 한 단계가 늘어난 것으로
+       * 느껴진다. 여기서 미리 물어 두면 끈 사람은 곧장 홈으로 간다.
        *
        * 학년은 방금 위에서 저장됐다. 진단은 그 값을 기준으로 지문을 고르고,
-       * 결과를 받아들일지는 학생이 다시 고른다 (덮어쓰지 않는다).
+       * 결과를 받아들일지는 학생이 다시 고른다 (덮어쓰지 않는다 — spec §2c).
        * 시연 로그인(/auth/demo)은 온보딩을 거치지 않으므로 이 경로를 타지 않는다.
        */
       // replace 로 보낸다 — 뒤로 가기로 온보딩에 되돌아오지 않게
-      router.replace("/level-test");
+      router.replace(levelTest ? "/level-test" : "/home");
     } catch (cause) {
       setError(
         cause instanceof ApiClientError
@@ -193,6 +199,45 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
             학교·반을 직접 적지 않아. 코드로만 들어와야 다른 반 기록이 섞이지
             않거든.
           </p>
+
+          {/* 읽기 수준 진단 여부 (spec §2c). 시험이 아니라는 것을 여기서 먼저 말한다 */}
+          <div className="mt-6 rounded-card border border-border-soft bg-card p-[18px]">
+            <div className="flex items-start gap-3.5">
+              <span
+                aria-hidden
+                className="flex h-11 w-11 flex-none items-center justify-center rounded-[14px] bg-blue-bg text-xl"
+              >
+                📖
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-bold text-ink">
+                  읽기 수준도 확인해볼까?
+                </span>
+                <span className="mt-[3px] block text-[13px] text-muted">
+                  짧은 글 하나 읽고 세 가지만 답하면 돼. 시험이 아니야 — 안 해도 괜찮아
+                </span>
+              </span>
+            </div>
+            <div className="mt-3.5 flex gap-2">
+              {([true, false] as const).map((v) => (
+                <button
+                  key={String(v)}
+                  type="button"
+                  onClick={() => setLevelTest(v)}
+                  disabled={busy}
+                  aria-pressed={levelTest === v}
+                  className={cn(
+                    "min-h-12 flex-1 rounded-btn px-4 py-3 text-[15px] font-bold",
+                    levelTest === v
+                      ? "bg-coral text-white"
+                      : "border border-border bg-card text-ink",
+                  )}
+                >
+                  {v ? "해볼래" : "나중에"}
+                </button>
+              ))}
+            </div>
+          </div>
         </>
       ) : (
         <>
