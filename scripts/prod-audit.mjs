@@ -101,12 +101,12 @@ const sDemo = await get(student, "/auth/demo?as=student");
 check("시연 로그인(학생) 307", sDemo.status === 307, `${sDemo.status}`);
 const sProfile = await json(await get(student, "/api/profile"));
 check("학생 /api/profile — 민서 · student", sProfile?.data?.display_name === "민서" && sProfile?.data?.role === "student", JSON.stringify(sProfile)?.slice(0, 120));
-for (const p of ["/api/points", "/api/growth", "/api/ranking/class", "/api/characters", "/api/books/recommend"]) {
+for (const p of ["/api/points", "/api/growth", "/api/ranking/class", "/api/characters", "/api/items", "/api/books/recommend"]) {
   const r = await get(student, p);
   const d = await json(r);
   check(`학생 ${p} 200 + data`, r.status === 200 && d && "data" in d, `${r.status} ${JSON.stringify(d)?.slice(0, 80)}`);
 }
-for (const p of ["/home", "/library", "/collection", "/me", "/write"]) {
+for (const p of ["/home", "/library", "/collection", "/me", "/write", "/level-test"]) {
   const r = await get(student, p);
   check(`학생 ${p} 200`, r.status === 200, `${r.status} ${r.headers.get("location") ?? ""}`);
 }
@@ -133,6 +133,11 @@ if (guardianUrl) {
   check("보호자 화면 익명 200", gp.status === 200, `${gp.status}`);
 }
 
+// POST 라우트(/api/checkpoints · /api/level-test · /api/reviews · /api/items/:id/buy)는
+// 여기서 부르지 않는다 — 부르는 순간 데모 계정에 행이 생겨서, 심사 직전에 돌리는
+// 점검이 시드를 더럽히는 꼴이 된다. 그 경로들은 `npm run demo:reset` 의 시드 대조와
+// 손 시연으로 본다 (#159 에서 실제로 그 문제를 겪었다).
+
 /* ── 3. 교사 세션 ────────────────────────────────────── */
 
 const teacher = new Jar();
@@ -147,7 +152,7 @@ for (const p of ["/api/teacher/class", "/api/teacher/students", "/api/teacher/ra
   const leak = hasForbiddenKeys(d);
   check(`교사 ${p} 응답에 body/answer 없음 (§5)`, !leak, leak);
 }
-for (const p of ["/home", "/library", "/collection", "/me", "/write", "/challenge"]) {
+for (const p of ["/home", "/library", "/collection", "/me", "/write", "/challenge", "/level-test"]) {
   const r = await get(teacher, p);
   check(`교사 ${p} → /teacher 리다이렉트`, r.status === 307 && /\/teacher/.test(r.headers.get("location") ?? ""), `${r.status} ${r.headers.get("location") ?? ""}`);
 }
