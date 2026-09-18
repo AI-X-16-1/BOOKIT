@@ -21,7 +21,7 @@ import {
 } from "../api";
 import { advance, splitWords, START_WINDOW, TOKEN_PATTERN, WINDOW } from "../readAlong";
 import type { ReaderDictResponse, ShelfBook } from "../schema";
-import { PagedText } from "./PagedText";
+import { PagedText, type PagedTextControl } from "./PagedText";
 import { ShelfPagination, useShelfPageSize } from "./ShelfPagination";
 import { useReadAloud } from "./useReadAloud";
 
@@ -425,12 +425,17 @@ export function LibraryScreen({
   const readCursor = useRef(0);
   const [readFrom, setReadFrom] = useState(0);
   const [readUpTo, setReadUpTo] = useState(0);
+  /** 쪽을 넘기는 손잡이 — 쪽 끝까지 읽으면 다음 쪽을 펼친다 */
+  const paged = useRef<PagedTextControl>(null);
   const readAloud = useReadAloud((finals, interim) => {
     // 아직 한 낱말도 못 맞췄으면 첫 문장 안에서 찾는다 — 🎤 를 누르자마자 읽어서
     // 인식기가 앞 낱말을 흘린 경우다 (readAlong 의 START_WINDOW)
     const width = () => (readCursor.current === readFrom ? START_WINDOW : WINDOW);
     readCursor.current = advance(readWords.current, readCursor.current, finals, width());
-    setReadUpTo(advance(readWords.current, readCursor.current, interim, width()));
+    const upTo = advance(readWords.current, readCursor.current, interim, width());
+    setReadUpTo(upTo);
+    // 다음에 읽을 낱말이 다음 쪽에 있으면 = 이 쪽을 끝까지 읽었으면 쪽을 넘긴다
+    paged.current?.reveal(upTo);
   });
   /** 장을 옮기거나 목록으로 나가면 마이크를 끄고 처음부터 */
   const resetReadAloud = () => {
@@ -687,6 +692,7 @@ export function LibraryScreen({
                   onPrevChapter={() => openChapter(book, chapterNo - 1, "end")}
                   onNextChapter={() => openChapter(book, chapterNo + 1, "start")}
                   onReachEnd={() => markChapterRead(book.id, chapterNo)}
+                  control={paged}
                 >
                   {/* 문단은 블록으로 쌓는다 — flex 로 감싸면 쪽 경계에서 문단이 쪼개지지 않는다 */}
                   <div className="space-y-5">
