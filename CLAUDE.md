@@ -176,6 +176,8 @@ Cut in this order if time runs short: 챌린지 → 독서성향 리포트 → l
 
 Do not add features not listed in `docs/spec.md`. If something seems missing, raise it rather than building it.
 
+**2026-09-18 sprint (`docs/sprint-0918.md`):** gamification (characters, boss-fight result skin, cover puzzle, 도감, checkpoints, explorer rank) is in scope via `spec.md §2b/§5b`. Priority order there overrides the cut list above. Invariant: the AI pipeline, 책갈피 award rules and existing RLS are not modified — new tables ship with their own RLS in `0014`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
