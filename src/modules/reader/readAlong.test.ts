@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { advance, normalize, sameWord, splitWords } from "./readAlong";
+import { advance, normalize, sameWord, sessionText, splitWords } from "./readAlong";
 
 const BOOK = splitWords(
   "어느 해 몹시 추운 겨울날이었습니다. 하늘에서는 흰 새의 날개같이 희고도 보드라운 눈송이가 펑 ─ 펑 ─ 쏟아져 내리고",
@@ -49,8 +49,15 @@ test("들린 말의 첫 쌍이 잡음이어도 뒤 쌍에서 닻을 내린다", 
   assert.equal(advance(BOOK, 0, ["음", "저기", "희고도", "보드라운"]), 11);
 });
 
-test("앞으로 돌아가 다시 읽으면 커서도 돌아간다", () => {
-  assert.equal(advance(BOOK, 12, ["어느", "해"]), 2);
+test("이미 읽은 말이 다시 들어와도 뒤로 가지 않는다", () => {
+  // 안드로이드 크롬은 들은 말을 쌓아 다시 보낸다 — 첫 문장이 또 와도 제자리다 (폰 실측)
+  assert.equal(advance(BOOK, 12, ["어느", "해"]), 12);
+  assert.equal(advance(BOOK, 12, splitWords("어느 해 몹시 추운 겨울날이었습니다")), 12);
+});
+
+test("닻은 앞쪽 가까운 곳에서만 내린다", () => {
+  const far = [...BOOK, ...Array.from({ length: 200 }, (_, i) => `채움${i}`), "먼", "곳의", "낱말"];
+  assert.equal(advance(far, 0, ["먼", "곳의"]), 0, "200 낱말 뒤는 너무 멀다");
 });
 
 /**
@@ -79,4 +86,23 @@ test("비슷한 말은 바로 다음 한두 낱말에만 받는다 — 멀리 �
   assert.equal(advance(BOOK, 1, ["펑"]), 1);
   // 커서 5(하늘에서는) 에서 "펑" 과 한 글자 차이인 "평" 은 12번째라 받지 않는다
   assert.equal(advance(BOOK, 5, ["평"]), 5);
+});
+
+function results(...items: Array<[string, boolean]>) {
+  return items.map(([transcript, isFinal]) => Object.assign([{ transcript }], { isFinal }));
+}
+
+test("sessionText — 데스크톱처럼 조각으로 오면 이어 붙인다", () => {
+  assert.equal(sessionText(results(["어느 해", true], ["몹시 추운", true]), true), "어느 해 몹시 추운");
+});
+
+test("sessionText — 안드로이드처럼 쌓여 다시 오면 마지막 것만 쓴다", () => {
+  const cumulative = results(["어느 해", true], ["어느 해 몹시", true], ["어느 해 몹시 추운", true]);
+  assert.equal(sessionText(cumulative, true), "어느 해 몹시 추운");
+});
+
+test("sessionText — 확정과 듣는 중을 나눈다", () => {
+  const list = results(["어느 해", true], ["몹시", false]);
+  assert.equal(sessionText(list, true), "어느 해");
+  assert.equal(sessionText(list, false), "몹시");
 });

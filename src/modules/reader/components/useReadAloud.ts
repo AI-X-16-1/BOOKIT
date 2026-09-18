@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { splitWords } from "../readAlong";
+import { sessionText, splitWords } from "../readAlong";
 
 /**
  * 브라우저 음성 인식으로 아이가 소리 내어 읽는 말을 듣는다. owner: 강민구
@@ -29,6 +29,7 @@ interface Recognition {
   onresult: ((event: { resultIndex: number; results: SpeechRecognitionResultList }) => void) | null;
   onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
+  onstart: (() => void) | null;
   start: () => void;
   stop: () => void;
   abort: () => void;
@@ -48,12 +49,17 @@ function recognitionCtor(): RecognitionCtor | null {
 export type ReadAloudState = "idle" | "listening" | "unsupported" | "denied";
 
 /**
- * @param onHeard 확정된 낱말과 아직 듣는 중인 낱말. 확정분은 커서를 옮기는 데,
+ * @param onHeard 새로 확정된 낱말과 아직 듣는 중인 낱말. 확정분은 커서를 옮기는 데,
  *                듣는 중인 것은 그 앞을 미리 칠하는 데 쓴다 — 확정만 기다리면
- *                한 문장이 끝날 때까지 색이 멈춰 있어서 따라가는 느낌이 안 난다
+ *                한 문장이 끝날 때까지 색이 멈춰 있어서 따라가는 느낌이 안 난다.
+ *                확정분은 **이번에 새로 붙은 것만** 온다 (같은 말을 두 번 세지 않게)
  */
 export function useReadAloud(onHeard: (finalWords: string[], interimWords: string[]) => void) {
   const [state, setState] = useState<ReadAloudState>("idle");
+  /** 방금 들은 말 몇 낱말. 화면 안내 줄에만 띄우고 어디에도 남기지 않는다 */
+  const [lastHeard, setLastHeard] = useState("");
+  /** 지난번까지 넘긴 확정문. 새 확정문이 이걸로 시작하면 뒷부분만 새것이다 */
+  const lastFinal = useRef("");
   const recognition = useRef<Recognition | null>(null);
   /** 아이가 끄지 않았는데 인식기가 멈추면(침묵·시간 제한) 다시 켠다 */
   const wanted = useRef(false);
@@ -82,15 +88,28 @@ export function useReadAloud(onHeard: (finalWords: string[], interimWords: strin
     next.interimResults = true;
 
     next.onresult = (event) => {
-      const finals: string[] = [];
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const result = event.results[i];
-        const text = result[0]?.transcript ?? "";
-        if (result.isFinal) finals.push(text);
-        else interim += ` ${text}`;
+      // 결과 목록 전체를 매번 다시 읽는다. resultIndex 만 믿으면 기기마다 다시 보내는
+      // 방식이 달라 같은 말을 두 번 센다. 확정문이 지난번 확정문으로 **시작하면**
+      // 뒷부분만 새것이고, 아니면(목록이 새로 시작했거나 최신 것만 오는 브라우저) 전부 새것이다
+      const finalText = sessionText(event.results, true);
+      const interimText = sessionText(event.results, false);
+      let fresh: string[] = [];
+      if (finalText) {
+        fresh = splitWords(
+          finalText.startsWith(lastFinal.current)
+            ? finalText.slice(lastFinal.current.length)
+            : finalText,
+        );
+        lastFinal.current = finalText;
       }
-      handler.current(splitWords(finals.join(" ")), splitWords(interim));
+      const interim = splitWords(interimText);
+      setLastHeard(splitWords(`${finalText} ${interimText}`).slice(-6).join(" "));
+      handler.current(fresh, interim);
+    };
+
+    // 새 세션이 시작되면 결과 목록도 새로 시작한다
+    next.onstart = () => {
+      lastFinal.current = "";
     };
 
     next.onerror = (event) => {
@@ -126,6 +145,8 @@ export function useReadAloud(onHeard: (finalWords: string[], interimWords: strin
 
     wanted.current = true;
     recognition.current = next;
+    lastFinal.current = "";
+    setLastHeard("");
     next.start();
     setState("listening");
   }, []);
@@ -139,5 +160,5 @@ export function useReadAloud(onHeard: (finalWords: string[], interimWords: strin
     [],
   );
 
-  return { state, start, stop };
+  return { state, start, stop, lastHeard };
 }

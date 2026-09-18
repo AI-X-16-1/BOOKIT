@@ -13,8 +13,11 @@
  *     "흰 → 흰색", "희고도 → 이고도" 로 들었다 (2026-09-18 크롬 실측, readAlong.test.ts).
  *     멀리 있는 낱말에는 쓰지 않는다. 짧은 말끼리는 대부분 한 글자 차이라 아무 데나 맞는다
  *   - 커서 뒤 몇 낱말 안에서만 찾는다 — 멀리서 찾으면 흔한 낱말에 엉뚱하게 튄다
- *   - 그래도 못 찾으면 두 낱말이 연달아 맞는 곳을 본문 전체에서 찾는다 —
- *     중간 쪽부터 읽기 시작하거나 앞으로 돌아가 다시 읽는 경우다
+ *   - 그래도 못 찾으면 두 낱말이 연달아 맞는 곳을 **앞쪽 두어 쪽 안에서** 찾는다 —
+ *     몇 문장을 통째로 못 알아들었거나 중간 쪽부터 읽기 시작한 경우다
+ *   - **커서는 절대 뒤로 가지 않는다.** 폰 실측(2026-09-18)에서 읽던 자리가 처음으로
+ *     돌아가는 일이 있었다. 안드로이드 크롬은 들은 말을 앞에서부터 쌓아 다시 보내서,
+ *     이미 읽은 첫 문장이 또 들어오면 거기로 닻을 내렸다. 아이 눈에는 고장이다
  *
  * 순수 함수만 둔다. 음성 인식은 useReadAloud 가, 색칠은 LibraryScreen 이 한다.
  */
@@ -106,6 +109,9 @@ export function similarWord(book: string, heard: string): boolean {
 /** 비슷하기만 해도 받는 범위 — 커서 바로 다음 낱말과 그다음 하나 */
 const FUZZY_REACH = 2;
 
+/** 닻을 내릴 수 있는 범위 — 커서 앞쪽으로 이만큼. 폰 한 쪽이 40~60 낱말이다 */
+export const ANCHOR_REACH = 120;
+
 /** 커서부터 WINDOW 안에서 들린 낱말 하나를 찾는다. 찾으면 그 낱말 **다음** 위치 */
 function findNear(words: string[], cursor: number, heard: string): number {
   const end = Math.min(words.length, cursor + WINDOW);
@@ -124,8 +130,7 @@ function findNear(words: string[], cursor: number, heard: string): number {
 }
 
 /**
- * 두 낱말이 연달아 맞는 곳을 본문 전체에서 찾는다. 지금 커서에서 가까운 앞쪽을
- * 먼저 보고, 없으면 처음부터 본다 (앞으로 돌아가 다시 읽는 경우).
+ * 두 낱말이 연달아 맞는 곳을 커서 앞쪽 ANCHOR_REACH 안에서 찾는다. 뒤는 보지 않는다.
  *
  * 돌려주는 것: 맞은 두 낱말 **다음** 본문 위치와, 들린 말 중 몇 개를 썼는지.
  * 들린 말의 첫 쌍이 잡음이고 둘째 쌍에서 맞을 수도 있어서 둘 다 필요하다.
@@ -135,12 +140,9 @@ function anchor(
   cursor: number,
   heard: string[],
 ): { next: number; used: number } | null {
-  const order = [
-    ...Array.from({ length: Math.max(0, words.length - cursor) }, (_, k) => cursor + k),
-    ...Array.from({ length: Math.min(cursor, words.length) }, (_, k) => k),
-  ];
+  const end = Math.min(words.length, cursor + ANCHOR_REACH);
   for (let h = 0; h + 1 < heard.length; h += 1) {
-    for (const j of order) {
+    for (let j = cursor; j < end; j += 1) {
       if (
         j + 1 < words.length &&
         sameWord(words[j], heard[h]) &&
@@ -176,4 +178,31 @@ export function advance(words: string[], cursor: number, heard: string[]): numbe
   // 닻을 내린 뒤 남은 말로 조금 더 따라간다
   const rest = heard.slice(hit.used);
   return rest.length ? advance(words, hit.next, rest) : hit.next;
+}
+
+/**
+ * 한 번 켠 동안(세션)의 들은 말. 결과 목록을 앞에서부터 이어 붙이되, 뒤 결과가 앞 결과로
+ * **시작하면** 앞 것을 버린다 — 안드로이드 크롬은 같은 말을 쌓아서 다시 보낸다
+ * ("어느 해" → "어느 해 몹시" → "어느 해 몹시 추운").
+ */
+/** 음성 인식 결과 목록 중 여기서 쓰는 모양만 (lib.dom 의 SpeechRecognitionResultList 와 맞는다) */
+export interface ResultListLike {
+  readonly length: number;
+  readonly [index: number]: {
+    readonly isFinal: boolean;
+    readonly [alternative: number]: { readonly transcript: string } | undefined;
+  };
+}
+
+export function sessionText(results: ResultListLike, final: boolean): string {
+  const parts: string[] = [];
+  for (let i = 0; i < results.length; i += 1) {
+    if (results[i].isFinal !== final) continue;
+    const text = (results[i][0]?.transcript ?? "").trim();
+    if (!text) continue;
+    const last = parts[parts.length - 1];
+    if (last !== undefined && text.startsWith(last)) parts[parts.length - 1] = text;
+    else if (last === undefined || !last.startsWith(text)) parts.push(text);
+  }
+  return parts.join(" ");
 }

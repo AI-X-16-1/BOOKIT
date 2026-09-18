@@ -657,7 +657,9 @@ export function LibraryScreen({
                     readAloud.state === "denied" ? "text-coral-text" : "text-faint"
                   }`}
                 >
-                  {READ_ALOUD_HINT[readAloud.state]}
+                  {readAloud.state === "listening" && readAloud.lastHeard
+                    ? `🎤 들은 말: “${readAloud.lastHeard}”`
+                    : READ_ALOUD_HINT[readAloud.state]}
                 </p>
               </>
             )}
