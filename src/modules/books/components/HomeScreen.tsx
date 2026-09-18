@@ -102,9 +102,20 @@ export function HomeScreen({ draft, reading }: HomeScreenProps) {
     <div className="flex flex-col gap-4">
       {/* 책갈피·순위는 머리말 칩으로. 주인공 자리는 아래 두 카드다 */}
       <div className="flex items-center justify-between gap-2">
-        <span className="rounded-full bg-yellow-bg px-3 py-[7px] text-xs font-bold text-yellow-text">
-          🔖 {points === null ? "—" : points.toLocaleString()}
-        </span>
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="rounded-full bg-yellow-bg px-3 py-[7px] text-xs font-bold text-yellow-text">
+            🔖 {points === null ? "—" : points.toLocaleString()}
+          </span>
+          {/* 도감 입구. 목업 7 은 탭바의 챌린지 자리를 도감으로 바꾸지만 TabBar 는
+              shared/ui 라 김민경 몫이다 (CLAUDE.md §2) — 탭이 바뀌기 전까지는 홈에서
+              들어간다. 보스전 통과 화면에도 "도감에서 보기" 가 있다 */}
+          <Link
+            href="/collection"
+            className="rounded-full border border-border bg-card px-3 py-[7px] text-xs font-bold text-ink-warm"
+          >
+            ◈ 도감
+          </Link>
+        </div>
         {rank !== null && <Chip tone="blue">우리 반 {rank}위</Chip>}
       </div>
 
