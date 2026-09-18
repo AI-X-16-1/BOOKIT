@@ -24,11 +24,25 @@ import {
  * 목업의 "3문 중 N문" 을 그대로 만들려면 질문을 3개 던져야 하는데 그건 파이프라인
  * 변경이라 금지다.
  *
- * 색: 목업은 보라 계열(#1D1621 배경 · #C69BFF 강조 · #2E2436 패널)을 쓰지만
- * tokens.css 에 없는 색이라 임의로 만들지 않았다 (CLAUDE.md §2, tokens.css 머리말).
- * 지금은 기존 검증 화면 토큰(--panel / --panel-inner / --panel-line / coral)으로
- * 그린다 — 어두운 대비 자체가 "검사받는 중" 신호라 §7 은 지켜진다. 보라 3색은
- * 김민경에게 요청해 두었고, 등재되면 이 파일의 panel-* 만 바꾸면 된다.
+ * 색: 보스전 전용 보라 3색을 쓴다 (--boss-bg · --boss-panel · --boss-accent,
+ * #146 에서 tokens.css 에 등재됐다). 이 세 색은 **검증 결과 화면에만** 쓴다 —
+ * 다른 화면으로 번지면 "검사받는 중" 대비가 흐려진다 (CLAUDE.md §7).
+ * HP 막대는 목업 그대로 coral 이다. 깎인 체력은 보라가 아니라 빨강으로 읽힌다.
+ *
+ * 목업의 보조 문구 색 #9C8FB5 는 토큰으로 만들지 않았다. --panel-muted 와 대비가
+ * 사실상 같아서(#1D1621 위에서 5.83 vs 5.90) 색을 하나 더 만들 이유가 없다.
+ * 보라는 강조(BOSS 라벨·명중 칩·HP 라벨)에만 썼다.
+ *
+ * 보스 원의 테두리·점선 링·안쪽 그라데이션은 --boss-accent 의 투명도로 만든다.
+ * 목업은 여기에 색 셋(#463A5C 테두리 · #6B5A8F 점선 · #5A4A7A 안쪽)을 더 쓰지만
+ * accent/25·/45·/30 이 그 값에 거의 그대로 맞는다. 토큰을 세 개 더 만드는 대신
+ * 이미 승인된 색의 투명도로 간다 — BottomSheet 의 bg-ink/45 와 같은 방식이다.
+ *
+ * 테두리는 **원 자신의 배경 위에** 섞인다 (background-clip 기본값이 border-box 라
+ * 그라데이션이 테두리 아래까지 깔린다). 그래서 accent/25 는 배경이 아니라
+ * --boss-panel 위에서 #544268 이 되고, 페이지 배경과 대비 1.98 — 목업(1.70)보다
+ * 조금 더 또렷하다. 테두리를 --boss-panel 로 두면 1.20 이라 링이 통째로 사라진다
+ * (#148 리뷰에서 그렇게 냈다가 고쳤다).
  *
  * 실패 화면은 CLAUDE.md §9 를 따른다 — 벌처럼 보이지 않게, 무엇을 더하면 되는지
  * 말하고 재시도를 준다. 그래서 실패 쪽에는 포획 도장도, 책갈피 줄도, 장식 별도 없다.
@@ -82,13 +96,13 @@ export function ResultCard({
     // 덮는다. 버튼을 flex-1 로 바닥에 붙이므로 여백이 없으면 "다시 도전하기" 가 탭바 뒤로
     // 들어간다 — 내용이 화면보다 짧은 실패 화면에서 실제로 그랬다. 탭바는 md:hidden 이라
     // 768px 이상에서는 원래 여백으로 돌아간다.
-    <div className="-mx-[22px] -mt-[52px] flex min-h-dvh flex-col bg-panel px-[22px] pt-[52px] pb-[calc(86px+env(safe-area-inset-bottom))] md:mx-0 md:mt-0 md:min-h-0 md:flex-1 md:rounded-card md:pt-8 md:pb-[26px]">
+    <div className="-mx-[22px] -mt-[52px] flex min-h-dvh flex-col bg-boss-bg px-[22px] pt-[52px] pb-[calc(86px+env(safe-area-inset-bottom))] md:mx-0 md:mt-0 md:min-h-0 md:flex-1 md:rounded-card md:pt-8 md:pb-[26px]">
       {/* 보스 이름과 명중 수. 보스 = 그 책이다 */}
       <div className="flex items-center justify-between gap-3">
-        <span className="min-w-0 truncate font-mono text-xs tracking-[0.2em] text-coral-light">
+        <span className="min-w-0 truncate font-mono text-xs tracking-[0.2em] text-boss-accent">
           BOSS · {bookTitle}
         </span>
-        <span className="flex-none rounded-full bg-panel-inner px-[11px] py-1.5 text-[11px] font-bold text-on-dark-2">
+        <span className="flex-none rounded-full bg-boss-panel px-[11px] py-1.5 text-[11px] font-bold text-boss-accent">
           {BOSS_AXES}군데 중 {hits}군데
         </span>
       </div>
@@ -105,12 +119,12 @@ export function ResultCard({
 
         {/* 보스. 캐릭터 그림은 ②(도감, characters.art_seed)에서 오고 지금은 자리표시자다 */}
         <div className="flex justify-center">
-          <div className="relative flex h-[196px] w-[196px] items-center justify-center rounded-full border-[3px] border-panel-line bg-radial-[at_34%_30%] from-panel-inner to-panel to-[72%]">
+          <div className="relative flex h-[196px] w-[196px] items-center justify-center rounded-full border-[3px] border-boss-accent/25 bg-radial-[at_34%_30%] from-boss-accent/30 to-boss-panel to-[72%]">
             <span className="text-[60px]" aria-hidden>
               🐉
             </span>
             {passed && (
-              <div className="absolute -inset-3.5 rounded-full border-2 border-dashed border-panel-line" />
+              <div className="absolute -inset-3.5 rounded-full border-2 border-dashed border-boss-accent/45" />
             )}
           </div>
         </div>
@@ -118,9 +132,9 @@ export function ResultCard({
 
       {/* HP — 못 때린 축의 수 */}
       <div className="mt-5 text-center">
-        <div className="font-mono text-xs text-panel-muted">BOSS HP</div>
+        <div className="font-mono text-xs text-boss-accent">BOSS HP</div>
         <div
-          className="mt-2.5 h-3 overflow-hidden rounded-full bg-panel-inner"
+          className="mt-2.5 h-3 overflow-hidden rounded-full bg-boss-panel"
           role="img"
           aria-label={`보스 HP ${hp} / ${BOSS_AXES}`}
         >
@@ -206,7 +220,7 @@ export function ResultCard({
       {/* 책갈피 — 통과했을 때만 */}
       {passed && (
         <>
-          <div className="mt-4 flex items-center justify-between rounded-[18px] bg-panel-inner p-5">
+          <div className="mt-4 flex items-center justify-between rounded-[18px] bg-boss-panel p-5">
             <span className="text-base font-bold text-on-dark">🔖 책갈피 획득</span>
             <span className="text-[26px] font-bold text-yellow">+{points}</span>
           </div>
@@ -245,7 +259,7 @@ export function ResultCard({
             <Button
               variant="dark"
               fullWidth={false}
-              className="flex-none bg-panel-inner px-[18px]"
+              className="flex-none bg-boss-panel px-[18px]"
             >
               ⤳ 공유
             </Button>
@@ -259,7 +273,7 @@ export function ResultCard({
               variant="dark"
               fullWidth={false}
               onClick={onDone}
-              className="flex-none bg-panel-inner px-[18px]"
+              className="flex-none bg-boss-panel px-[18px]"
             >
               나중에
             </Button>
