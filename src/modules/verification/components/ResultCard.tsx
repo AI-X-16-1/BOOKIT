@@ -75,7 +75,12 @@ export function ResultCard({
   const hp = BOSS_AXES - hits;
 
   return (
-    <div className="-mx-[22px] -mt-[52px] flex min-h-dvh flex-col bg-panel px-[22px] pt-[52px] pb-[26px] md:mx-0 md:mt-0 md:min-h-0 md:flex-1 md:rounded-card md:pt-8">
+    // 아래 여백이 86px 인 이유: 이 카드는 -mt 로 main 의 위 여백을 지우고 min-h-dvh 로
+    // 화면을 꽉 채운다. 그래서 카드 바닥 = 화면 바닥이고, 그 자리를 하단 탭바(86px, 고정)가
+    // 덮는다. 버튼을 flex-1 로 바닥에 붙이므로 여백이 없으면 "다시 도전하기" 가 탭바 뒤로
+    // 들어간다 — 내용이 화면보다 짧은 실패 화면에서 실제로 그랬다. 탭바는 md:hidden 이라
+    // 768px 이상에서는 원래 여백으로 돌아간다.
+    <div className="-mx-[22px] -mt-[52px] flex min-h-dvh flex-col bg-panel px-[22px] pt-[52px] pb-[calc(86px+env(safe-area-inset-bottom))] md:mx-0 md:mt-0 md:min-h-0 md:flex-1 md:rounded-card md:pt-8 md:pb-[26px]">
       {/* 보스 이름과 명중 수. 보스 = 그 책이다 */}
       <div className="flex items-center justify-between gap-3">
         <span className="min-w-0 truncate font-mono text-xs tracking-[0.2em] text-coral-light">
