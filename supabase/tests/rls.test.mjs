@@ -556,6 +556,19 @@ let badRank = false;
 try { await db.exec(`update profiles set explorer_rank = '왕' where id = '${S1}'`); } catch (e) { badRank = /check constraint|violates/.test(e.message); }
 check('탐험가 등급은 정해진 셋 중 하나만', badRank);
 
+// ── 0015: curated 책은 캐릭터가 자동으로 생긴다 ────────────
+await db.exec(`insert into books (id, title, author, tags, curated) values
+  ('b3333333-0000-0000-0000-000000000001','자동 캐릭터 책','작가Y','{동화}', true)`);
+check('curated 책을 넣으면 기본 캐릭터가 생긴다',
+  (await db.query(`select name from characters where book_id = 'b3333333-0000-0000-0000-000000000001'`)).rows[0]?.name === '자동 캐릭터 책 요정');
+await db.exec(`insert into books (id, title, author, tags, curated) values
+  ('b3333333-0000-0000-0000-000000000002','검색 유입 책','작가Y','{동화}', false)`);
+check('curated 가 아니면 캐릭터가 안 생긴다',
+  (await db.query(`select 1 from characters where book_id = 'b3333333-0000-0000-0000-000000000002'`)).rows.length === 0);
+await db.exec(`update books set curated = true where id = 'b3333333-0000-0000-0000-000000000002'`);
+check('나중에 curated 로 바뀌면 그때 생긴다',
+  (await db.query(`select 1 from characters where book_id = 'b3333333-0000-0000-0000-000000000002'`)).rows.length === 1);
+
 // ── 출력 ─────────────────────────────────────────────
 const failed = results.filter(r => !r.ok);
 for (const r of results) {

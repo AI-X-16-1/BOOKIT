@@ -33,7 +33,8 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
   const [code, setCode] = useState("");
   /** 탐험가 등급 — 선택. 안 고르면 null 로 보낸다 (spec §2b) */
   const [rank, setRank] = useState<ExplorerRank | null>(null);
-  const [school, setSchool] = useState("한빛초");
+  // 기본값을 비운다 — "한빛초" 가 채워져 있으면 그대로 제출돼 남의 학교로 반이 생겼다 (#131)
+  const [school, setSchool] = useState("");
   const [classNo, setClassNo] = useState(2);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -198,7 +199,8 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
           <input
             value={school}
             onChange={(e) => setSchool(e.target.value)}
-            className="mt-1.5 rounded-xl border border-border bg-white p-[17px] text-[17px] text-ink outline-none focus:border-coral"
+            placeholder="예: 한빛초"
+            className="mt-1.5 rounded-xl border border-border bg-white p-[17px] text-[17px] text-ink outline-none placeholder:text-faint focus:border-coral"
           />
           <div className="mt-3.5 text-[13px] text-muted">반</div>
           <input
@@ -242,7 +244,7 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
             대시보드로 가기
           </Button>
         ) : (
-          <Button variant="dark" disabled={busy} onClick={submitTeacher}>
+          <Button variant="dark" disabled={busy || !school.trim()} onClick={submitTeacher}>
             {busy ? "만드는 중…" : "반 만들고 코드 받기"}
           </Button>
         )}

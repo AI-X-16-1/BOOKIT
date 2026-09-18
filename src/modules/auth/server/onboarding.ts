@@ -153,7 +153,30 @@ export async function createClassForTeacher(
     .maybeSingle();
 
   if (existing) {
-    return { ok: true, data: { class: existing, join_code: existing.join_code } };
+    // 이미 반이 있으면 코드는 그대로 두고 입력값만 반영한다 (#131). 전에는 입력을 통째로
+    // 무시해서 기본값 "한빛초" 로 한 번 만들어지면 학교명을 고쳐도 안 바뀌었다.
+    const changed =
+      existing.school_name !== input.school_name ||
+      existing.grade_level !== input.grade_level ||
+      existing.class_no !== input.class_no;
+    if (!changed) {
+      return { ok: true, data: { class: existing, join_code: existing.join_code } };
+    }
+    const { data: updated, error: updateError } = await supabase
+      .from("classes")
+      .update({
+        school_name: input.school_name,
+        grade_level: input.grade_level,
+        class_no: input.class_no,
+      })
+      .eq("id", existing.id)
+      .select("*")
+      .single();
+    if (updateError || !updated) {
+      console.error("[auth] 반 정보 갱신 실패", updateError);
+      return failure("server_error", "잠깐 문제가 생겼어. 다시 해볼까?", 500);
+    }
+    return { ok: true, data: { class: updated, join_code: updated.join_code } };
   }
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
