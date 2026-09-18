@@ -33,7 +33,9 @@ export type PointReason =
   | "verification_pass"
   | "ebook_pass"
   | "audiobook_pass"
-  | "admin_adjust";
+  | "admin_adjust"
+  /** 아이템 구매 (0016). delta = -price, ref_id = student_items.id */
+  | "item_purchase";
 
 export type ChallengeKind = "class_goal" | "season";
 
@@ -89,6 +91,29 @@ export interface ReadingProgress {
   book_id: string;
   chapter_no: number;
   read_at: string;
+}
+
+/* ── 아이템 샵 (spec §2b ④, 0016) ── */
+
+export type ItemKind = "hat" | "bg" | "frame";
+
+/** 카탈로그. 마이그레이션이 넣는다 — 운영과 테스트가 같은 목록 */
+export interface Item {
+  id: string;
+  code: string;
+  name: string;
+  kind: ItemKind;
+  emoji: string;
+  price: number;
+  created_at: string;
+}
+
+/** 산 것. 쓰기는 buy_item() RPC 뿐 */
+export interface StudentItem {
+  id: string;
+  student_id: string;
+  item_id: string;
+  bought_at: string;
 }
 
 /** 장 끝 한 문항 (AI #6). 책갈피는 없다 — 부화만 */

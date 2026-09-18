@@ -17,6 +17,7 @@ import type {
   ExplorerRank,
   GapType,
   GradeLevel,
+  Item,
   PointReason,
   Profile,
   ProfileRole,
@@ -232,6 +233,17 @@ export interface AnswerCheckpointResponse {
   passed: boolean;
   feedback: string;
   character_stage: CharacterStage | null;
+}
+
+/** GET /api/items — 카탈로그 + 내가 가진 것 (④) */
+export interface ItemsResponse {
+  items: Array<Item & { owned: boolean }>;
+  balance: number;
+}
+/** POST /api/items/:id/buy → 잔액 부족 402 insufficient_points · 이미 가짐 409 already_owned */
+export interface BuyItemResponse {
+  balance: number;
+  owned: string[];
 }
 
 /* ── rewards / growth / ranking / guardian (문민재) ── */

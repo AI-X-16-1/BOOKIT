@@ -36,4 +36,6 @@ export const REASON_LABEL: Record<PointReason, string> = {
   ebook_pass: "ebook 열람권",
   audiobook_pass: "오디오북 열람권",
   admin_adjust: "이전 학기 이월",
+  // 0016 아이템 샵. enum 값이 늘어 컴파일용으로 김민경이 넣음 — 문구는 바꿔도 된다
+  item_purchase: "아이템 구매",
 };
