@@ -42,4 +42,8 @@ export {
 export { GAP_LABEL, GAP_TONE, axisLabel } from "./components/labels";
 
 /** 요청 본문 스키마. 서버 전용이 아니라 라우트와 화면 양쪽에서 쓸 수 있다 */
-export { answerSchema } from "./schema";
+export {
+  answerSchema,
+  createCheckpointSchema,
+  checkpointAnswerSchema,
+} from "./schema";
