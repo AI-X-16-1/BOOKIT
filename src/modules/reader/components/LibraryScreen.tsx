@@ -304,6 +304,8 @@ export function LibraryScreen({
    */
   const asked = useRef(new Set<string>());
   const [checkpoint, setCheckpoint] = useState<CheckpointView | null>(null);
+  /** 768px 미만에서 표지 퍼즐을 담는 바텀시트 (CLAUDE.md §8) */
+  const [puzzleOpen, setPuzzleOpen] = useState(false);
 
   const askCheckpoint = (
     bookId: string,
@@ -319,6 +321,7 @@ export function LibraryScreen({
         // 사전이 열려 있었으면 닫는다. 바텀시트가 두 장 겹치면 아래 것을 닫을 수 없다 —
         // 뜻을 보던 중에 마지막 쪽으로 넘기면 실제로 그렇게 된다
         close();
+        setPuzzleOpen(false);
         setCheckpoint({
           id: checkpoint_id,
           chapterNo,
@@ -386,6 +389,7 @@ export function LibraryScreen({
     setEntry({ state: "idle" });
     // 장을 옮기면 앞 장 문항은 닫는다 — 지난 장을 묻는 문항이 새 본문 옆에 남으면 안 된다
     setCheckpoint(null);
+    setPuzzleOpen(false);
     setReading({ book, chapterNo, startAt, state: "loading" });
     window.scrollTo({ top: 0 });
     void loadChapter(book, chapterNo, startAt, requestId);
@@ -447,11 +451,32 @@ export function LibraryScreen({
             </div>
             <div className="text-xs text-muted">{subtitleOf(book)}</div>
           </div>
-          {book.chapterCount > 1 && (
-            <Chip tone="yellow">
-              {chapterNo} / {book.chapterCount}장
-            </Chip>
-          )}
+          {/* 768px 미만에서는 이 칩을 눌러 표지 퍼즐을 연다 (목업 7 #4).
+              768px 이상은 오른쪽 패널에 퍼즐이 늘 보이므로 칩은 표시만 한다.
+              퍼즐은 한 장이라도 읽은 책에만 있다 — 진행 기록이 조각의 재료다 */}
+          {book.chapterCount > 1 &&
+            (readChapters[book.id] !== undefined ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setPuzzleOpen(true)}
+                  aria-label={`표지 조각 ${readChapters[book.id]} / ${book.chapterCount} 보기`}
+                  className="flex min-h-12 flex-none items-center gap-1.5 rounded-full bg-yellow-bg px-3.5 text-xs font-bold text-yellow-text md:hidden"
+                >
+                  {chapterNo} / {book.chapterCount}장
+                  <span aria-hidden>🧩</span>
+                </button>
+                <span className="hidden md:block">
+                  <Chip tone="yellow">
+                    {chapterNo} / {book.chapterCount}장
+                  </Chip>
+                </span>
+              </>
+            ) : (
+              <Chip tone="yellow">
+                {chapterNo} / {book.chapterCount}장
+              </Chip>
+            ))}
           {/* 서재 책은 DB 행이 있어 바로 독후감으로 이어진다 — /write?book= 이 초고를 만든다 */}
           <Link
             href={`/write?book=${book.id}`}
@@ -604,6 +629,28 @@ export function LibraryScreen({
               </Card>
             )}
           </aside>
+        </div>
+
+        {/* 768px 미만 — 표지 퍼즐 바텀시트 (목업 7 #4). 위 칩으로 연다.
+            768px 이상은 오른쪽 패널에 늘 보이므로 여기서는 그리지 않는다 */}
+        <div className="md:hidden">
+          <BottomSheet
+            open={puzzleOpen}
+            onClose={() => setPuzzleOpen(false)}
+            label="표지 퍼즐"
+          >
+            <div className="text-xl font-bold text-ink">읽을수록 표지가 드러나요</div>
+            <p className="mt-2 text-[13px] text-muted">
+              한 장을 다 읽으면 조각이 하나 열려
+            </p>
+            <div className="mt-4">
+              <CoverPuzzle
+                coverUrl={null}
+                readChapters={readChapters[book.id] ?? 0}
+                totalChapters={book.chapterCount}
+              />
+            </div>
+          </BottomSheet>
         </div>
 
         {/* 768px 미만 — 체크포인트는 바텀시트 (CLAUDE.md §8, 목업 7 #7).
