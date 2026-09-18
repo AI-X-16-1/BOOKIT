@@ -21,7 +21,7 @@ export async function GET(): Promise<
   } = await supabase.auth.getUser();
   if (!user) return unauthorized();
 
-  const result = await getClassRanking(supabase);
+  const result = await getClassRanking(supabase, user.id);
   if (!result.ok) return fail(result.code, result.message, result.status);
 
   return ok({ rows: result.data });

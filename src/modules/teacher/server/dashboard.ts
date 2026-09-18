@@ -93,7 +93,13 @@ export function withRank(
 /** GET /api/teacher/ranking — 반 대 반. 개인 순위는 만들지 않는다 (docs/plan.md §4) */
 export async function getClassRanking(
   supabase: BookitClient,
+  userId: string,
 ): Promise<TeacherResult<ClassRankingRow[]>> {
+  // 반 집계는 학생도 /api/ranking/class 로 보는 값이라 새는 건 없지만, 교사 라우트는
+  // 교사만 부르게 맞춘다 (audit:prod 가 학생 호출을 200 으로 잡았다)
+  const klass = await ownedClass(supabase, userId);
+  if (!klass.ok) return klass;
+
   const { data, error } = await supabase
     .from("v_class_ranking")
     .select("class_id, label, verified_count");
