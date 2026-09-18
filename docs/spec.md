@@ -13,7 +13,9 @@ review_status     : 'draft' | 'analyzing' | 'questioning' | 'passed' | 'failed'
 gap_type          : 'unsupported_claim' | 'vague_statement' | 'feeling_only' | 'core_claim'
                     -- core_claim: 빈틈 0개일 때 AI 가 고른 핵심 주장 (0013, issue #14). 빈틈이 아니다
 grade_level       : 1..9   -- 1=초1 ... 6=초6, 7=중1, 8=중2, 9=중3
-point_reason      : 'verification_pass' | 'ebook_pass' | 'audiobook_pass' | 'admin_adjust'
+point_reason      : 'verification_pass' | 'ebook_pass' | 'audiobook_pass' | 'admin_adjust' | 'item_purchase'
+                    -- item_purchase: 아이템 샵 (0016). delta = -price, ref_id = student_items.id
+item_kind         : 'hat' | 'bg' | 'frame'
 challenge_kind    : 'class_goal' | 'season'
 ```
 
@@ -177,9 +179,10 @@ Never delete a failed attempt. Retry inserts a new row with `attempt_no + 1` and
 ### profiles.explorer_rank — 탐험가 등급 (② 온보딩)
 `profiles` 에 `explorer_rank text nullable` 한 칸. 값은 `'새싹' | '탐험가' | '대장'` 중 학생이 온보딩에서 고른다 (학년 선택과 같은 수준의 자기 선언, 검증 없음). 화면 톤(인사말·캐릭터 말투)에만 쓴다. **학년(`grade_level`)을 대체하지 않는다** — 학년은 AI 난이도에 쓰이므로 그대로.
 
-### items / student_items — 아이템 샵 (④ 스트레치, 이번에 안 들어갈 수 있음)
-`items`: `id`, `name`, `price int`, `kind ('hat'|'bg'|'frame')`. `student_items`: `student_id`, `item_id`, `bought_at`.
-구매는 `points_ledger` 에 `reason = 'item_purchase'`, `delta = -price`, `ref_id = item_id` 로 쓴다 (enum 값 추가). **append-only 규칙 그대로.** 잔액 부족은 서버가 `sum(delta)` 로 막는다. 이 두 테이블은 ④ 가 확정될 때만 0014 에 넣는다.
+### items / student_items — 아이템 샵 (④ 스트레치) — **스키마 0016 깔림, 화면·라우트는 rewards 몫**
+`items`: `id`, `code unique`, `name`, `kind item_kind`, `emoji`, `price int > 0`. 카탈로그 6개(모자 2·배경 2·액자 2, 100~350)는 마이그레이션이 넣는다.
+`student_items`: `id`, `student_id`, `item_id`, `bought_at`, unique (student, item).
+구매는 **`buy_item(p_student_id, p_item_id)` RPC** (service_role 전용, `exchange_points` 와 같은 advisory lock) — 잔액 확인 + `points_ledger(reason 'item_purchase', delta -price, ref_id = student_items.id)` + 지급을 한 트랜잭션으로. 잔액 부족은 `check_violation`, 이미 가짐은 `unique_violation` 으로 던진다. **append-only 규칙 그대로.** 학생 클라이언트는 둘 다 읽기만.
 
 ### 데모 시드
 `demo@bookit.demo` 에 캐릭터 5마리(stage 2 세 마리 = 통과한 책, stage 1 하나, 알 하나), 읽기 진행 2권(완독 1, 반쯤 1). 도감이 비어 보이면 안 된다.
@@ -292,7 +295,8 @@ POST /api/reading/progress { book_id, chapter_no } → { read_chapters, total_ch
 POST /api/checkpoints  { book_id, chapter_no }     → { checkpoint_id, question }        AI #6. 이미 있으면 그대로 돌려준다
 POST /api/checkpoints/:id/answer { answer }        → { passed, feedback, character_stage }
 PATCH /api/profile     { explorer_rank }           → { profile }                        ② 온보딩에서 고르고(POST /api/onboarding/student 의 explorer_rank), 나중에 이 라우트로 바꾼다 — 구현됨
-GET  /api/items · POST /api/items/:id/buy          → { balance, owned[] }                ④ 스트레치
+GET  /api/items                                    → { items[]: Item & { owned }, balance }   ④ 카탈로그 + 내 것
+POST /api/items/:id/buy                            → { balance, owned[] }   buy_item RPC. 잔액 부족 402 insufficient_points · 이미 가짐 409 already_owned. rewards(문민재)
 ```
 검증 결과 응답(`POST /api/verifications/:id/answer`)은 **바꾸지 않는다.** 보스전 화면은 그 응답을 그대로 받아 연출만 한다. 통과 뒤 캐릭터가 최종 진화했는지는 화면이 `GET /api/characters` 를 한 번 더 부른다 (트리거가 이미 올려 둔 뒤라 즉시 반영).
 

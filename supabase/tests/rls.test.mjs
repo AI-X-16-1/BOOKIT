@@ -569,6 +569,39 @@ await db.exec(`update books set curated = true where id = 'b3333333-0000-0000-00
 check('나중에 curated 로 바뀌면 그때 생긴다',
   (await db.query(`select 1 from characters where book_id = 'b3333333-0000-0000-0000-000000000002'`)).rows.length === 1);
 
+// ── 0016 아이템 샵 ────────────────────────────────────
+const leaf = (await db.query(`select id, price from items where code = 'hat_leaf'`)).rows[0];
+check('아이템 카탈로그는 학생 누구나 읽는다',
+  (await as(S3, `select code from items`)).rows.length >= 6);
+check('학생은 student_items 에 직접 못 넣는다',
+  await denied(S1, `insert into student_items (student_id, item_id) values ('${S1}', '${leaf.id}')`));
+const buyCall = (uid, student, item, role = 'service_role') => as(
+  uid, `select id from buy_item('${student}'::uuid, '${item}'::uuid)`, role);
+let studentBuyBlocked = false;
+try { await buyCall(S1, S1, leaf.id, 'authenticated'); }
+catch (e) { studentBuyBlocked = /permission denied/.test(e.message); }
+check('학생 역할로는 buy_item 을 못 부른다 (service_role 전용)', studentBuyBlocked);
+
+// S1 잔액: 이 시점의 원장 합계를 기준으로 본다
+const balBefore = Number((await db.query(`select coalesce(sum(delta),0) as s from points_ledger where student_id = $1`, [S1])).rows[0].s);
+check('구매 전 잔액이 나뭇잎 모자(100) 이상이다 (테스트 전제)', balBefore >= 100, `${balBefore}`);
+const bought = await buyCall(null, S1, leaf.id);
+const balAfter = Number((await db.query(`select coalesce(sum(delta),0) as s from points_ledger where student_id = $1`, [S1])).rows[0].s);
+check('buy_item: 아이템이 지급되고 책갈피가 가격만큼 빠진다', bought.rows.length === 1 && balBefore - balAfter === 100, `${balBefore} → ${balAfter}`);
+check('원장에 item_purchase 행이 student_items.id 를 가리킨다',
+  (await db.query(`select 1 from points_ledger where reason = 'item_purchase' and ref_id = $1`, [bought.rows[0].id])).rows.length === 1);
+check('학생은 자기 아이템을 읽는다', (await as(S1, `select item_id from student_items`)).rows.length === 1);
+check('학생은 남의 아이템을 못 본다', (await as(S3, `select item_id from student_items`)).rows.length === 0);
+let dup = false;
+try { await buyCall(null, S1, leaf.id); } catch (e) { dup = /이미 가진/.test(e.message); }
+check('같은 아이템을 두 번 못 산다', dup);
+const crown = (await db.query(`select id from items where code = 'frame_gold'`)).rows[0];
+let poor = false;
+try { await buyCall(null, S3, crown.id); } catch (e) { poor = /모자라다/.test(e.message); }
+check('잔액이 모자라면 못 산다 (S3, 금빛 액자 350)', poor);
+check('실패한 구매는 원장에 아무것도 남기지 않는다',
+  (await db.query(`select count(*)::int as n from points_ledger where student_id = $1 and reason = 'item_purchase'`, [S3])).rows[0].n === 0);
+
 // ── 출력 ─────────────────────────────────────────────
 const failed = results.filter(r => !r.ok);
 for (const r of results) {

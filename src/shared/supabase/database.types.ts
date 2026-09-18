@@ -23,6 +23,8 @@ import type {
   GapType,
   GenreStamp,
   GuardianLink,
+  Item,
+  ItemKind,
   PointReason,
   PointsLedgerEntry,
   Profile,
@@ -34,6 +36,7 @@ import type {
   ScoreAxis,
   Streak,
   StudentCharacter,
+  StudentItem,
   StyleAxis,
   Verification,
 } from "@/shared/types/db";
@@ -367,6 +370,33 @@ export interface Database {
           },
         ];
       };
+      items: {
+        Row: Flatten<Item>;
+        Insert: Insertable<Item, "id" | "emoji" | "created_at">;
+        Update: Flatten<Partial<Item>>;
+        Relationships: [];
+      };
+      student_items: {
+        Row: Flatten<StudentItem>;
+        Insert: Insertable<StudentItem, "id" | "bought_at">;
+        Update: Flatten<Partial<StudentItem>>;
+        Relationships: [
+          {
+            foreignKeyName: "student_items_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_items_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       checkpoints: {
         Row: Flatten<Checkpoint>;
         Insert: Insertable<
@@ -461,6 +491,11 @@ export interface Database {
         };
         Returns: Database["public"]["Tables"]["verifications"]["Row"];
       };
+      /** 아이템 구매 (0016). service_role 전용 — 잔액 확인 + 차감 + 지급 한 트랜잭션 */
+      buy_item: {
+        Args: { p_student_id: string; p_item_id: string };
+        Returns: Database["public"]["Tables"]["student_items"]["Row"];
+      };
     };
 
     Enums: {
@@ -468,6 +503,7 @@ export interface Database {
       review_status: ReviewStatus;
       gap_type: GapType;
       point_reason: PointReason;
+      item_kind: ItemKind;
       challenge_kind: ChallengeKind;
       score_axis: ScoreAxis;
       style_axis: StyleAxis;
