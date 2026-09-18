@@ -123,6 +123,69 @@ Never delete a failed attempt. Retry inserts a new row with `attempt_no + 1` and
 
 ---
 
+## 2b. 게임화 (2026-09-18 추가 — 마감 스프린트, `docs/sprint-0918.md`)
+
+**Status: DRAFT — 9/18 중 확정.** 마이그레이션 `0014_gamification.sql` 하나로 들어간다. 기존 테이블·정책·`record_verification_result`·`points_ledger` 규칙은 건드리지 않는다.
+아래 "가정" 은 김민경이 정한 초안이다. 다르게 가야 하면 9/18 오전 안에 말한다 — 그 뒤엔 코드가 시작된다.
+
+### characters — 캐릭터 도감 (카탈로그, 정적)
+| column | type | note |
+|---|---|---|
+| id | uuid PK | |
+| book_id | uuid FK books **unique** | **가정: 책 한 권 = 캐릭터 한 마리.** 서재 책(`is_public_domain`)에만 붙인다. 시드로 넣는다 |
+| name | text | 예: 「눈 어두운 포수」→ "안경 사슴" |
+| stage_names | text[3] | 알 → 1단계 → 2단계 이름. `['알', '아기 사슴', '안경 사슴']` |
+| art_seed | text | 그림이 없으니 `COVER` 그라데이션 + 이모지/색으로 그린다. 표지와 합성해 도감에 보인다 |
+
+**가정: 진화 3단계.** `stage 0` 알(책을 펼치면 받음) → `stage 1` 부화(체크포인트 1개 통과 또는 마지막 장 도달) → `stage 2` 최종(**독후감 검증 통과**). 검증 통과가 유일한 최종 진화 조건이라 "책갈피 = 검증" 규칙과 나란히 간다.
+
+### student_characters — 학생이 가진 캐릭터
+| column | type | note |
+|---|---|---|
+| student_id | uuid FK profiles | |
+| book_id | uuid FK books | PK (student_id, book_id) |
+| stage | smallint | 0..2. 내려가지 않는다 |
+| obtained_at | timestamptz | 알을 받은 때 |
+| evolved_at | timestamptz nullable | 마지막 진화 |
+
+`stage` 갱신은 **DB 트리거**로 한다 (0011 과 같은 방식): `reading_progress` 삽입 → 조건 맞으면 1, `points_ledger` 에 `verification_pass` 삽입 → 그 책 캐릭터 2. 검증 응답 시간에 얹지 않는다.
+
+### reading_progress — 서재 읽기 기록 (표지 퍼즐의 재료)
+| column | type | note |
+|---|---|---|
+| student_id | uuid | |
+| book_id | uuid | |
+| chapter_no | int | PK (student_id, book_id, chapter_no) |
+| read_at | timestamptz | |
+
+**가정: 퍼즐 조각 = 읽은 장.** 진행률 = `count(*) / (그 책의 book_contents 장 수)`. 리더 화면이 장 끝에 닿으면 한 번 쓴다 (upsert, 중복 무시). 따로 퍼즐 테이블은 두지 않는다.
+
+### checkpoints — 장 끝 한 문항 (AI #6)
+| column | type | note |
+|---|---|---|
+| id | uuid PK | |
+| student_id | uuid | |
+| book_id | uuid | |
+| chapter_no | int | |
+| question | text | AI #6 이 그 장 본문으로 만든 한 문항. 해석형, 정답 있는 퀴즈 아님 |
+| answer | text nullable | |
+| passed | boolean nullable | AI 가 본문과 대조해 판정 (채점 #4 와 별개, **책갈피 없음**) |
+| asked_at / answered_at | timestamptz | 검증과 달리 시간 제한 없음 |
+
+**가정: 체크포인트는 책갈피를 주지 않는다.** 캐릭터 부화(stage 1)와 퍼즐 완성감만 준다. 책갈피는 여전히 검증 통과에서만 나온다 (§4 불변).
+
+### profiles.explorer_rank — 탐험가 등급 (② 온보딩)
+`profiles` 에 `explorer_rank text nullable` 한 칸. 값은 `'새싹' | '탐험가' | '대장'` 중 학생이 온보딩에서 고른다 (학년 선택과 같은 수준의 자기 선언, 검증 없음). 화면 톤(인사말·캐릭터 말투)에만 쓴다. **학년(`grade_level`)을 대체하지 않는다** — 학년은 AI 난이도에 쓰이므로 그대로.
+
+### items / student_items — 아이템 샵 (④ 스트레치, 이번에 안 들어갈 수 있음)
+`items`: `id`, `name`, `price int`, `kind ('hat'|'bg'|'frame')`. `student_items`: `student_id`, `item_id`, `bought_at`.
+구매는 `points_ledger` 에 `reason = 'item_purchase'`, `delta = -price`, `ref_id = item_id` 로 쓴다 (enum 값 추가). **append-only 규칙 그대로.** 잔액 부족은 서버가 `sum(delta)` 로 막는다. 이 두 테이블은 ④ 가 확정될 때만 0014 에 넣는다.
+
+### 데모 시드
+`demo@bookit.demo` 에 캐릭터 5마리(stage 2 세 마리 = 통과한 책, stage 1 하나, 알 하나), 읽기 진행 2권(완독 1, 반쯤 1). 도감이 비어 보이면 안 된다.
+
+---
+
 ## 3. RLS summary
 
 | Table | Student | Teacher | Guardian token |
@@ -134,6 +197,9 @@ Never delete a failed attempt. Retry inserts a new row with `attempt_no + 1` and
 | verifications | own — **read only**. All writes go through the service role (attempt insert, `asked_at`, `record_verification_result`) | scores, passed, attempt_no — not `answer` | scores, passed |
 | points_ledger | own | aggregate per student | aggregate |
 | guardian_links | own (create/revoke) | no | own token row |
+| characters (2b) | read all | read all | read all (카탈로그) |
+| student_characters · reading_progress · checkpoints (2b) | own — read; `reading_progress` 는 own insert, 나머지 write 는 service role/트리거 | **no** (게임 기록은 성적이 아니다) | `student_characters` 만 stage 집계 (도감 수) |
+| items / student_items (2b, ④) | read all / own | no | no |
 
 Rule of thumb: `reviews.body` and `verifications.answer` are visible to the student only, unless `reviews.is_shared = true`.
 
@@ -218,6 +284,17 @@ GET  /api/challenges                   → { class_goal, season }
 POST /api/guardian/link                → { url }
 GET  /api/guardian/:token              → { summary, books[] }        no auth
 ```
+
+### 5b. 게임화 (2026-09-18, spec §2b) — DRAFT
+```
+GET  /api/characters                    → { characters[]: { book_id, name, stage, stage_name, cover_url, obtained_at } }   도감. 강민구(진화 로직) · 박재경(화면)
+POST /api/reading/progress { book_id, chapter_no } → { read_chapters, total_chapters, character_stage }   장 끝에서 리더가 호출. 퍼즐 진행률 + (부화했으면) 새 stage. 강민구(reader)
+POST /api/checkpoints  { book_id, chapter_no }     → { checkpoint_id, question }        AI #6. 이미 있으면 그대로 돌려준다
+POST /api/checkpoints/:id/answer { answer }        → { passed, feedback, character_stage }
+PATCH /api/profile     { explorer_rank }           → { profile }                        ② 온보딩. 기존 grade_level PATCH 와 같은 라우트
+GET  /api/items · POST /api/items/:id/buy          → { balance, owned[] }                ④ 스트레치
+```
+검증 결과 응답(`POST /api/verifications/:id/answer`)은 **바꾸지 않는다.** 보스전 화면은 그 응답을 그대로 받아 연출만 한다. 통과 뒤 캐릭터가 최종 진화했는지는 화면이 `GET /api/characters` 를 한 번 더 부른다 (트리거가 이미 올려 둔 뒤라 즉시 반영).
 
 ### teacher (김민경)
 ```
