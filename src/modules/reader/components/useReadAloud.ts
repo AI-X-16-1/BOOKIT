@@ -94,24 +94,34 @@ export function useReadAloud(onHeard: (finalWords: string[], interimWords: strin
     };
 
     next.onerror = (event) => {
-      // 마이크를 막았으면 다시 켜도 소용없다. 침묵(no-speech)은 onend 에서 다시 켠다
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+      // 마이크를 막았거나 마이크가 없으면 다시 켜도 소용없다.
+      // 침묵(no-speech)·네트워크 끊김 등은 onend 가 이어서 불리고, 거기서 다시 켠다
+      if (
+        event.error === "not-allowed" ||
+        event.error === "service-not-allowed" ||
+        event.error === "audio-capture"
+      ) {
         wanted.current = false;
         setState("denied");
       }
     };
 
     next.onend = () => {
-      if (wanted.current) {
+      if (!wanted.current) {
+        setState((current) => (current === "listening" ? "idle" : current));
+        return;
+      }
+      // 크롬은 침묵이 길거나 한 번에 듣는 시간이 차면 인식을 끝낸다. 끝난 그 자리에서
+      // 바로 start 하면 아직 닫히는 중이라 던질 때가 있어서 한 박자 쉬고 다시 켠다
+      // (2026-09-18 크롬 실측: end → start 가 0.1초 간격으로 이어졌다)
+      window.setTimeout(() => {
+        if (!wanted.current || recognition.current !== next) return;
         try {
           next.start();
-          return;
         } catch {
-          // 이미 켜져 있는 경우 — 그대로 둔다
-          return;
+          // 이미 켜져 있다 — 그대로 둔다
         }
-      }
-      setState((current) => (current === "listening" ? "idle" : current));
+      }, 250);
     };
 
     wanted.current = true;

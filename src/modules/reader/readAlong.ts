@@ -7,7 +7,11 @@
  * **판정이 아니라 시각 효과다.** 그래서 틀려도 된다 — 몇 낱말 놓쳐도 뒤에서 다시
  * 맞으면 따라잡으면 된다. 이 파일의 규칙이 느슨한 이유가 그것이다:
  *   - 조사가 달라도 같은 낱말로 본다 ("소녀" 와 "소녀가")
+ *   - 앞이 잘려 들린 말도 받는다 ("같이" 와 본문의 "날개같이")
  *   - 붙어서 들린 말도 받는다 ("할수있다" 와 본문의 "할 수 있다")
+ *   - **바로 다음 한두 낱말**은 비슷하기만 해도 받는다 — 실제 인식이 "해 → 회",
+ *     "흰 → 흰색", "희고도 → 이고도" 로 들었다 (2026-09-18 크롬 실측, readAlong.test.ts).
+ *     멀리 있는 낱말에는 쓰지 않는다. 짧은 말끼리는 대부분 한 글자 차이라 아무 데나 맞는다
  *   - 커서 뒤 몇 낱말 안에서만 찾는다 — 멀리서 찾으면 흔한 낱말에 엉뚱하게 튄다
  *   - 그래도 못 찾으면 두 낱말이 연달아 맞는 곳을 본문 전체에서 찾는다 —
  *     중간 쪽부터 읽기 시작하거나 앞으로 돌아가 다시 읽는 경우다
@@ -46,8 +50,61 @@ export function sameWord(book: string, heard: string): boolean {
   if (!a || !b) return false;
   if (a === b) return true;
   if (Math.min(a.length, b.length) < 2) return false;
-  return a.startsWith(b) || b.startsWith(a);
+  return a.startsWith(b) || b.startsWith(a) || a.endsWith(b);
 }
+
+/**
+ * 한글 음절을 자모로 편다 ("해" → ㅎ ㅐ). 음절 단위로 재면 한 글자짜리 말끼리는
+ * 전부 "한 글자 차이" 라 "해" 가 "펑" 과도 비슷해진다. 자모로 재면 "해 ↔ 회" 는
+ * 한 자 차이, "해 ↔ 펑" 은 세 자 차이로 갈린다.
+ */
+function jamo(word: string): string[] {
+  const out: string[] = [];
+  for (const ch of word) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (code < 0xac00 || code > 0xd7a3) {
+      out.push(ch);
+      continue;
+    }
+    const s = code - 0xac00;
+    out.push(`L${Math.floor(s / 588)}`, `V${Math.floor((s % 588) / 28)}`);
+    if (s % 28) out.push(`T${s % 28}`);
+  }
+  return out;
+}
+
+/** 자모 단위 편집 거리 */
+function distance(a: string, b: string): number {
+  const x = jamo(a);
+  const y = jamo(b);
+  let prev = Array.from({ length: y.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= x.length; i += 1) {
+    const row = [i];
+    for (let j = 1; j <= y.length; j += 1) {
+      row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (x[i - 1] === y[j - 1] ? 0 : 1));
+    }
+    prev = row;
+  }
+  return prev[y.length];
+}
+
+/**
+ * 비슷한 낱말인가 — 자모로 폈을 때 긴 쪽의 40% 까지 (짧아도 한 자는) 달라도 된다.
+ * 한쪽이 다른 쪽으로 시작하면 한 글자짜리도 받는다 ("흰" ↔ "흰색", "추운" ↔ "추").
+ * "추운 겨울날이었습니다" 를 "추 결말이었습니다" 로 들어도 따라간다.
+ * **바로 다음 한두 낱말에만** 쓴다 (findNear) — 넓게 쓰면 짧은 말이 아무 데나 맞는다
+ */
+export function similarWord(book: string, heard: string): boolean {
+  const a = normalize(book);
+  const b = normalize(heard);
+  if (!a || !b) return false;
+  if (a.startsWith(b) || b.startsWith(a)) return true;
+  const longest = Math.max(jamo(a).length, jamo(b).length);
+  return distance(a, b) <= Math.max(1, Math.floor(longest * 0.4));
+}
+
+/** 비슷하기만 해도 받는 범위 — 커서 바로 다음 낱말과 그다음 하나 */
+const FUZZY_REACH = 2;
 
 /** 커서부터 WINDOW 안에서 들린 낱말 하나를 찾는다. 찾으면 그 낱말 **다음** 위치 */
 function findNear(words: string[], cursor: number, heard: string): number {
@@ -58,6 +115,10 @@ function findNear(words: string[], cursor: number, heard: string): number {
   // 붙어서 들린 말 — 본문 두 낱말을 이어 붙여 본다
   for (let j = cursor; j + 1 < end; j += 1) {
     if (sameWord(words[j] + words[j + 1], heard)) return j + 2;
+  }
+  // 잘못 들린 말 — 바로 다음 한두 낱말만 비슷한지 본다
+  for (let j = cursor; j < Math.min(words.length, cursor + FUZZY_REACH); j += 1) {
+    if (similarWord(words[j], heard)) return j + 1;
   }
   return -1;
 }
