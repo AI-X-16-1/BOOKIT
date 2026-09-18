@@ -28,6 +28,11 @@ import { BottomSheet, Button, cn } from "@/shared/ui";
  */
 
 export interface CheckpointPanelProps {
+  /**
+   * 이 문항의 id (`POST /api/checkpoints` 의 `checkpoint_id`).
+   * 답 입력을 문항마다 새로 시작하는 데 쓴다 — 아래 CheckpointPanel 주석.
+   */
+  checkpointId: string;
   /** 몇 장 끝인지. 칩에 그대로 보인다 */
   chapterNo: number;
   /** AI #6 이 그 장 본문으로 만든 한 문항 */
@@ -57,7 +62,21 @@ function Chip({ chapterNo }: { chapterNo: number }) {
   );
 }
 
-export function CheckpointPanel({
+/**
+ * 문항이 바뀌면 답 입력을 비운다.
+ *
+ * 패널이 마운트된 채 다음 장으로 넘어가면 앞 장에 쓰던 답이 그대로 남는다.
+ * 같은 모듈의 QuestionPanel 이 겪은 문제이고, VerificationFlow 가 질문 id 를
+ * key 로 줘서 푼 것과 같은 방법이다. useEffect 로 지우지 않는다 —
+ * 이 저장소는 react-hooks/set-state-in-effect 를 켜 뒀고, 한 박자 늦게 지워진다.
+ *
+ * 부르는 쪽이 key 를 잊어도 되도록 여기서 감싼다.
+ */
+export function CheckpointPanel({ checkpointId, ...props }: CheckpointPanelProps) {
+  return <CheckpointForm key={checkpointId} {...props} />;
+}
+
+function CheckpointForm({
   chapterNo,
   question,
   readChapters,
@@ -68,7 +87,7 @@ export function CheckpointPanel({
   onSubmit,
   onClose,
   className,
-}: CheckpointPanelProps) {
+}: Omit<CheckpointPanelProps, "checkpointId">) {
   const [answer, setAnswer] = useState("");
 
   const percent =
@@ -127,14 +146,17 @@ export function CheckpointPanel({
     <div className={cn("flex flex-col gap-3.5", className)}>
       <Chip chapterNo={chapterNo} />
 
-      {/* 읽기 진행률. 목업의 62% 자리다 — 시간이 아니라 읽은 양을 보여준다 */}
-      <div
-        className="h-1 overflow-hidden rounded-full bg-panel-line"
-        role="img"
-        aria-label={`${totalChapters}장 중 ${readChapters}장 읽음`}
-      >
-        <div className="h-1 rounded-full bg-blue" style={{ width: `${percent}%` }} />
-      </div>
+      {/* 읽기 진행률. 목업의 62% 자리다 — 시간이 아니라 읽은 양을 보여준다.
+          장 수를 모르는 책(본문 없음)에서는 아래 조각 줄과 같이 사라진다 */}
+      {totalChapters > 0 && (
+        <div
+          className="h-1 overflow-hidden rounded-full bg-panel-line"
+          role="img"
+          aria-label={`${totalChapters}장 중 ${readChapters}장 읽음`}
+        >
+          <div className="h-1 rounded-full bg-blue" style={{ width: `${percent}%` }} />
+        </div>
+      )}
 
       <p className="rounded-[14px] bg-card p-5 text-[17px] leading-relaxed text-ink">
         {question}
@@ -169,7 +191,7 @@ export function CheckpointPanel({
       {error && <p className="text-center text-sm text-coral-light">{error}</p>}
 
       <Button
-        onClick={() => onSubmit(answer)}
+        onClick={() => onSubmit(answer.trim())}
         disabled={submitting || answer.trim() === ""}
       >
         {submitting ? "읽어보는 중이야…" : "답변 제출"}
