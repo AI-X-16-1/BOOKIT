@@ -1,6 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ReactNode,
+  type Ref,
+} from "react";
+
+/** 바깥에서 쪽을 넘기게 여는 손잡이 (소리 내어 읽기) */
+export interface PagedTextControl {
+  /**
+   * 이 번호(data-word)의 낱말이 **뒤쪽** 쪽에 있으면 그 쪽을 펼친다. 앞으로만 넘긴다.
+   * 소리 내어 읽기가 다음에 읽을 낱말을 넘긴다 — 쪽 끝까지 읽으면 저절로 다음 쪽이 된다
+   */
+  reveal: (wordNo: number) => void;
+}
 
 /**
  * 한 장의 본문을 전자책처럼 쪽으로 나눠 넘긴다. owner: 강민구
@@ -32,6 +49,7 @@ export function PagedText({
   onPrevChapter,
   onNextChapter,
   onReachEnd,
+  control,
 }: {
   /** 흘려 놓을 본문. 문단은 블록 요소로 — flex 로 감싸면 쪽 경계에서 문단이 안 쪼개진다 */
   children: ReactNode;
@@ -47,6 +65,8 @@ export function PagedText({
    * 짧아서 정말 한 쪽인 장은 펼친 순간이 곧 끝이라 그대로 센다.
    */
   onReachEnd?: () => void;
+  /** 소리 내어 읽기가 쪽을 넘기는 손잡이 (PagedTextControl) */
+  control?: Ref<PagedTextControl>;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -119,6 +139,21 @@ export function PagedText({
       behavior: reduceMotion ? "auto" : "smooth",
     });
   };
+
+  // 소리 내어 읽기 — 다음에 읽을 낱말이 뒤쪽 쪽에 있으면 거기로 넘긴다.
+  // 낱말의 가로 위치로 몇 번째 쪽인지 안다 (한 단 = 한 쪽, 단 사이 COLUMN_GAP)
+  useImperativeHandle(control, () => ({
+    reveal: (wordNo: number) => {
+      const scroller = scrollerRef.current;
+      const content = contentRef.current;
+      if (!scroller || !content) return;
+      const target = content.querySelector<HTMLElement>(`[data-word="${wordNo}"]`);
+      if (!target) return;
+      const x = target.getBoundingClientRect().left - content.getBoundingClientRect().left;
+      const pageOf = Math.floor((x + 1) / (scroller.clientWidth + COLUMN_GAP));
+      if (pageOf > pageRef.current) goTo(pageOf);
+    },
+  }));
 
   const atStart = page === 0;
   const atEnd = page >= pageCount - 1;

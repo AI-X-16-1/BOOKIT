@@ -21,16 +21,23 @@ function subscribe(onChange: () => void) {
 }
 
 /**
- * 서버에서는 폭을 모르니 폰 기준(6권)으로 그리고, 브라우저에서 폭을 읽어 맞춘다.
- * useSyncExternalStore 가 하이드레이션 때는 서버 값을 쓰므로 불일치 경고가 나지 않는다.
+ * 768px 이상인가 (CLAUDE.md §8 의 갈림길). 서버에서는 폭을 모르니 폰(false)으로 그리고,
+ * 브라우저에서 폭을 읽어 맞춘다. useSyncExternalStore 가 하이드레이션 때는 서버 값을
+ * 쓰므로 불일치 경고가 나지 않는다.
+ *
+ * 서재 목록 크기와 소리 내어 읽기(폰에서 시트가 본문을 덮으면 마이크를 끈다)가 같이 쓴다.
  */
-export function useShelfPageSize(): number {
-  const wide = useSyncExternalStore(
+export function useIsWide(): boolean {
+  return useSyncExternalStore(
     subscribe,
     () => window.matchMedia(WIDE_QUERY).matches,
     () => false,
   );
-  return wide ? 12 : 6;
+}
+
+/** 서재 목록 한 쪽에 몇 권 — 폰 6권, 768px 이상 12권 */
+export function useShelfPageSize(): number {
+  return useIsWide() ? 12 : 6;
 }
 
 /** 처음·끝·현재 주변만 보인다 — 1 … 4 5 [6] 7 8 … 20 */

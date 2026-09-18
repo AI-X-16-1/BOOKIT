@@ -173,7 +173,12 @@ export function advance(
   let next = cursor;
   for (const word of heard) {
     const found = findNear(words, next, word, next === cursor ? firstWidth : WINDOW);
-    if (found >= 0) next = found;
+    if (found < 0) continue;
+    next = found;
+    // 맞춘 낱말 바로 뒤의 부호뿐인 칸(” ─ …)은 소리 낼 수 없으니 함께 넘긴다.
+    // 넘기지 않으면 "다음에 읽을 칸" 이 부호를 가리켜, 쪽 끝이 ” 로 끝날 때 다음 쪽으로
+    // 안 넘어갔다 (「참된 동정」 1쪽 끝: … 줍시요 ”)
+    while (next < words.length && !readable(words[next])) next += 1;
   }
   return next;
 }

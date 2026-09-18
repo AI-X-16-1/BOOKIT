@@ -155,3 +155,11 @@ test("둘째 문단 끝만 읽으면 따라가지 않고, 이어서 차례로 �
     TWO_PARAGRAPHS.length,
   );
 });
+
+test("맞춘 낱말 뒤의 부호뿐인 칸은 함께 넘긴다 — 쪽 끝이 ” 로 끝나도 다음 칸은 낱말이다", () => {
+  // 「참된 동정」 1쪽 끝은 "… 줍시요 ”" 이고 2쪽은 "하고" 로 시작한다
+  const words = splitWords("“돈 한 푼 줍시요!” 하고 떨면서");
+  assert.equal(words[words.indexOf("줍시요") + 1], "”");
+  const cursor = advance(words, 0, splitWords("돈 한 푼 줍시요"));
+  assert.equal(words[cursor], "하고");
+});
