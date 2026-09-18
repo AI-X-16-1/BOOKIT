@@ -23,6 +23,7 @@
 export { WriteFlow, type WriteFlowProps } from "./components/WriteFlow";
 export { ReviewEditor, type ReviewEditorProps } from "./components/ReviewEditor";
 export { PickBookFirst } from "./components/PickBookFirst";
+export { CoverPuzzle, type CoverPuzzleProps } from "./components/CoverPuzzle";
 export {
   createReviewSchema,
   updateReviewSchema,
