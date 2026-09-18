@@ -24,6 +24,8 @@ const BOOK_GOLD_AXE = "0000b017-0000-4000-8000-000000000017"; // 금도끼 — �
 const BOOK_LUCKY_DAY = "0000b001-0000-4000-8000-000000000001"; // 운수 좋은 날 — 알·1장
 const STAMPS = { 성장소설: 6, 고전: 3, 동화: 1 };
 const EXPECTED_BALANCE = 1240;
+/** 통과작 9 + 금도끼(부화) + 운수 좋은 날(알). seed.sql §7b */
+const EXPECTED_CHARACTERS = 11;
 
 function env(name) {
   const v = process.env[name]?.trim();
@@ -97,15 +99,30 @@ await run("아이템", async () => {
 });
 
 /* ── 3. 시드 값으로 복원 ─────────────────────────────── */
+/**
+ * insert/upsert 한 행 수. **오류를 삼키지 않는다** (#159).
+ *
+ * 예전에는 `(await q.select()).data?.length ?? 0` 이었다. 그러면 쓰기가 통째로 실패해도
+ * 0 을 돌려주고 "… : 0건" 으로 정상처럼 찍힌다 — 바로 앞에서 delete 를 한 단계들이라
+ * 표가 빈 채로 남고, 그걸 아무도 모른다. 실제로 도감이 그렇게 비었다.
+ */
+async function wrote(query) {
+  const { data, error } = await query.select();
+  if (error) throw error;
+  return data?.length ?? 0;
+}
+
 await run("도장판 → 성장소설 6 · 고전 3 · 동화 1", async () => {
   if (!WRITE) return 1;
   await db.from("genre_stamps").delete().eq("student_id", DEMO);
   const rows = Object.entries(STAMPS).map(([genre, completed_count]) => ({ student_id: DEMO, genre, completed_count }));
-  return (await db.from("genre_stamps").insert(rows).select()).data?.length ?? 0;
+  return wrote(db.from("genre_stamps").insert(rows));
 });
 await run(`연속 기록 → 7 / 12, last_passed_on ${kstToday}`, async () => {
   if (!WRITE) return 1;
-  return (await db.from("streaks").upsert({ student_id: DEMO, current_days: 7, longest_days: 12, last_passed_on: kstToday }).select()).data?.length ?? 0;
+  return wrote(
+    db.from("streaks").upsert({ student_id: DEMO, current_days: 7, longest_days: 12, last_passed_on: kstToday }),
+  );
 });
 await run("읽기 진행 → 금도끼 전 장 · 운수 좋은 날 1장", async () => {
   if (!WRITE) return 1;
@@ -114,7 +131,7 @@ await run("읽기 진행 → 금도끼 전 장 · 운수 좋은 날 1장", async
   const rows = (ch ?? []).map((c) => ({ student_id: DEMO, book_id: BOOK_GOLD_AXE, chapter_no: c.chapter_no }));
   rows.push({ student_id: DEMO, book_id: BOOK_LUCKY_DAY, chapter_no: 1 });
   // reading_progress 트리거가 캐릭터를 만들지만 stage 는 아래에서 다시 맞춘다
-  return (await db.from("reading_progress").insert(rows).select()).data?.length ?? 0;
+  return wrote(db.from("reading_progress").insert(rows));
 });
 await run("캐릭터 → 통과작 최종 2 · 금도끼 1 · 운수 좋은 날 0", async () => {
   if (!WRITE) return 1;
@@ -122,17 +139,42 @@ await run("캐릭터 → 통과작 최종 2 · 금도끼 1 · 운수 좋은 날 
   const { data: passed } = await db.from("reviews").select("book_id").eq("student_id", DEMO).eq("status", "passed");
   const { data: chars } = await db.from("characters").select("book_id");
   const has = new Set((chars ?? []).map((c) => c.book_id));
-  const rows = (passed ?? []).filter((r) => has.has(r.book_id)).map((r) => ({ student_id: DEMO, book_id: r.book_id, stage: 2 }));
-  rows.push({ student_id: DEMO, book_id: BOOK_GOLD_AXE, stage: 1 }, { student_id: DEMO, book_id: BOOK_LUCKY_DAY, stage: 0 });
-  return (await db.from("student_characters").upsert(rows, { onConflict: "student_id,book_id" }).select()).data?.length ?? 0;
+  // 책 하나당 한 행만 남긴다. 고정 두 권이 통과 목록을 이긴다 — 시드의 뜻이
+  // "운수 좋은 날은 알, 금도끼는 부화" 이기 때문이다.
+  //
+  // 접지 않으면: 「운수 좋은 날」을 통과시킨 적이 있으면 passed 에도 들어 있어 같은
+  // (student_id, book_id) 가 배치에 두 번 들어간다. Postgres 는 한 ON CONFLICT 문이
+  // 같은 행을 두 번 건드리는 것을 거절하고(21000), 바로 위에서 delete 를 한 뒤라
+  // 도감이 빈 채로 남는다 (#159).
+  const byBook = new Map();
+  for (const r of (passed ?? []).filter((r) => has.has(r.book_id))) {
+    byBook.set(r.book_id, { student_id: DEMO, book_id: r.book_id, stage: 2 });
+  }
+  byBook.set(BOOK_GOLD_AXE, { student_id: DEMO, book_id: BOOK_GOLD_AXE, stage: 1 });
+  byBook.set(BOOK_LUCKY_DAY, { student_id: DEMO, book_id: BOOK_LUCKY_DAY, stage: 0 });
+
+  return wrote(
+    db.from("student_characters").upsert([...byBook.values()], { onConflict: "student_id,book_id" }),
+  );
 });
 
 /* ── 4. 확인 ─────────────────────────────────────────── */
 const { data: led } = await db.from("points_ledger").select("delta").eq("student_id", DEMO);
 const balance = (led ?? []).reduce((s, x) => s + x.delta, 0);
 const { count: reviewCount } = await db.from("reviews").select("id", { count: "exact", head: true }).eq("student_id", DEMO);
-log(`\n잔액 ${balance} (기대 ${EXPECTED_BALANCE}) · 독후감 ${reviewCount}편 (기대 12)`);
-if (WRITE && (balance !== EXPECTED_BALANCE || reviewCount !== 12)) {
+// 도감 행 수도 본다 — 캐릭터 단계가 조용히 비는 일이 있었다 (#159)
+const { count: charCount } = await db
+  .from("student_characters")
+  .select("book_id", { count: "exact", head: true })
+  .eq("student_id", DEMO);
+log(
+  `
+잔액 ${balance} (기대 ${EXPECTED_BALANCE}) · 독후감 ${reviewCount}편 (기대 12) · 도감 ${charCount}마리 (기대 ${EXPECTED_CHARACTERS})`,
+);
+if (
+  WRITE &&
+  (balance !== EXPECTED_BALANCE || reviewCount !== 12 || charCount !== EXPECTED_CHARACTERS)
+) {
   log("✕ 시드 값과 다르다 — 원장이나 독후감에 기준일 이전 테스트 행이 있을 수 있다. 손으로 확인할 것");
   process.exit(1);
 }
