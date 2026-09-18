@@ -63,12 +63,16 @@ export interface MeResponse {
   role: ProfileRole;
   /** 교사는 null */
   grade_level: GradeLevel | null;
+  /** 온보딩에서 고른 탐험가 등급. 안 골랐으면 null (spec §2b) */
+  explorer_rank: ExplorerRank | null;
   /** 예: "5학년 2반" */
   class_label: string | null;
 }
 
+/** 둘 중 하나 이상. explorer_rank 는 null 로 지울 수 있다 */
 export interface UpdateProfileRequest {
-  grade_level: GradeLevel;
+  grade_level?: GradeLevel;
+  explorer_rank?: ExplorerRank | null;
 }
 export interface UpdateProfileResponse {
   profile: Profile;
@@ -228,11 +232,6 @@ export interface AnswerCheckpointResponse {
   passed: boolean;
   feedback: string;
   character_stage: CharacterStage | null;
-}
-
-/** PATCH /api/profile — 탐험가 등급 (② 온보딩). grade_level 과 같은 라우트, 둘 중 하나만 */
-export interface UpdateExplorerRankRequest {
-  explorer_rank: ExplorerRank;
 }
 
 /* ── rewards / growth / ranking / guardian (문민재) ── */

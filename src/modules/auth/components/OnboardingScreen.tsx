@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ApiClientError, apiPost } from "@/shared/api/client";
 import type {
+  ExplorerRank,
   GradeLevel,
   StudentOnboardingResponse,
   TeacherOnboardingResponse,
 } from "@/shared/types";
 import { Button, Chip, cn } from "@/shared/ui";
+import { EXPLORER_RANKS } from "../explorer";
 import { GRADES, gradeLabel } from "../grades";
 
 /**
@@ -29,6 +31,8 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
   const [role, setRole] = useState<"student" | "teacher">("student");
   const [grade, setGrade] = useState<GradeLevel>(5);
   const [code, setCode] = useState("");
+  /** 탐험가 등급 — 선택. 안 고르면 null 로 보낸다 (spec §2b) */
+  const [rank, setRank] = useState<ExplorerRank | null>(null);
   const [school, setSchool] = useState("한빛초");
   const [classNo, setClassNo] = useState(2);
   const [busy, setBusy] = useState(false);
@@ -42,6 +46,7 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
       await apiPost<StudentOnboardingResponse>("/api/onboarding/student", {
         grade_level: grade,
         join_code: code,
+        explorer_rank: rank,
       });
       // replace 로 보낸다 — 뒤로 가기로 온보딩에 되돌아오지 않게
       router.replace("/home");
@@ -139,6 +144,41 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
 
       {role === "student" ? (
         <>
+          {/* 탐험가 등급 — 자기 선언, 건너뛰어도 된다. 화면 톤에만 쓴다 (spec §2b) */}
+          <div className="mt-6 text-[15px] font-bold text-coral-text-2">
+            너는 어떤 탐험가야?{" "}
+            <span className="text-[13px] font-normal text-faint">(안 골라도 돼)</span>
+          </div>
+          <div className="mt-2.5 grid grid-cols-3 gap-2.5">
+            {EXPLORER_RANKS.map((r) => (
+              <button
+                key={r.value}
+                type="button"
+                aria-pressed={rank === r.value}
+                onClick={() => setRank(rank === r.value ? null : r.value)}
+                className={cn(
+                  "flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-2 py-3",
+                  rank === r.value
+                    ? "bg-coral text-white"
+                    : "bg-yellow-bg text-coral-text-2",
+                )}
+              >
+                <span className="text-[22px] leading-none" aria-hidden>
+                  {r.emoji}
+                </span>
+                <span className="text-[15px] font-bold">{r.value}</span>
+                <span
+                  className={cn(
+                    "text-[11px] leading-tight",
+                    rank === r.value ? "text-white/85" : "text-muted",
+                  )}
+                >
+                  {r.blurb}
+                </span>
+              </button>
+            ))}
+          </div>
+
           <div className="mt-6 text-[13px] text-muted">반 참여 코드</div>
           <input
             value={code}

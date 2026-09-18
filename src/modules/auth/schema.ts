@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 
-import type { GradeLevel } from "@/shared/types";
+import type { ExplorerRank, GradeLevel } from "@/shared/types";
 
 /** 1..9. DB 의 check 제약과 같은 범위다 (docs/spec.md §1) */
 export const gradeLevelSchema = z
@@ -30,9 +30,15 @@ export const joinCodeSchema = z
     message: "6자리 코드가 아니야.",
   });
 
+/** 탐험가 등급 (spec §2b). DB check 제약과 같은 셋. 고르지 않으면 null */
+export const explorerRankSchema = z
+  .enum(["새싹", "탐험가", "대장"])
+  .transform((value) => value as ExplorerRank);
+
 export const studentOnboardingSchema = z.object({
   grade_level: gradeLevelSchema,
   join_code: joinCodeSchema,
+  explorer_rank: explorerRankSchema.nullable().optional(),
 });
 
 export const teacherOnboardingSchema = z.object({
@@ -42,6 +48,16 @@ export const teacherOnboardingSchema = z.object({
   class_no: z.number().int().min(1).max(30),
 });
 
-export const updateProfileSchema = z.object({
-  grade_level: gradeLevelSchema,
-});
+/**
+ * PATCH /api/profile — 학년 또는 탐험가 등급, 둘 중 하나 이상.
+ * 등급은 null 로 지울 수 있다 (학년은 학생에게 필수라 지울 수 없다).
+ */
+export const updateProfileSchema = z
+  .object({
+    grade_level: gradeLevelSchema.optional(),
+    explorer_rank: explorerRankSchema.nullable().optional(),
+  })
+  .refine(
+    (value) => value.grade_level !== undefined || value.explorer_rank !== undefined,
+    { message: "바꿀 게 없어." },
+  );

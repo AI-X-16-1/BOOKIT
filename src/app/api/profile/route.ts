@@ -1,6 +1,6 @@
 /**
  * GET    /api/profile               → { display_name, role, grade_level, class_label }
- * PATCH  /api/profile  { grade_level } → { profile }
+ * PATCH  /api/profile  { grade_level?, explorer_rank? } → { profile }
  * DELETE /api/profile               → { deleted }   계정과 모든 데이터 삭제, 세션 종료
  *
  * 소유: 김민경 (docs/spec.md §5).
@@ -11,7 +11,7 @@ import type { NextRequest, NextResponse } from "next/server";
 import {
   deleteAccount,
   getMyProfile,
-  updateGradeLevel,
+  updateProfile,
   updateProfileSchema,
 } from "@/modules/auth";
 import {
@@ -52,13 +52,9 @@ export async function PATCH(
   if (!user) return unauthorized();
 
   const parsed = updateProfileSchema.safeParse(await readJson(request));
-  if (!parsed.success) return invalidBody("학년을 다시 골라줘.");
+  if (!parsed.success) return invalidBody("다시 골라줘.");
 
-  const result = await updateGradeLevel(
-    supabase,
-    user.id,
-    parsed.data.grade_level,
-  );
+  const result = await updateProfile(supabase, user.id, parsed.data);
   if (!result.ok) return fail(result.code, result.message, result.status);
 
   return ok({ profile: result.data });
