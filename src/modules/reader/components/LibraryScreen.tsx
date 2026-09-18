@@ -316,6 +316,9 @@ export function LibraryScreen({
 
     void openCheckpoint(bookId, chapterNo)
       .then(({ checkpoint_id, question }) => {
+        // 사전이 열려 있었으면 닫는다. 바텀시트가 두 장 겹치면 아래 것을 닫을 수 없다 —
+        // 뜻을 보던 중에 마지막 쪽으로 넘기면 실제로 그렇게 된다
+        close();
         setCheckpoint({
           id: checkpoint_id,
           chapterNo,
@@ -524,10 +527,12 @@ export function LibraryScreen({
 
           {/* 768px 이상 — 우측 사이드 패널 */}
           <aside className="hidden w-[270px] flex-none md:block">
-            {/* 체크포인트 — 목업 8 #8 (sprint-0918 ③). 뜨면 사전·퍼즐보다 앞선다.
-                답할 동안 옆에 다른 카드가 겹치면 어디를 봐야 할지 알 수 없다 */}
+            {/* 체크포인트 — 목업 8 #8 (sprint-0918 ③). 뜨면 표지 퍼즐보다 앞선다.
+                사전은 접지 않고 아래에 같이 둔다 — 문항에 답하려고 모르는 낱말을
+                찾는 건 자연스러운 흐름이고, 접어 두면 낱말을 눌러도 아무것도 안 뜬다
+                (본문 강조까지는 되므로 아이는 눌린 줄 알고 기다린다, #152 리뷰) */}
             {checkpoint && (
-              <div className="sticky top-4 mb-4 rounded-card bg-panel p-4">
+              <div className="mb-4 rounded-card bg-panel p-4">
                 <CheckpointPanel
                   checkpointId={checkpoint.id}
                   chapterNo={checkpoint.chapterNo}
@@ -558,8 +563,12 @@ export function LibraryScreen({
               </div>
             )}
 
-            {checkpoint ? null : entry.state === "idle" ? (
-              <p className="text-xs text-faint">낱말을 누르면 여기 뜻이 떠요</p>
+            {entry.state === "idle" ? (
+              // 문항이 떠 있는 동안에는 안내를 접는다 — 문항이 주인공이어야 한다.
+              // 낱말을 누르면 아래 뜻 카드는 그대로 뜬다
+              checkpoint ? null : (
+                <p className="text-xs text-faint">낱말을 누르면 여기 뜻이 떠요</p>
+              )
             ) : (
               <Card raised className="sticky top-4">
                 <div className="flex items-start justify-between gap-2">
