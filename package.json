@@ -15,6 +15,7 @@
     "check:supabase": "node scripts/check-supabase.mjs",
     "audit:prod": "node scripts/prod-audit.mjs",
     "demo:reset": "node --env-file-if-exists=.env.local scripts/demo-reset.mjs",
+    "covers:generate": "node --env-file-if-exists=.env.local scripts/covers-generate.mjs",
     "books:smoke": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/books-smoke.ts",
     "test:books": "node --conditions=react-server --import tsx --test src/modules/books/schema.test.ts src/modules/books/server/tags.test.ts src/modules/books/server/response.test.ts src/modules/books/server/source.test.ts src/modules/books/server/search.test.ts src/modules/books/server/recommend.test.ts src/modules/books/server/library-availability.test.ts",
     "ai:smoke": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-smoke.ts",

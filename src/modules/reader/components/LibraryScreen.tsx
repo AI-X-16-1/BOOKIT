@@ -762,7 +762,7 @@ export function LibraryScreen({
                   읽을수록 표지가 드러나요
                 </div>
                 <CoverPuzzle
-                  coverUrl={null}
+                  coverUrl={book.coverUrl}
                   readChapters={readChapters[book.id]}
                   totalChapters={book.chapterCount}
                 />
@@ -826,7 +826,7 @@ export function LibraryScreen({
             </p>
             <div className="mt-4">
               <CoverPuzzle
-                coverUrl={null}
+                coverUrl={book.coverUrl}
                 readChapters={readChapters[book.id] ?? 0}
                 totalChapters={book.chapterCount}
               />
@@ -947,7 +947,18 @@ export function LibraryScreen({
                 className="text-left"
               >
                 <Card className="flex h-full items-center gap-3">
-                  <div className="h-14 w-11 flex-none rounded-lg bg-linear-160 from-yellow to-yellow-text-2" />
+                  {book.coverUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- 정적 표지 파일
+                    <img
+                      src={book.coverUrl}
+                      alt=""
+                      width={44}
+                      height={56}
+                      className="h-14 w-11 flex-none rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="h-14 w-11 flex-none rounded-lg bg-linear-160 from-yellow to-yellow-text-2" />
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[15px] font-bold text-ink">
                       {book.title}
