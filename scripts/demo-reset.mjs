@@ -57,16 +57,24 @@ const db = createClient(env("NEXT_PUBLIC_SUPABASE_URL"), env("SUPABASE_SERVICE_R
 const kstToday = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 /** supabase-js 는 실패해도 throw 하지 않는다 — 여기서 멈춘다 (#159: 실패를 삼키고 지나가 도감이 비었다) */
 function must(res, label) {
-  if (res.error) { console.error(`✕ ${label}: ${res.error.message}`); process.exit(1); }
+  if (res.error) throw new Error(`${label} — ${res.error.message}`);
   return res;
 }
 const log = (s) => console.log(s);
 let touched = 0;
 
 async function run(label, fn) {
-  const n = await fn();
-  touched += n;
-  log(`  ${WRITE ? "✓" : "·"} ${label}: ${n}건`);
+  try {
+    const n = await fn();
+    touched += n;
+    log(`  ${WRITE ? "✓" : "·"} ${label}: ${n}건`);
+  } catch (e) {
+    // 어느 단계에서 죽었는지 사람이 바로 알게 — 그 단계의 표는 손으로 확인해야 한다 (#161 리뷰)
+    console.error(`
+✕ [${label}] 에서 멈춤: ${e?.message ?? e}
+  이 단계가 만지는 표를 손으로 확인할 것. 다시 돌리면 이어서 복원된다.`);
+    process.exit(1);
+  }
 }
 
 log(`${WRITE ? "실행" : "미리보기 (실제로 쓰려면 --write)"} — 데모 학생 ${DEMO.slice(0, 8)}, 기준일 ${SEED_CUTOFF.slice(0, 10)}\n`);
@@ -160,22 +168,25 @@ await run("아이템", async () => {
 /* ── 3. 시드 값으로 복원 ─────────────────────────────── */
 await run("도장판 → 성장소설 6 · 고전 3 · 동화 1", async () => {
   if (!WRITE) return 1;
-  await db.from("genre_stamps").delete().eq("student_id", DEMO);
   const rows = Object.entries(STAMPS).map(([genre, completed_count]) => ({ student_id: DEMO, genre, completed_count }));
-  return (await db.from("genre_stamps").insert(rows).select()).data?.length ?? 0;
+  const up = must(await db.from("genre_stamps").upsert(rows, { onConflict: "student_id,genre" }).select(), "도장판 upsert");
+  must(await db.from("genre_stamps").delete().eq("student_id", DEMO).not("genre", "in", `(${Object.keys(STAMPS).join(",")})`), "도장판 정리");
+  return up.data.length;
 });
 await run(`연속 기록 → 7 / 12, last_passed_on ${kstToday}`, async () => {
   if (!WRITE) return 1;
-  return (await db.from("streaks").upsert({ student_id: DEMO, current_days: 7, longest_days: 12, last_passed_on: kstToday }).select()).data?.length ?? 0;
+  return must(await db.from("streaks").upsert({ student_id: DEMO, current_days: 7, longest_days: 12, last_passed_on: kstToday }).select(), "연속 기록").data.length;
 });
 await run("읽기 진행 → 금도끼 전 장 · 운수 좋은 날 1장", async () => {
   if (!WRITE) return 1;
-  await db.from("reading_progress").delete().eq("student_id", DEMO);
-  const { data: ch } = await db.from("book_contents").select("chapter_no").eq("book_id", BOOK_GOLD_AXE);
+  const { data: ch } = must(await db.from("book_contents").select("chapter_no").eq("book_id", BOOK_GOLD_AXE), "금도끼 장 조회");
   const rows = (ch ?? []).map((c) => ({ student_id: DEMO, book_id: BOOK_GOLD_AXE, chapter_no: c.chapter_no }));
   rows.push({ student_id: DEMO, book_id: BOOK_LUCKY_DAY, chapter_no: 1 });
-  // reading_progress 트리거가 캐릭터를 만들지만 stage 는 아래에서 다시 맞춘다
-  return (await db.from("reading_progress").insert(rows).select()).data?.length ?? 0;
+  // 먼저 넣고(있으면 무시) 그다음 두 책 밖의 기록을 지운다. 트리거가 캐릭터를 만들지만 stage 는 아래에서 다시 맞춘다
+  const up = must(await db.from("reading_progress").upsert(rows, { onConflict: "student_id,book_id,chapter_no", ignoreDuplicates: true }).select(), "읽기 진행 upsert");
+  must(await db.from("reading_progress").delete().eq("student_id", DEMO).not("book_id", "in", `(${BOOK_GOLD_AXE},${BOOK_LUCKY_DAY})`), "읽기 진행 정리");
+  must(await db.from("reading_progress").delete().eq("student_id", DEMO).eq("book_id", BOOK_LUCKY_DAY).gt("chapter_no", 1), "운수 좋은 날 2장 이후 정리");
+  return up.data.length + 0;
 });
 await run("캐릭터 → 통과작 최종 2 · 금도끼 1 · 운수 좋은 날 0", async () => {
   if (!WRITE) return 1;
