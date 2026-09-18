@@ -29,9 +29,16 @@ import {
  * 다른 화면으로 번지면 "검사받는 중" 대비가 흐려진다 (CLAUDE.md §7).
  * HP 막대는 목업 그대로 coral 이다. 깎인 체력은 보라가 아니라 빨강으로 읽힌다.
  *
- * 목업의 보조 문구 색 #9C8FB5 는 토큰으로 만들지 않았다 (CLAUDE.md §2 — 색을
- * 임의로 늘리지 않는다). 어두운 패널 위 보조 문구는 --panel-muted 가 이미 그 역할이고,
- * 12px 글씨에서 대비도 그쪽이 낫다. 보라는 강조(BOSS 라벨·명중 칩·HP 라벨)에만 썼다.
+ * 목업의 보조 문구 색 #9C8FB5 는 토큰으로 만들지 않았다. --panel-muted 와 대비가
+ * 사실상 같아서(#1D1621 위에서 5.83 vs 5.90) 색을 하나 더 만들 이유가 없다.
+ * 보라는 강조(BOSS 라벨·명중 칩·HP 라벨)에만 썼다.
+ *
+ * 보스 원의 테두리·점선 링·안쪽 그라데이션은 --boss-accent 의 투명도로 만든다.
+ * 목업은 여기에 색 셋(#463A5C 테두리 · #6B5A8F 점선 · #5A4A7A 안쪽)을 더 쓰지만
+ * accent/25·/45·/30 이 그 값에 거의 그대로 맞는다 (테두리 대비 1.64 vs 목업 1.70).
+ * 토큰을 세 개 더 만드는 대신 이미 승인된 색의 투명도로 간다 — BottomSheet 의
+ * bg-ink/45 와 같은 방식이다. 테두리를 --boss-panel 로 두면 배경과 1.20 이라
+ * 링이 통째로 사라진다 (#148 리뷰).
  *
  * 실패 화면은 CLAUDE.md §9 를 따른다 — 벌처럼 보이지 않게, 무엇을 더하면 되는지
  * 말하고 재시도를 준다. 그래서 실패 쪽에는 포획 도장도, 책갈피 줄도, 장식 별도 없다.
@@ -108,12 +115,12 @@ export function ResultCard({
 
         {/* 보스. 캐릭터 그림은 ②(도감, characters.art_seed)에서 오고 지금은 자리표시자다 */}
         <div className="flex justify-center">
-          <div className="relative flex h-[196px] w-[196px] items-center justify-center rounded-full border-[3px] border-boss-panel bg-radial-[at_34%_30%] from-boss-panel to-boss-bg to-[72%]">
+          <div className="relative flex h-[196px] w-[196px] items-center justify-center rounded-full border-[3px] border-boss-accent/25 bg-radial-[at_34%_30%] from-boss-accent/30 to-boss-panel to-[72%]">
             <span className="text-[60px]" aria-hidden>
               🐉
             </span>
             {passed && (
-              <div className="absolute -inset-3.5 rounded-full border-2 border-dashed border-boss-panel" />
+              <div className="absolute -inset-3.5 rounded-full border-2 border-dashed border-boss-accent/45" />
             )}
           </div>
         </div>
