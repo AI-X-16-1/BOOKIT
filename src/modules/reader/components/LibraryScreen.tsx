@@ -4,10 +4,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CoverPuzzle } from "@/modules/review";
-import type { ReaderChapterResponse } from "@/shared/types";
+import { CheckpointPanel, CheckpointSheet } from "@/modules/verification";
+import type {
+  AnswerCheckpointResponse,
+  ReaderChapterResponse,
+  ReadingProgressResponse,
+} from "@/shared/types";
 import { ApiClientError } from "@/shared/api/client";
 import { BottomSheet, Button, Card, Chip } from "@/shared/ui";
-import { fetchChapter, fetchDictEntry, recordChapterRead } from "../api";
+import {
+  answerCheckpoint,
+  fetchChapter,
+  fetchDictEntry,
+  openCheckpoint,
+  recordChapterRead,
+} from "../api";
 import type { ReaderDictResponse, ShelfBook } from "../schema";
 import { PagedText } from "./PagedText";
 import { ShelfPagination, useShelfPageSize } from "./ShelfPagination";
@@ -193,6 +204,21 @@ type Reading = {
   | { state: "failed"; message: string }
 );
 
+/**
+ * 띄워 둔 체크포인트. null 이면 문항이 없거나 아이가 닫은 상태다.
+ * 화면이 필요한 것만 담는다 — CheckpointPanel 의 props 와 1:1 이다.
+ */
+type CheckpointView = {
+  id: string;
+  chapterNo: number;
+  question: string;
+  readChapters: number;
+  totalChapters: number;
+  result: AnswerCheckpointResponse | null;
+  submitting: boolean;
+  error: string | null;
+};
+
 export function LibraryScreen({
   books,
   initial,
@@ -252,12 +278,89 @@ export function LibraryScreen({
     recorded.current.add(key);
 
     void recordChapterRead(bookId, chapterNo)
-      .then(() => router.refresh())
+      .then((progress) => {
+        router.refresh();
+        // 기록이 남은 **뒤에** 문항을 부른다 — 순서가 뒤집히면 서버가 409
+        // not_read_yet 으로 막는다 (reader/server/checkpoint.ts 의 openCheckpoint)
+        askCheckpoint(bookId, chapterNo, progress);
+      })
       .catch(() => {
         // 다음에 다시 닿으면 또 보낸다
         recorded.current.delete(key);
       });
   };
+
+  /**
+   * 체크포인트 — 장 끝 한 문항 (sprint-0918 ③, 목업 7 #7 · 목업 8 #8).
+   *
+   * 화면은 verification 의 CheckpointPanel/Sheet 이고(박재경), 문항과 판정은
+   * reader/server/checkpoint.ts 가 AI #6 으로 만든다(강민구). 여기는 그 둘을 잇는다.
+   *
+   * 한 장에 한 번만 띄운다 — 닫고 계속 읽다가 같은 장 끝에 다시 닿아도 다시 뜨지 않는다.
+   * 책갈피가 걸린 검증과 달리 강제하지 않는 문항이라, 아이가 닫았으면 닫힌 채로 둔다.
+   *
+   * 실패는 조용히 넘긴다. 문항을 못 받아도 읽기는 계속돼야 한다 — 체크포인트는
+   * 부가 기록이고 통과해도 책갈피가 없다 (spec §2b).
+   */
+  const asked = useRef(new Set<string>());
+  const [checkpoint, setCheckpoint] = useState<CheckpointView | null>(null);
+  /** 768px 미만에서 표지 퍼즐을 담는 바텀시트 (CLAUDE.md §8) */
+  const [puzzleOpen, setPuzzleOpen] = useState(false);
+
+  const askCheckpoint = (
+    bookId: string,
+    chapterNo: number,
+    progress: ReadingProgressResponse,
+  ) => {
+    const key = `${bookId}:${chapterNo}`;
+    if (asked.current.has(key)) return;
+    asked.current.add(key);
+
+    void openCheckpoint(bookId, chapterNo)
+      .then(({ checkpoint_id, question }) => {
+        // 사전이 열려 있었으면 닫는다. 바텀시트가 두 장 겹치면 아래 것을 닫을 수 없다 —
+        // 뜻을 보던 중에 마지막 쪽으로 넘기면 실제로 그렇게 된다
+        close();
+        setPuzzleOpen(false);
+        setCheckpoint({
+          id: checkpoint_id,
+          chapterNo,
+          question,
+          // 방금 받은 진행률을 쓴다 — router.refresh() 가 내려주는 값보다 확실히 최신이다
+          readChapters: progress.read_chapters,
+          totalChapters: progress.total_chapters,
+          result: null,
+          submitting: false,
+          error: null,
+        });
+      })
+      .catch(() => {
+        // 못 받았으면 이 장에서는 그냥 넘어간다. 다음 장에서 다시 시도한다
+      });
+  };
+
+  const submitCheckpoint = (answer: string) => {
+    if (!checkpoint) return;
+    const { id } = checkpoint;
+    setCheckpoint({ ...checkpoint, submitting: true, error: null });
+
+    void answerCheckpoint(id, answer)
+      .then((result) => {
+        setCheckpoint((current) =>
+          current && current.id === id
+            ? { ...current, result, submitting: false }
+            : current,
+        );
+      })
+      .catch((error) => {
+        setCheckpoint((current) =>
+          current && current.id === id
+            ? { ...current, submitting: false, error: messageOf(error) }
+            : current,
+        );
+      });
+  };
+
   const dictRequest = useRef(0);
 
   const loadChapter = async (
@@ -284,6 +387,9 @@ export function LibraryScreen({
     const requestId = ++chapterRequest.current;
     dictRequest.current++;
     setEntry({ state: "idle" });
+    // 장을 옮기면 앞 장 문항은 닫는다 — 지난 장을 묻는 문항이 새 본문 옆에 남으면 안 된다
+    setCheckpoint(null);
+    setPuzzleOpen(false);
     setReading({ book, chapterNo, startAt, state: "loading" });
     window.scrollTo({ top: 0 });
     void loadChapter(book, chapterNo, startAt, requestId);
@@ -345,11 +451,32 @@ export function LibraryScreen({
             </div>
             <div className="text-xs text-muted">{subtitleOf(book)}</div>
           </div>
-          {book.chapterCount > 1 && (
-            <Chip tone="yellow">
-              {chapterNo} / {book.chapterCount}장
-            </Chip>
-          )}
+          {/* 768px 미만에서는 이 칩을 눌러 표지 퍼즐을 연다 (목업 7 #4).
+              768px 이상은 오른쪽 패널에 퍼즐이 늘 보이므로 칩은 표시만 한다.
+              퍼즐은 한 장이라도 읽은 책에만 있다 — 진행 기록이 조각의 재료다 */}
+          {book.chapterCount > 1 &&
+            (readChapters[book.id] !== undefined ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setPuzzleOpen(true)}
+                  aria-label={`표지 조각 ${readChapters[book.id]} / ${book.chapterCount} 보기`}
+                  className="flex min-h-12 flex-none items-center gap-1.5 rounded-full bg-yellow-bg px-3.5 text-xs font-bold text-yellow-text md:hidden"
+                >
+                  {chapterNo} / {book.chapterCount}장
+                  <span aria-hidden>🧩</span>
+                </button>
+                <span className="hidden md:block">
+                  <Chip tone="yellow">
+                    {chapterNo} / {book.chapterCount}장
+                  </Chip>
+                </span>
+              </>
+            ) : (
+              <Chip tone="yellow">
+                {chapterNo} / {book.chapterCount}장
+              </Chip>
+            ))}
           {/* 서재 책은 DB 행이 있어 바로 독후감으로 이어진다 — /write?book= 이 초고를 만든다 */}
           <Link
             href={`/write?book=${book.id}`}
@@ -425,9 +552,30 @@ export function LibraryScreen({
 
           {/* 768px 이상 — 우측 사이드 패널 */}
           <aside className="hidden w-[270px] flex-none md:block">
+            {/* 체크포인트 — 목업 8 #8 (sprint-0918 ③). 뜨면 표지 퍼즐보다 앞선다.
+                사전은 접지 않고 아래에 같이 둔다 — 문항에 답하려고 모르는 낱말을
+                찾는 건 자연스러운 흐름이고, 접어 두면 낱말을 눌러도 아무것도 안 뜬다
+                (본문 강조까지는 되므로 아이는 눌린 줄 알고 기다린다, #152 리뷰) */}
+            {checkpoint && (
+              <div className="mb-4 rounded-card bg-panel p-4">
+                <CheckpointPanel
+                  checkpointId={checkpoint.id}
+                  chapterNo={checkpoint.chapterNo}
+                  question={checkpoint.question}
+                  readChapters={checkpoint.readChapters}
+                  totalChapters={checkpoint.totalChapters}
+                  result={checkpoint.result}
+                  submitting={checkpoint.submitting}
+                  error={checkpoint.error}
+                  onSubmit={submitCheckpoint}
+                  onClose={() => setCheckpoint(null)}
+                />
+              </div>
+            )}
+
             {/* 표지 퍼즐 — 목업 7 #4 · 목업 8 #5 (sprint-0918 ①, 박재경).
                 사전 패널 위에 둔다. 사전이 뜨면 뜻이 우선이라 접는다 */}
-            {entry.state === "idle" && readChapters[book.id] !== undefined && (
+            {!checkpoint && entry.state === "idle" && readChapters[book.id] !== undefined && (
               <div className="mb-4">
                 <div className="mb-2 text-[13px] font-bold text-ink">
                   읽을수록 표지가 드러나요
@@ -441,7 +589,11 @@ export function LibraryScreen({
             )}
 
             {entry.state === "idle" ? (
-              <p className="text-xs text-faint">낱말을 누르면 여기 뜻이 떠요</p>
+              // 문항이 떠 있는 동안에는 안내를 접는다 — 문항이 주인공이어야 한다.
+              // 낱말을 누르면 아래 뜻 카드는 그대로 뜬다
+              checkpoint ? null : (
+                <p className="text-xs text-faint">낱말을 누르면 여기 뜻이 떠요</p>
+              )
             ) : (
               <Card raised className="sticky top-4">
                 <div className="flex items-start justify-between gap-2">
@@ -479,7 +631,49 @@ export function LibraryScreen({
           </aside>
         </div>
 
-        {/* 768px 미만 — 바텀시트 */}
+        {/* 768px 미만 — 표지 퍼즐 바텀시트 (목업 7 #4). 위 칩으로 연다.
+            768px 이상은 오른쪽 패널에 늘 보이므로 여기서는 그리지 않는다 */}
+        <div className="md:hidden">
+          <BottomSheet
+            open={puzzleOpen}
+            onClose={() => setPuzzleOpen(false)}
+            label="표지 퍼즐"
+          >
+            <div className="text-xl font-bold text-ink">읽을수록 표지가 드러나요</div>
+            <p className="mt-2 text-[13px] text-muted">
+              한 장을 다 읽으면 조각이 하나 열려
+            </p>
+            <div className="mt-4">
+              <CoverPuzzle
+                coverUrl={null}
+                readChapters={readChapters[book.id] ?? 0}
+                totalChapters={book.chapterCount}
+              />
+            </div>
+          </BottomSheet>
+        </div>
+
+        {/* 768px 미만 — 체크포인트는 바텀시트 (CLAUDE.md §8, 목업 7 #7).
+            사전 시트와 같은 자리를 쓰지만 동시에 뜰 일은 없다 — 문항이 뜨면
+            본문을 가리므로 낱말을 누를 수 없다 */}
+        <div className="md:hidden">
+          {checkpoint && (
+            <CheckpointSheet
+              open
+              checkpointId={checkpoint.id}
+              chapterNo={checkpoint.chapterNo}
+              question={checkpoint.question}
+              readChapters={checkpoint.readChapters}
+              totalChapters={checkpoint.totalChapters}
+              result={checkpoint.result}
+              submitting={checkpoint.submitting}
+              error={checkpoint.error}
+              onSubmit={submitCheckpoint}
+              onClose={() => setCheckpoint(null)}
+            />
+          )}
+        </div>
+
         <div className="md:hidden">
           <BottomSheet
             open={entry.state !== "idle"}

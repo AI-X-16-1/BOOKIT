@@ -97,8 +97,20 @@ function CheckpointForm({
 
   /* ── 답한 뒤 ─────────────────────────────────── */
   if (result) {
-    // 알이 깨진 순간에만 알린다. 이미 부화해 있던 캐릭터는 말을 얹지 않는다
-    const hatched = result.character_stage === 1;
+    /*
+     * 부화 알림은 **통과했을 때만** 띄운다.
+     *
+     * stage 1 은 두 경로로 온다 — 체크포인트 통과, 그리고 마지막 장 도달 (spec §2b).
+     * 그래서 다 읽은 책에서는 답하기 전부터 이미 stage 1 이고, `character_stage === 1`
+     * 만 보면 **틀린 답에도** "알이 부화했어!" 가 뜬다. 실제로 그랬다 — 3장짜리 책을
+     * 다 읽고 문항에 답하면 판정과 무관하게 stage 1 이 돌아온다 (#152 확인).
+     *
+     * 틀린 답 옆에 "부화했어!" 가 붙으면 못 맞혀도 상을 준 것처럼 읽힌다. 통과로 좁히면
+     * 남는 과장은 "이미 부화해 있었는데 통과 화면에서 다시 알리는" 경우 하나뿐이고,
+     * 그건 맞은 답에 붙는 말이라 해롭지 않다. 응답에 "이번에 올랐는지" 가 없어서
+     * 화면이 더 좁힐 수는 없다 (AnswerCheckpointResponse 는 shared 소유).
+     */
+    const hatched = result.passed && result.character_stage === 1;
 
     return (
       <div className={cn("flex flex-col gap-4", className)}>
