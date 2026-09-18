@@ -49,8 +49,19 @@ export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
         join_code: code,
         explorer_rank: rank,
       });
+      /*
+       * 온보딩 다음은 레벨테스트다 (spec §2c, plan-ko §14-2 의 4번).
+       *
+       * 단계를 하나 더 그리지 않는다 — /level-test 의 첫 화면이 이미
+       * "해볼래 / 나중에 할래" 안내이고, 나중에를 누르면 /home 으로 간다.
+       * 그래서 이 한 줄이 곧 "건너뛸 수 있는 선택 단계" 다.
+       *
+       * 학년은 방금 위에서 저장됐다. 진단은 그 값을 기준으로 지문을 고르고,
+       * 결과를 받아들일지는 학생이 다시 고른다 (덮어쓰지 않는다).
+       * 시연 로그인(/auth/demo)은 온보딩을 거치지 않으므로 이 경로를 타지 않는다.
+       */
       // replace 로 보낸다 — 뒤로 가기로 온보딩에 되돌아오지 않게
-      router.replace("/home");
+      router.replace("/level-test");
     } catch (cause) {
       setError(
         cause instanceof ApiClientError
