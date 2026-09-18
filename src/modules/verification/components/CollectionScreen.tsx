@@ -184,7 +184,11 @@ export function CollectionScreen({
 
       {shown.length === 0 ? (
         <p className="py-10 text-center text-sm text-muted">
-          이 장르에는 아직 캐릭터가 없어
+          {/* 거르지도 않았는데 비어 있으면 카탈로그 자체가 비어 있는 것이다 —
+              장르 탓으로 말하면 아이가 다른 칩을 눌러 보며 헤맨다 */}
+          {tag === null
+            ? "아직 도감에 책이 없어"
+            : "이 장르에는 아직 캐릭터가 없어"}
         </p>
       ) : (
         <div className="grid grid-cols-3 gap-3 md:grid-cols-5 lg:grid-cols-6">
