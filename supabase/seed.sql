@@ -11150,7 +11150,7 @@ insert into book_contents (book_id, chapter_no, title, body) values
 
 하고 기다리고 있는데, 이윽고 내어 걸린 문제를 보니까,
 
-父泣(부립 ; 아비는 울고)
+父泣(부읍 ; 아비는 울고)
 
 夫歌(부가 ; 지아비는 노래부르고)
 
