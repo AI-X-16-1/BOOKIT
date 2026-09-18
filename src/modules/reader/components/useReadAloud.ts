@@ -2,11 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  createLevelBreathTracker,
-  createVoiceDetector,
-  createWordBreathTracker,
-} from "../breath";
 import { sessionText, splitWords } from "../readAlong";
 
 /**
@@ -21,6 +16,12 @@ import { sessionText, splitWords } from "../readAlong";
  *   - 다만 브라우저 음성 인식(Web Speech API)은 크롬에서 **구글 서버로 음성을 보내**
  *     글자로 바꾼다. 서비스 코드가 보내는 게 아니라 브라우저가 보내는 것이지만,
  *     아이에게 버튼 옆에 적고 처리방침에도 적는다
+ *
+ * TTS 로 틀어 놓는 것을 막으려고 "숨 쉴 틈 없이 이어지면 되돌리기" 를 넣었다가 뺐다
+ * (2026-09-18). 실제 마이크에서 사람의 숨을 안정적으로 가려내지 못해, PC·폰 모두에서
+ * 평소대로 이어 읽는 사람을 처음으로 되돌렸다 — 아이를 억울하게 되돌리는 쪽이 TTS 가
+ * 빠져나가는 쪽보다 훨씬 나쁘다. TTS 는 다른 겹으로 막는다: 폰 인식기는 다른 기기
+ * 스피커로 튼 TTS 를 알아듣지 못했고(실기기), 건너뛰면 형광펜이 멈춘다 (readAlong)
  *
  * 크롬·엣지·삼성 인터넷에 있다. 사파리는 설정에 따라, 파이어폭스는 없다 —
  * 없으면 "unsupported" 로 알리고 버튼 자리에 안내만 남긴다.
@@ -54,60 +55,6 @@ function recognitionCtor(): RecognitionCtor | null {
 
 export type ReadAloudState = "idle" | "listening" | "unsupported" | "denied";
 
-/**
- * 마이크 소리 크기로 숨을 잴 수 있는 기기인가 — PC 만. 폰에서는 마이크를 하나 더 열면
- * 음성 인식이 소리를 못 받는다 (안드로이드는 구글 앱이 마이크를 잡는다, breath.ts)
- */
-function canMeasureLevel(): boolean {
-  return typeof navigator !== "undefined" && !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-}
-
-/**
- * (PC) 숨 쉴 틈 없이 이어지는 낭독을 마이크 소리 **크기로** 잰다 (breath.ts).
- * 50ms 마다 브라우저 안에서 재고, 소리는 어디에도 보내거나 남기지 않는다.
- * 마이크를 못 열면 null — 숨 재기만 빠지고 소리 내어 읽기는 그대로 된다.
- */
-async function watchBreath(onBreathless: () => void): Promise<(() => void) | null> {
-  if (!navigator.mediaDevices?.getUserMedia) return null;
-  let stream: MediaStream;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch {
-    return null;
-  }
-  const Ctx =
-    window.AudioContext ??
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Ctx) {
-    for (const track of stream.getTracks()) track.stop();
-    return null;
-  }
-
-  const context = new Ctx();
-  void context.resume();
-  const source = context.createMediaStreamSource(stream);
-  const analyser = context.createAnalyser();
-  analyser.fftSize = 1024;
-  source.connect(analyser);
-
-  const samples = new Float32Array(analyser.fftSize);
-  const isVoice = createVoiceDetector();
-  const tracker = createLevelBreathTracker();
-  const timer = window.setInterval(() => {
-    analyser.getFloatTimeDomainData(samples);
-    let sum = 0;
-    for (const value of samples) sum += value * value;
-    if (tracker(performance.now(), isVoice(Math.sqrt(sum / samples.length)))) onBreathless();
-  }, 50);
-
-  return () => {
-    window.clearInterval(timer);
-    source.disconnect();
-    for (const track of stream.getTracks()) track.stop();
-    void context.close();
-  };
-}
-
 
 
 /**
@@ -116,11 +63,7 @@ async function watchBreath(onBreathless: () => void): Promise<(() => void) | nul
  *                한 문장이 끝날 때까지 색이 멈춰 있어서 따라가는 느낌이 안 난다.
  *                확정분은 **이번에 새로 붙은 것만** 온다 (같은 말을 두 번 세지 않게)
  */
-export function useReadAloud(
-  onHeard: (finalWords: string[], interimWords: string[]) => void,
-  /** 숨 쉴 틈 없이 너무 오래 이어졌을 때 (breath.ts). TTS 로 틀어 놓은 경우를 막는다 */
-  onBreathless?: () => void,
-) {
+export function useReadAloud(onHeard: (finalWords: string[], interimWords: string[]) => void) {
   const [state, setState] = useState<ReadAloudState>("idle");
   /** 방금 들은 말 몇 낱말. 화면 안내 줄에만 띄우고 어디에도 남기지 않는다 */
   const [lastHeard, setLastHeard] = useState("");
@@ -135,25 +78,12 @@ export function useReadAloud(
   /** 아이가 끄지 않았는데 인식기가 멈추면(침묵·시간 제한) 다시 켠다 */
   const wanted = useRef(false);
   const handler = useRef(onHeard);
-  const breathHandler = useRef(onBreathless);
-  /**
-   * (폰) 숨 재기 (breath.ts) — 인식 결과에 **새 낱말이 늘어난 시각**만 넘긴다.
-   * PC 는 마이크 소리 크기로 따로 잰다 (watchBreath). null 이면 이 방식을 안 쓰는 중
-   */
-  const wordBreath = useRef<((now: number) => boolean) | null>(null);
-  /** (PC) 소리 크기 재기를 끄는 함수. 마이크를 끌 때 같이 끈다 */
-  const levelStop = useRef<(() => void) | null>(null);
-  /** 이번 세션에서 지난번까지 들린 낱말 수. 늘었을 때만 "새 낱말" 이다 */
-  const heardCount = useRef(0);
   useEffect(() => {
     handler.current = onHeard;
-    breathHandler.current = onBreathless;
   });
 
   const stop = useCallback(() => {
     wanted.current = false;
-    levelStop.current?.();
-    levelStop.current = null;
     recognition.current?.stop();
     recognition.current = null;
     setState((current) => (current === "listening" ? "idle" : current));
@@ -186,21 +116,13 @@ export function useReadAloud(
         );
         lastFinal.current = finalText;
       }
-      const interim = splitWords(interimText);
-      const all = splitWords(`${finalText} ${interimText}`);
-      setLastHeard(all.slice(-6).join(" "));
-      handler.current(fresh, interim);
-
-      // (폰) 새 낱말이 늘었을 때만 숨 재기에 넘긴다. 같은 말을 고쳐 보내는 것은 새 소리가 아니다
-      const grew = all.length > heardCount.current;
-      heardCount.current = all.length;
-      if (grew && wordBreath.current?.(performance.now())) breathless();
+      setLastHeard(splitWords(`${finalText} ${interimText}`).slice(-6).join(" "));
+      handler.current(fresh, splitWords(interimText));
     };
 
     // 새 세션이 시작되면 결과 목록도 새로 시작한다
     next.onstart = () => {
       lastFinal.current = "";
-      heardCount.current = 0;
     };
     next.onaudiostart = () => setReady(true);
 
@@ -235,35 +157,14 @@ export function useReadAloud(
       }, 250);
     };
 
-    /**
-     * 숨 없이 너무 오래 이어졌다. 화면에 알리고, 이 세션에 쌓인 말을 버린다 — 그대로 두면
-     * 안드로이드처럼 앞 문장부터 쌓아 보내는 결과로 형광펜이 곧바로 다시 차오른다
-     * (가짜 인식기 확인, 9/18). 끊으면 onend 가 새 세션으로 다시 켠다
-     */
-    const breathless = () => {
-      breathHandler.current?.();
-      next.abort();
-    };
-
     wanted.current = true;
     recognition.current = next;
     lastFinal.current = "";
-    heardCount.current = 0;
     setLastHeard("");
     setReady(false);
     next.start();
     setState("listening");
 
-    if (canMeasureLevel()) {
-      // PC — 소리 크기로 잰다. 마이크가 열리는 사이에 아이가 이미 껐으면 바로 닫는다
-      wordBreath.current = null;
-      void watchBreath(breathless).then((stopWatch) => {
-        if (wanted.current && recognition.current === next) levelStop.current = stopWatch;
-        else stopWatch?.();
-      });
-    } else {
-      wordBreath.current = createWordBreathTracker();
-    }
   }, []);
 
   // 화면을 떠나면 마이크를 끈다
@@ -271,7 +172,6 @@ export function useReadAloud(
     () => () => {
       wanted.current = false;
       recognition.current?.abort();
-      levelStop.current?.();
     },
     [],
   );
