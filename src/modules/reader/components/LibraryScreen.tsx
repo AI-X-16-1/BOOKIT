@@ -49,6 +49,20 @@ const PARAGRAPH_BREAK = /\n\s*\n/;
 const FALLBACK_MESSAGE = "잠깐 문제가 생겼어. 다시 해볼까?";
 
 /**
+ * 소리 내어 읽은 곳 — 형광펜처럼 글자 뒤에 노란 배경. 글자색만 바꿨더니 폰에서
+ * 구분이 안 된다는 실기기 피드백을 받았다 (2026-09-18). 색은 토큰의 yellow 다
+ */
+const READ_MARK = "bg-yellow";
+/**
+ * 읽은 낱말 버튼. 버튼은 줄 높이(18px × 2)만큼 상자가 커서 그 전체가 칠해지고,
+ * 사이 띄어쓰기(span)는 글자 높이만 칠해져 낱말 사이에 흰 틈이 났다.
+ * 버튼은 display 를 inline 으로 바꿔도 브라우저가 inline-block 으로 다룬다(HTML 규칙) —
+ * 그래서 버튼의 줄 높이를 글자 높이로 줄여 칠하는 높이를 맞춘다. 줄 간격은 문단(p)이
+ * 정하므로 본문 배치는 그대로다
+ */
+const READ_WORD = `leading-[normal] ${READ_MARK} text-ink`;
+
+/**
  * 본문 아래 안내 한 줄. 소리 내어 읽기 상태에 따라 바뀐다.
  * 듣는 동안에는 목소리가 어디로 가는지 적는다 — 브라우저가 구글 음성 인식으로 보낸다.
  */
@@ -97,26 +111,36 @@ function Tappable({
   // 낱말 버튼마다 장 전체 번호를 매긴다 — readAlong.splitWords 와 같은 순서다.
   // 구분자 조각은 -1. 아래 map 안에서 세면 렌더 뒤 재할당이 되어 미리 센다
   const wordNos: number[] = [];
+  // 구분자(띄어쓰기·부호)는 그 뒤에 올 낱말 번호를 적어 둔다. 앞뒤 낱말을 다 읽었으면
+  // 사이도 칠해서 형광펜을 한 번에 그은 것처럼 이어 보이게 한다
+  const gapNext: number[] = [];
   let next = offset;
   for (const part of parts) {
     if (part && !TOKEN_PATTERN.test(part)) {
       wordNos.push(next);
+      gapNext.push(-1);
       next += 1;
     } else {
       wordNos.push(-1);
+      gapNext.push(next);
     }
   }
 
   return (
     <p className="text-[18px] leading-[2] text-ink-soft">
       {parts.map((part, index) => {
-        // 구분자이거나 빈 조각은 그대로 둔다
+        // 구분자이거나 빈 조각은 그대로 둔다. 앞뒤를 다 읽었으면 사이도 칠한다
         if (!part || TOKEN_PATTERN.test(part)) {
-          return <span key={index}>{part}</span>;
+          const covered = gapNext[index] > offset && gapNext[index] < readUpTo;
+          return (
+            <span key={index} className={covered ? READ_MARK : undefined}>
+              {part}
+            </span>
+          );
         }
 
         // 모든 낱말이 눌린다. 전부에 밑줄을 그으면 본문이 읽히지 않으므로
-        // 지금 보고 있는 낱말만 표시한다. 소리 내어 읽은 낱말은 초록으로 바뀐다
+        // 지금 보고 있는 낱말만 표시한다. 소리 내어 읽은 낱말은 형광펜으로 칠한다
         const read = wordNos[index] < readUpTo;
         return (
           <button
@@ -127,7 +151,7 @@ function Tappable({
               part === active
                 ? "border-b-2 border-b-coral text-coral-deep"
                 : read
-                  ? "text-green-text"
+                  ? READ_WORD
                   : "hover:text-coral-deep"
             }
           >
@@ -362,7 +386,7 @@ export function LibraryScreen({
   /**
    * 소리 내어 읽기 — STT 낭독 하이라이트 (sprint-0918 ③, 기획 §3).
    *
-   * 들린 말을 readAlong 으로 본문 낱말에 맞춰, 읽은 곳까지 본문 색을 바꾼다.
+   * 들린 말을 readAlong 으로 본문 낱말에 맞춰, 읽은 곳까지 형광펜처럼 칠한다.
    * 판정이 아니라 연출이다 — 책갈피도 기록도 없고, 들린 말은 어디에도 남기지 않는다.
    *
    * 커서가 둘이다. 확정된 말로 옮긴 커서(readCursor)와, 아직 듣는 중인 말까지 더해
