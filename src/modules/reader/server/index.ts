@@ -15,6 +15,11 @@ export {
   type ChapterErrorKind,
 } from "./chapter";
 export { listShelf, readMyGrade } from "./shelf";
+export {
+  openCheckpoint,
+  answerCheckpoint,
+  type CheckpointResult,
+} from "./checkpoint";
 export { readBookText, EXCERPT_MAX_CHARS } from "./text";
 export { lookup, DictError, type DictErrorKind } from "./dict";
 export type { DictSense, ReaderDictResponse } from "../schema";

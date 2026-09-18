@@ -234,6 +234,30 @@ Fixed tags: 성장소설, 판타지, SF, 추리, 동화, 역사, 과학, 모험,
 
 ---
 
+## 6. Checkpoint (chapter end — sprint-0918 ③)
+
+**When this runs.** In the reader, when the student reaches the end of a chapter: `POST /api/checkpoints` makes the question, `POST /api/checkpoints/:id/answer` judges the answer (`modules/ai/server/checkpoint.ts`). Two calls, one chapter's text each.
+
+**Why it is not the verification pipeline.** Verification (2-4) decides whether a review was written by the student and pays 책갈피. This one only keeps a reader reading: no points, no time limit, no retry rules, and passing it hatches the book's character (stage 1) and opens a cover-puzzle piece (spec §2b). Because nothing is paid out, the pass bar is deliberately loose — the failure mode to avoid is a child who did read being told they did not.
+
+Three constraints that shaped the prompt, in order of how much trouble they caused:
+
+1. **One chapter, never the book.** Given the whole text the model asks about later chapters, which spoils the story and is unanswerable. `ChapterContext` carries one chapter, capped at 8,000 characters (`CHAPTER_MAX_CHARS`) — our imported chapters are split at 4,000, so only a few seeded classics get cut.
+2. **No multiple choice.** "A 야, B 야?" is answerable without reading. Explicitly banned in the system prompt.
+3. **No trivia.** Same rule as call 3 — names, numbers and places are forgettable after a genuine read.
+
+```
+질문: 해석형 한 문항. 그 장 안에서만 답할 수 있게. 보기·힌트·정답 유도 금지.
+      반말 한 문장, 한두 문장으로 답할 크기.
+판정: 그 장을 읽은 사람만 할 수 있는 답인가 — 그것 하나만 본다.
+      짧아도, 맞춤법이 틀려도, 감상이 섞여도 통과. 지어낸 내용·무관한 말·"재밌었다" 뿐이면 통과 아님.
+출력: {"question": "..."} / {"passed": true|false, "feedback": "..."}
+```
+
+**One copy rule learned from the first run.** The judge's first failure feedback was "이건 감상평이지 질문에 대한 답이 아니야." — correct, and exactly the tone CLAUDE.md §9 forbids. The prompt now requires the feedback to pick up something the child did write before pointing back at the chapter ("재밌게 읽었구나! 그럼 어느 대목이…"). Same measured answer, after the change: "다음 이야기가 궁금하구나! 근데 그 소녀가 왜 …".
+
+The same question is reused if the student opens that chapter's checkpoint again (unique per student·book·chapter, 0014). Regenerating it would be anti-cheat theatre here — CLAUDE.md §6's fresh-question rule exists for verification, where points are at stake.
+
 ## Test set (day 2, before anything is wired up)
 
 Build 20 sample reviews at real 초등학생 level and run calls 2-4 on them:
