@@ -68,6 +68,36 @@ export const gradeSchema: z.ZodType<GradeResult> = z.object({
 });
 
 /**
+ * AI #6 체크포인트 — 장 끝 한 문항 (docs/sprint-0918.md ③, spec §2b).
+ *
+ * 질문은 #1·#3 과 같은 모양이지만 같은 스키마를 돌려쓰지 않는다. 그쪽은
+ * WritingHelperResult·BuildQuestionResult 계약에 묶여 있고, 체크포인트는
+ * shared 에 계약이 없는 ai 모듈 내부 타입이다 (src/shared/types 는 김민경 소유).
+ */
+export const checkpointQuestionSchema = z.object({
+  question: z.string().min(1),
+});
+
+/**
+ * 체크포인트 판정. 채점(#4)의 3축이 아니라 통과 여부 하나다 —
+ * 책갈피를 주지 않으므로 축을 나눠 보여줄 자리도 없다 (spec §2b).
+ */
+export const checkpointJudgeSchema = z.object({
+  passed: z.boolean(),
+  /** 아이에게 그대로 보여주는 반말 한두 문장 */
+  feedback: z.string().min(1),
+});
+
+export interface CheckpointQuestion {
+  question: string;
+}
+
+export interface CheckpointJudgement {
+  passed: boolean;
+  feedback: string;
+}
+
+/**
  * 앱이 쓰는 고정 장르 태그 (docs/prompts.md §5).
  *
  * ai 모듈이 이 목록의 주인이다. 여기 없는 값이 books.tags 에 들어가면

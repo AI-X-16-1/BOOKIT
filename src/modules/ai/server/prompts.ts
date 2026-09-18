@@ -35,6 +35,18 @@ export interface PromptContext {
   excerpt?: string;
 }
 
+/**
+ * 체크포인트(AI #6)가 보는 한 장. reader 가 book_contents 에서 그대로 넘긴다.
+ * 책 전체가 아니라 그 장만 담는 이유는 CHECKPOINT_SYSTEM 머리말에 적어 뒀다.
+ */
+export interface ChapterContext {
+  bookTitle: string;
+  chapterNo: number;
+  /** book_contents.title — "1장" 처럼 번호만인 경우가 많다 */
+  title?: string;
+  body: string;
+}
+
 function gradeLine(context: PromptContext | undefined): string {
   return context?.gradeLevel ? `학년: ${context.gradeLevel}학년 / ` : "";
 }
@@ -302,4 +314,80 @@ export function genreTagsUser(book: BookClassification): string {
   if (book.kdc) lines.push(`KDC: ${book.kdc}`);
   if (book.description) lines.push(`책소개: ${book.description.slice(0, 500)}`);
   return lines.join("\n");
+}
+
+/* ── AI #6 체크포인트 (장 끝 한 문항, docs/sprint-0918.md ③) ── */
+
+/**
+ * 검증(#2~#4)과 무엇이 다른가.
+ *
+ * 검증은 독후감을 놓고 "직접 읽고 썼나" 를 가리고 책갈피를 준다. 체크포인트는 읽는
+ * 중에 한 장이 끝날 때 한 문항을 물어 **계속 읽게** 한다 — 점수도 책갈피도 없고
+ * (spec §2b), 통과하면 캐릭터가 부화하고 표지 조각이 열릴 뿐이다.
+ *
+ * 그래서 프롬프트의 성격이 반대다. 검증은 빠져나갈 틈을 막아야 하고, 이쪽은
+ * 읽은 아이가 걸리지 않아야 한다. 통과 기준을 넉넉하게 적어 둔 것은 실수가 아니다.
+ *
+ * 본문은 **그 장만** 넣는다. 책 전체를 넣으면 다음 장 내용을 묻거나 미리 흘린다.
+ */
+export const CHECKPOINT_SYSTEM = `너는 아이가 책의 한 장을 방금 다 읽었을 때, 정말 읽었는지 확인하는 질문 한 개를 만든다.
+
+주어진 것은 그 장의 본문이다. 그 장 안에서만 답할 수 있는 질문이어야 한다.
+
+규칙:
+- 해석형 한 문항. 그 장에서 일어난 일을 놓고 "왜 그랬을까", "어느 대목에서 그렇게 보였어" 처럼 묻는다.
+- 정답이 하나로 정해지는 퀴즈를 만들지 마라. 인물 이름·숫자·지명처럼 외워야 답하는 것은 묻지 않는다.
+  읽고도 잊을 수 있는 것이다.
+- 본문에 없는 것을 묻지 마라. 다음 장 이야기도 묻지 마라.
+- 보기를 주지 마라. "A 야, B 야?" 처럼 고르게 하면 읽지 않고도 맞힌다.
+- 반말로 한 문장. 아이가 한두 문장으로 답할 크기여야 한다.
+- 답이나 힌트를 질문에 넣지 마라.
+- 시험처럼 들리지 않게. "맞혀 봐" 가 아니라 "어떻게 봤어" 를 묻는다.`;
+
+/** 한 장 본문 상한. 우리 서재의 장은 4,000자로 잘려 들어오고, 시드 명작 몇 장만 더 길다 */
+export const CHAPTER_MAX_CHARS = 8_000;
+
+export function checkpointUser(
+  chapter: ChapterContext,
+  context?: PromptContext,
+): string {
+  const body = chapter.body.slice(0, CHAPTER_MAX_CHARS);
+  const cut = chapter.body.length > CHAPTER_MAX_CHARS ? "\n(본문이 여기서 잘렸다)" : "";
+
+  return `${gradeLine(context)}책: ${chapter.bookTitle}
+${chapter.chapterNo}장${chapter.title ? ` (${chapter.title})` : ""} 본문:
+"""${body}"""${cut}`;
+}
+
+export const CHECKPOINT_JUDGE_SYSTEM = `너는 아이가 그 장을 읽고 답한 것을 본다. 정답을 맞혔는지 채점하는 것이 아니다.
+
+판단 기준은 하나다 — **그 장을 읽은 사람만 할 수 있는 답인가.**
+
+- 그 장의 장면·인물·흐름을 짚었으면 통과다. 짧아도, 맞춤법이 틀려도, 감상이 섞여도 통과다.
+- 본문에 없는 내용을 지어냈거나, 그 장과 상관없는 말이거나, "재밌었다" 처럼 무엇을 읽었는지
+  알 수 없는 말만 있으면 통과가 아니다.
+- 기준은 넉넉하게 잡아라. 이 문항은 점수도 책갈피도 주지 않는다. 읽었는지 확인하고
+  다음 장으로 보내는 문이다.
+- feedback 은 반말 한두 문장이다. 통과면 아이가 짚은 대목을 짧게 되짚어 주고,
+  통과가 아니면 벌주지 말고 그 장에서 어디를 다시 보면 되는지 알려준다.
+  답을 알려주지는 마라.
+- 통과가 아닐 때도 "틀렸다", "답이 아니다" 로 시작하지 마라. 아이가 쓴 것 중 살릴
+  만한 것을 먼저 한 마디 짚고, 그다음에 어디를 더 보면 되는지 말해라.
+  나쁜 예: "이건 감상평이지 답이 아니야."
+  좋은 예: "재밌게 읽었구나! 그럼 어느 대목이 제일 재밌었는지 한 가지만 더 말해줄래?"`;
+
+export function checkpointJudgeUser(
+  chapter: ChapterContext,
+  question: string,
+  answer: string,
+  context?: PromptContext,
+): string {
+  const body = chapter.body.slice(0, CHAPTER_MAX_CHARS);
+
+  return `${gradeLine(context)}책: ${chapter.bookTitle} ${chapter.chapterNo}장
+그 장의 본문:
+"""${body}"""
+
+물어본 것: ${question}
+아이의 답: """${answer}"""`;
 }

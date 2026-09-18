@@ -21,7 +21,10 @@
  * 모든 프롬프트 출력은 strict JSON이며, 형태를 신뢰하지 말고 방어적으로 파싱할 것.
  *
  * 구현 완료: writingHelper(#1), analyzeGaps(#2), buildQuestion(#3), grade(#4),
- *            normalizeGenreTags(프롬프트 #5)
+ *            normalizeGenreTags(프롬프트 #5), askCheckpoint·judgeCheckpoint(#6)
+ *
+ * askCheckpoint(chapter)·judgeCheckpoint(chapter, question, answer) — 장 끝 한 문항
+ *            (sprint-0918 ③, spec §2b). 검증과 별개이고 책갈피를 주지 않는다.
  *
  * pickCoreClaim(#2b) — 빈틈이 0개일 때 되물을 문장 하나 (#14). Gap(type: core_claim)을 돌려주므로
  *            review/server/submit.ts 가 review_gaps 에 그대로 저장한다. null 이면 초고로 돌려보낸다.
@@ -35,6 +38,12 @@ export { pickCoreClaim, type CoreClaim } from "./server/core-claim";
 export { buildQuestion } from "./server/question";
 export { grade, isPass, readThreshold } from "./server/grade";
 export { normalizeGenreTags } from "./server/genre-tags";
+export {
+  askCheckpoint,
+  judgeCheckpoint,
+  type ChapterContext,
+} from "./server/checkpoint";
+export type { CheckpointJudgement, CheckpointQuestion } from "./schema";
 export { GENRE_TAGS, type GenreTag } from "./schema";
 export { tagsFromKdcMajor, needsAiTagging } from "./kdc";
 export type { BookClassification, PassThreshold } from "./server/prompts";
