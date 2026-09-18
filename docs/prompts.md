@@ -1,6 +1,6 @@
 # docs/prompts.md
 
-Owner: 강민구. Four server-side calls. All outputs are strict JSON — no markdown fences, no preamble. Parse defensively.
+Owner: 강민구. Seven server-side calls — verification is 2 → 3 → 4 (2b when no gaps), plus the writing helper (1), genre tags (5, batch) and the chapter checkpoint (6). All outputs are strict JSON — no markdown fences, no preamble. Parse defensively.
 
 Shared context passed to every call: `grade_level` (1-9), book title/author, and a short synopsis (LLM knowledge for well-known books, API description text otherwise).
 
