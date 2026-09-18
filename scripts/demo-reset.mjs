@@ -42,6 +42,8 @@ const SEED_REVIEWS = {
 };
 const SEED_DRAFT_BODY = "오늘부터 이 책을 읽기 시작했다. 아직 앞부분밖에 못 읽었는데";
 const EXPECTED_BALANCE = 1240;
+/** 통과작 9 + 금도끼(부화) + 운수 좋은 날(알) */
+const EXPECTED_CHARACTERS = 11;
 
 function env(name) {
   const v = process.env[name]?.trim();
@@ -202,8 +204,8 @@ for (const r of allReviews ?? []) byStatus[r.status] = (byStatus[r.status] ?? 0)
 const draftOk = (allReviews ?? []).some((r) => r.book_id === BOOK_LUCKY_DAY && r.status === "draft" && r.body === SEED_DRAFT_BODY);
 const { count: charCount } = await db.from("student_characters").select("book_id", { count: "exact", head: true }).eq("student_id", DEMO);
 log(`
-잔액 ${balance} (기대 ${EXPECTED_BALANCE}) · 독후감 ${reviewCount}편 (기대 12: passed ${byStatus.passed}/9 · failed ${byStatus.failed}/2 · draft ${byStatus.draft}/1) · 운수 좋은 날 초고 ${draftOk ? "seed 그대로" : "다름"} · 캐릭터 ${charCount}마리 (기대 11)`);
-const consistent = balance === EXPECTED_BALANCE && reviewCount === 12 && byStatus.passed === 9 && byStatus.failed === 2 && byStatus.draft === 1 && draftOk && charCount === 11;
+잔액 ${balance} (기대 ${EXPECTED_BALANCE}) · 독후감 ${reviewCount}편 (기대 12: passed ${byStatus.passed}/9 · failed ${byStatus.failed}/2 · draft ${byStatus.draft}/1) · 운수 좋은 날 초고 ${draftOk ? "seed 그대로" : "다름"} · 캐릭터 ${charCount}마리 (기대 ${EXPECTED_CHARACTERS})`);
+const consistent = balance === EXPECTED_BALANCE && reviewCount === 12 && byStatus.passed === 9 && byStatus.failed === 2 && byStatus.draft === 1 && draftOk && charCount === EXPECTED_CHARACTERS;
 if (WRITE && !consistent) {
   log("✕ 시드 값과 다르다 — 원장이나 독후감에 기준일 이전 테스트 행이 있을 수 있다. 손으로 확인할 것");
   process.exit(1);
