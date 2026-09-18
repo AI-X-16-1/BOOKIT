@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { createBreathTracker, createVoiceDetector } from "../breath";
+import { createBreathTracker } from "../breath";
 import { sessionText, splitWords } from "../readAlong";
 
 /**
@@ -50,51 +50,6 @@ function recognitionCtor(): RecognitionCtor | null {
 
 export type ReadAloudState = "idle" | "listening" | "unsupported" | "denied";
 
-/**
- * 숨 쉴 틈 없이 이어지는 낭독을 잰다 (breath.ts). 음성 인식과 따로 마이크 소리 **크기만**
- * 50ms 마다 브라우저 안에서 재고, 소리는 어디에도 보내거나 남기지 않는다.
- * 마이크를 못 열면 null — 숨 재기만 빠지고 소리 내어 읽기는 그대로 된다.
- */
-async function watchBreath(onBreathless: () => void): Promise<(() => void) | null> {
-  if (!navigator.mediaDevices?.getUserMedia) return null;
-  let stream: MediaStream;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch {
-    return null;
-  }
-  const Ctx =
-    window.AudioContext ??
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!Ctx) {
-    for (const track of stream.getTracks()) track.stop();
-    return null;
-  }
-
-  const context = new Ctx();
-  void context.resume();
-  const source = context.createMediaStreamSource(stream);
-  const analyser = context.createAnalyser();
-  analyser.fftSize = 1024;
-  source.connect(analyser);
-
-  const samples = new Float32Array(analyser.fftSize);
-  const isVoice = createVoiceDetector();
-  const tracker = createBreathTracker();
-  const timer = window.setInterval(() => {
-    analyser.getFloatTimeDomainData(samples);
-    let sum = 0;
-    for (const value of samples) sum += value * value;
-    if (tracker(performance.now(), isVoice(Math.sqrt(sum / samples.length)))) onBreathless();
-  }, 50);
-
-  return () => {
-    window.clearInterval(timer);
-    source.disconnect();
-    for (const track of stream.getTracks()) track.stop();
-    void context.close();
-  };
-}
 
 /**
  * @param onHeard 새로 확정된 낱말과 아직 듣는 중인 낱말. 확정분은 커서를 옮기는 데,
@@ -122,8 +77,13 @@ export function useReadAloud(
   const wanted = useRef(false);
   const handler = useRef(onHeard);
   const breathHandler = useRef(onBreathless);
-  /** 숨 재기를 끄는 함수. 마이크를 끌 때 같이 끈다 */
-  const breathStop = useRef<(() => void) | null>(null);
+  /**
+   * 숨 재기 (breath.ts). 마이크를 따로 열지 않고, 인식 결과에 **새 낱말이 늘어난 시각**만
+   * 넘긴다 — 안드로이드에서 마이크를 하나 더 열면 인식기가 소리를 못 받았다
+   */
+  const breath = useRef(createBreathTracker());
+  /** 이번 세션에서 지난번까지 들린 낱말 수. 늘었을 때만 "새 낱말" 이다 */
+  const heardCount = useRef(0);
   useEffect(() => {
     handler.current = onHeard;
     breathHandler.current = onBreathless;
@@ -131,8 +91,6 @@ export function useReadAloud(
 
   const stop = useCallback(() => {
     wanted.current = false;
-    breathStop.current?.();
-    breathStop.current = null;
     recognition.current?.stop();
     recognition.current = null;
     setState((current) => (current === "listening" ? "idle" : current));
@@ -166,13 +124,26 @@ export function useReadAloud(
         lastFinal.current = finalText;
       }
       const interim = splitWords(interimText);
-      setLastHeard(splitWords(`${finalText} ${interimText}`).slice(-6).join(" "));
+      const all = splitWords(`${finalText} ${interimText}`);
+      setLastHeard(all.slice(-6).join(" "));
       handler.current(fresh, interim);
+
+      // 새 낱말이 늘었을 때만 숨 재기에 넘긴다. 같은 말을 고쳐 보내는 것은 새 소리가 아니다
+      const breathless = all.length > heardCount.current && breath.current(performance.now());
+      heardCount.current = all.length;
+      if (breathless) {
+        breathHandler.current?.();
+        // 이 세션에 쌓인 말을 버린다. 그대로 두면 안드로이드처럼 앞 문장부터 쌓아 보내는
+        // 결과로 형광펜이 곧바로 다시 차오른다 (가짜 인식기 확인, 9/18). 끊으면 onend 가
+        // 새 세션으로 다시 켜고, 그 뒤로는 새로 들린 말만 온다
+        next.abort();
+      }
     };
 
     // 새 세션이 시작되면 결과 목록도 새로 시작한다
     next.onstart = () => {
       lastFinal.current = "";
+      heardCount.current = 0;
     };
     next.onaudiostart = () => setReady(true);
 
@@ -210,16 +181,12 @@ export function useReadAloud(
     wanted.current = true;
     recognition.current = next;
     lastFinal.current = "";
+    heardCount.current = 0;
+    breath.current = createBreathTracker();
     setLastHeard("");
     setReady(false);
     next.start();
     setState("listening");
-
-    // 숨 재기. 마이크가 열리는 사이에 아이가 이미 껐으면 바로 닫는다
-    void watchBreath(() => breathHandler.current?.()).then((stopWatch) => {
-      if (wanted.current && recognition.current === next) breathStop.current = stopWatch;
-      else stopWatch?.();
-    });
   }, []);
 
   // 화면을 떠나면 마이크를 끈다
@@ -227,7 +194,6 @@ export function useReadAloud(
     () => () => {
       wanted.current = false;
       recognition.current?.abort();
-      breathStop.current?.();
     },
     [],
   );
