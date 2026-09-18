@@ -102,20 +102,9 @@ export function HomeScreen({ draft, reading }: HomeScreenProps) {
     <div className="flex flex-col gap-4">
       {/* 책갈피·순위는 머리말 칩으로. 주인공 자리는 아래 두 카드다 */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="rounded-full bg-yellow-bg px-3 py-[7px] text-xs font-bold text-yellow-text">
-            🔖 {points === null ? "—" : points.toLocaleString()}
-          </span>
-          {/* 도감 입구. 목업 7 은 탭바의 챌린지 자리를 도감으로 바꾸지만 TabBar 는
-              shared/ui 라 김민경 몫이다 (CLAUDE.md §2) — 탭이 바뀌기 전까지는 홈에서
-              들어간다. 보스전 통과 화면에도 "도감에서 보기" 가 있다 */}
-          <Link
-            href="/collection"
-            className="rounded-full border border-border bg-card px-3 py-[7px] text-xs font-bold text-ink-warm"
-          >
-            ◈ 도감
-          </Link>
-        </div>
+        <span className="rounded-full bg-yellow-bg px-3 py-[7px] text-xs font-bold text-yellow-text">
+          🔖 {points === null ? "—" : points.toLocaleString()}
+        </span>
         {rank !== null && <Chip tone="blue">우리 반 {rank}위</Chip>}
       </div>
 
@@ -211,6 +200,17 @@ export function HomeScreen({ draft, reading }: HomeScreenProps) {
           {/* 검색이 이 화면 안으로 들어왔다는 안내 — 홈에서 찾던 아이가 길을 잃지 않게 */}
           종이책으로 읽은 책도 여기서 제목을 찾아 쓸 수 있어
         </div>
+      </Link>
+
+      {/* 도감 입구 (sprint-0918 ②). 목업 7 은 탭바의 챌린지 자리를 도감으로 바꾸지만
+          TabBar 는 shared/ui 라 김민경 몫이다 (CLAUDE.md §2) — 탭이 바뀌기 전까지 홈에서
+          들어간다. 두 갈래 카드보다 가볍게 한 줄로 둔다. 보스전 통과 화면에도 입구가 있다 */}
+      <Link
+        href="/collection"
+        className="flex min-h-12 items-center justify-between gap-3 rounded-[18px] border border-border-soft bg-card px-5 py-3.5"
+      >
+        <span className="text-sm font-bold text-ink">◈ 나의 도감</span>
+        <span className="text-xs text-muted">포획한 캐릭터 보기 →</span>
       </Link>
     </div>
   );

@@ -118,8 +118,15 @@ function Slot({ entry }: { entry: CollectionEntryView }) {
       >
         {captured ? entry.bookTitle : "미포획"}
       </div>
+      {/* 못 잡은 칸의 둘째 줄은 **책 제목**이다. 목업은 "-" 였지만 서재가 71권이라
+          빈 칸이 수십 개 이어지고, 전부 "?" 면 다음에 뭘 읽을지 고를 수가 없다.
+          캐릭터 이름은 그대로 가린다 — 잡았을 때의 재미가 거기 있다 */}
       <div className="mt-[2px] truncate text-[11px] text-faint">
-        {captured ? entry.name : seen ? `${entry.stageName} · 읽는 중` : "-"}
+        {captured
+          ? entry.name
+          : seen
+            ? `${entry.stageName} · 읽는 중`
+            : entry.bookTitle}
       </div>
     </div>
   );
@@ -162,7 +169,8 @@ export function CollectionScreen({
               onClick={() => setTag(t)}
               aria-pressed={tag === t}
               className={cn(
-                "min-h-9 flex-none rounded-full px-[15px] py-[9px] text-[13px] whitespace-nowrap",
+                // 48px — 손가락으로 누르는 것이라 목업(34px)보다 키운다 (CLAUDE.md §8)
+                "flex min-h-12 flex-none items-center rounded-full px-[15px] text-[13px] whitespace-nowrap",
                 tag === t
                   ? "bg-ink font-bold text-cream"
                   : "border border-border bg-card text-ink-warm",
