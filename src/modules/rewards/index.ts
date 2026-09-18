@@ -21,6 +21,7 @@
  */
 
 export { MeScreen } from "./components/MeScreen";
+export { ItemShop } from "./components/ItemShop";
 
 /** 요청 본문 스키마 + 표시 상수. 서버 전용이 아니라 화면과 라우트 양쪽에서 쓴다 */
 export {

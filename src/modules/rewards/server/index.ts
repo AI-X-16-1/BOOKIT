@@ -6,3 +6,4 @@
  * 묶는 순간 클라이언트 번들에 섞여 빌드가 깨진다 (verification, reader 모듈과 같은 이유).
  */
 export { getPoints, exchangePoints, type RewardsResult } from "./points";
+export { listItems, buyItem } from "./items";
