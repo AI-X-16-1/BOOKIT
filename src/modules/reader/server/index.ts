@@ -15,6 +15,7 @@ export {
   type ChapterErrorKind,
 } from "./chapter";
 export { listShelf, readMyGrade } from "./shelf";
+export { recordChapterRead } from "./progress";
 export {
   openCheckpoint,
   answerCheckpoint,

@@ -10,6 +10,7 @@
  * 라우트 (docs/spec.md §5):
  *   GET /api/reader/:bookId?chapter=1  → { title, body }
  *   GET /api/dict?word=                → { word, definition, source, senses[] }
+ *   POST /api/reading/progress         → { read_chapters, total_chapters, character_stage }
  *
  * 화면 주소:
  *   /library                           책 목록
@@ -24,6 +25,7 @@
  */
 
 export { LibraryScreen } from "./components/LibraryScreen";
-export { fetchChapter, fetchDictEntry } from "./api";
+export { fetchChapter, fetchDictEntry, recordChapterRead } from "./api";
 export { libraryHref } from "./links";
+export { readingProgressSchema } from "./schema";
 export type { ShelfBook } from "./schema";

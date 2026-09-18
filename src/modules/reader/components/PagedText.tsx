@@ -31,6 +31,7 @@ export function PagedText({
   hasNextChapter,
   onPrevChapter,
   onNextChapter,
+  onReachEnd,
 }: {
   /** 흘려 놓을 본문. 문단은 블록 요소로 — flex 로 감싸면 쪽 경계에서 문단이 안 쪼개진다 */
   children: ReactNode;
@@ -40,12 +41,20 @@ export function PagedText({
   hasNextChapter: boolean;
   onPrevChapter: () => void;
   onNextChapter: () => void;
+  /**
+   * 이 장의 마지막 쪽에 닿았을 때 한 번. 쪽 수를 재기 전에는 부르지 않는다 —
+   * 재기 전에는 쪽이 하나로 보여서 펼치자마자 끝에 닿은 것처럼 된다.
+   * 짧아서 정말 한 쪽인 장은 펼친 순간이 곧 끝이라 그대로 센다.
+   */
+  onReachEnd?: () => void;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const [page, setPage] = useState(0);
   const [pageCount, setPageCount] = useState(1);
+  /** 한 번이라도 쪽 수를 쟀는지. onReachEnd 를 너무 일찍 부르지 않기 위한 것이다 */
+  const [measured, setMeasured] = useState(false);
 
   // 재는 동안(ResizeObserver 콜백) 최신 쪽을 읽어야 해서 상태와 따로 둔다
   const pageRef = useRef(0);
@@ -77,6 +86,7 @@ export function PagedText({
     pageRef.current = next;
     setPageCount(count);
     setPage(next);
+    setMeasured(true);
     scroller.scrollLeft = next * (width + COLUMN_GAP);
   }, []);
 
@@ -112,6 +122,14 @@ export function PagedText({
 
   const atStart = page === 0;
   const atEnd = page >= pageCount - 1;
+
+  // 장이 바뀌면 부모가 key 를 바꿔 이 컴포넌트를 새로 만든다 — 그래서 장마다 한 번이다
+  const reported = useRef(false);
+  useEffect(() => {
+    if (!measured || !atEnd || reported.current) return;
+    reported.current = true;
+    onReachEnd?.();
+  }, [measured, atEnd, onReachEnd]);
 
   const prev = () => {
     if (!atStart) goTo(page - 1);

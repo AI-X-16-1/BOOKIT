@@ -4,6 +4,8 @@
  * API 계약(ReaderChapterResponse·DictResponse)은 src/shared/types 에 있다.
  * 서재 책 목록은 라우트로 나가지 않고 서버 컴포넌트가 화면에 바로 넘기므로 여기 둔다.
  */
+import { z } from "zod";
+
 import type { DictResponse } from "@/shared/types";
 
 /** 낱말 뜻 하나 */
@@ -33,3 +35,14 @@ export interface ShelfBook {
   /** book_contents 의 장 수. 1장부터 빈틈 없이 이어진다고 가정한다 */
   chapterCount: number;
 }
+
+/**
+ * POST /api/reading/progress 요청 본문 (spec §5b).
+ *
+ * uuid 는 모양만 본다 — z.uuid() 는 RFC 버전 비트까지 검사해서 시드의 고정 id 일부를
+ * 거절한다. 여기서는 Postgres 가 22P02 로 터지지 않게 막는 게 목적이다.
+ */
+export const readingProgressSchema = z.object({
+  book_id: z.guid(),
+  chapter_no: z.number().int().min(1),
+});
