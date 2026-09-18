@@ -27,7 +27,8 @@
     "ai:core-claim": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-core-claim.ts",
     "ai:question": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/ai-question.ts",
     "reader:dict": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/dict-check.ts",
-    "reader:import": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/reader-import.ts"
+    "reader:import": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/reader-import.ts",
+    "test:reader": "node --conditions=react-server --import tsx --test src/modules/reader/readAlong.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",

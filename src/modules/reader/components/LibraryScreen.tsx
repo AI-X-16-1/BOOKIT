@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CoverPuzzle } from "@/modules/review";
 import { CheckpointPanel, CheckpointSheet } from "@/modules/verification";
 import type {
@@ -19,9 +19,11 @@ import {
   openCheckpoint,
   recordChapterRead,
 } from "../api";
+import { advance, splitWords, TOKEN_PATTERN } from "../readAlong";
 import type { ReaderDictResponse, ShelfBook } from "../schema";
 import { PagedText } from "./PagedText";
 import { ShelfPagination, useShelfPageSize } from "./ShelfPagination";
+import { useReadAloud } from "./useReadAloud";
 
 /**
  * 책잇 서재. 목업 6 L386-404.
@@ -38,25 +40,72 @@ import { ShelfPagination, useShelfPageSize } from "./ShelfPagination";
  * 사전은 문맥을 모르므로 뜻이 여럿이면 모두 보여주고 아이가 고른다 (#43).
  */
 
-/** 낱말과 그 사이의 공백·문장부호를 나눈다. 낱말만 누를 수 있다. */
-const TOKEN_PATTERN = /([\s.,!?~"'()[\]{}·…—-]+)/;
+// 낱말과 그 사이의 공백·문장부호를 나누는 규칙(TOKEN_PATTERN)은 readAlong 에 있다.
+// 소리 내어 읽기가 세는 낱말 번호가 여기 낱말 버튼과 하나씩 맞아야 해서 한 곳에 둔다.
 
 /** 본문은 빈 줄로 문단을 나눈다 (supabase/seed.sql 의 위키문헌 원문). */
 const PARAGRAPH_BREAK = /\n\s*\n/;
 
 const FALLBACK_MESSAGE = "잠깐 문제가 생겼어. 다시 해볼까?";
 
+/**
+ * 본문 아래 안내 한 줄. 소리 내어 읽기 상태에 따라 바뀐다.
+ * 듣는 동안에는 목소리가 어디로 가는지 적는다 — 브라우저가 구글 음성 인식으로 보낸다.
+ */
+const READ_ALOUD_HINT: Record<ReturnType<typeof useReadAloud>["state"], string> = {
+  idle: "모르는 단어를 누르면 뜻이 떠요 ✎ · 🎤 누르고 소리 내어 읽어 봐",
+  listening: "구글 음성 인식으로 듣는 중 · 목소리는 저장하지 않아",
+  denied: "마이크를 쓸 수 없어. 브라우저에서 마이크를 허락해 줘",
+  unsupported: "이 브라우저에서는 소리 내어 읽기를 쓸 수 없어. 크롬에서 열면 돼",
+};
+
+/** 본문을 문단으로. 화면과 소리 내어 읽기가 같은 문단 목록을 써야 낱말 번호가 맞는다 */
+function paragraphsOf(body: string): string[] {
+  return body
+    .split(PARAGRAPH_BREAK)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
+
+/** 문단마다 첫 낱말의 장 전체 번호를 붙인다 */
+function withOffsets(paragraphs: string[]): { paragraph: string; offset: number }[] {
+  let offset = 0;
+  return paragraphs.map((paragraph) => {
+    const entry = { paragraph, offset };
+    offset += splitWords(paragraph).length;
+    return entry;
+  });
+}
+
 function Tappable({
   body,
   active,
   onTap,
+  offset = 0,
+  readUpTo = 0,
 }: {
   body: string;
   /** 지금 뜻을 보고 있는 낱말. 본문에서 그 낱말만 표시한다 */
   active: string | null;
   onTap: (word: string) => void;
+  /** 이 문단 첫 낱말이 장 전체에서 몇 번째인가 (소리 내어 읽기) */
+  offset?: number;
+  /** 장 전체에서 이 번호 앞까지 소리 내어 읽었다. 그 낱말들은 색이 바뀐다 */
+  readUpTo?: number;
 }) {
   const parts = body.split(TOKEN_PATTERN);
+  // 낱말 버튼마다 장 전체 번호를 매긴다 — readAlong.splitWords 와 같은 순서다.
+  // 구분자 조각은 -1. 아래 map 안에서 세면 렌더 뒤 재할당이 되어 미리 센다
+  const wordNos: number[] = [];
+  let next = offset;
+  for (const part of parts) {
+    if (part && !TOKEN_PATTERN.test(part)) {
+      wordNos.push(next);
+      next += 1;
+    } else {
+      wordNos.push(-1);
+    }
+  }
 
   return (
     <p className="text-[18px] leading-[2] text-ink-soft">
@@ -67,7 +116,8 @@ function Tappable({
         }
 
         // 모든 낱말이 눌린다. 전부에 밑줄을 그으면 본문이 읽히지 않으므로
-        // 지금 보고 있는 낱말만 표시한다.
+        // 지금 보고 있는 낱말만 표시한다. 소리 내어 읽은 낱말은 초록으로 바뀐다
+        const read = wordNos[index] < readUpTo;
         return (
           <button
             key={index}
@@ -76,7 +126,9 @@ function Tappable({
             className={
               part === active
                 ? "border-b-2 border-b-coral text-coral-deep"
-                : "hover:text-coral-deep"
+                : read
+                  ? "text-green-text"
+                  : "hover:text-coral-deep"
             }
           >
             {part}
@@ -307,6 +359,39 @@ export function LibraryScreen({
   /** 768px 미만에서 표지 퍼즐을 담는 바텀시트 (CLAUDE.md §8) */
   const [puzzleOpen, setPuzzleOpen] = useState(false);
 
+  /**
+   * 소리 내어 읽기 — STT 낭독 하이라이트 (sprint-0918 ③, 기획 §3).
+   *
+   * 들린 말을 readAlong 으로 본문 낱말에 맞춰, 읽은 곳까지 본문 색을 바꾼다.
+   * 판정이 아니라 연출이다 — 책갈피도 기록도 없고, 들린 말은 어디에도 남기지 않는다.
+   *
+   * 커서가 둘이다. 확정된 말로 옮긴 커서(readCursor)와, 아직 듣는 중인 말까지 더해
+   * 미리 칠하는 위치(readUpTo). 확정만 기다리면 한 문장이 끝날 때까지 색이 멈춘다.
+   */
+  const chapterWords = useMemo(
+    () =>
+      reading?.state === "ready"
+        ? paragraphsOf(reading.chapter.body).flatMap(splitWords)
+        : [],
+    [reading],
+  );
+  const readWords = useRef<string[]>([]);
+  useEffect(() => {
+    readWords.current = chapterWords;
+  }, [chapterWords]);
+  const readCursor = useRef(0);
+  const [readUpTo, setReadUpTo] = useState(0);
+  const readAloud = useReadAloud((finals, interim) => {
+    readCursor.current = advance(readWords.current, readCursor.current, finals);
+    setReadUpTo(advance(readWords.current, readCursor.current, interim));
+  });
+  /** 장을 옮기거나 목록으로 나가면 마이크를 끄고 처음부터 */
+  const resetReadAloud = () => {
+    readAloud.stop();
+    readCursor.current = 0;
+    setReadUpTo(0);
+  };
+
   const askCheckpoint = (
     bookId: string,
     chapterNo: number,
@@ -322,6 +407,8 @@ export function LibraryScreen({
         // 뜻을 보던 중에 마지막 쪽으로 넘기면 실제로 그렇게 된다
         close();
         setPuzzleOpen(false);
+        // 읽기가 끝났다. 문항을 소리 내 읽으면 본문 색이 엉뚱하게 튀므로 마이크를 끈다
+        readAloud.stop();
         setCheckpoint({
           id: checkpoint_id,
           chapterNo,
@@ -390,6 +477,7 @@ export function LibraryScreen({
     // 장을 옮기면 앞 장 문항은 닫는다 — 지난 장을 묻는 문항이 새 본문 옆에 남으면 안 된다
     setCheckpoint(null);
     setPuzzleOpen(false);
+    resetReadAloud();
     setReading({ book, chapterNo, startAt, state: "loading" });
     window.scrollTo({ top: 0 });
     void loadChapter(book, chapterNo, startAt, requestId);
@@ -437,6 +525,7 @@ export function LibraryScreen({
               chapterRequest.current++;
               setReading(null);
               close();
+              resetReadAloud();
               // ?book= 으로 들어왔다면 주소를 목록으로 돌린다 — 새로고침에 그 책이 다시 열리지 않게
               window.history.replaceState(null, "", "/library");
             }}
@@ -477,6 +566,24 @@ export function LibraryScreen({
                 {chapterNo} / {book.chapterCount}장
               </Chip>
             ))}
+          {/* 소리 내어 읽기 (sprint-0918 ③ STT). 누른 동안만 마이크가 켜진다 */}
+          <button
+            type="button"
+            onClick={readAloud.state === "listening" ? readAloud.stop : readAloud.start}
+            aria-pressed={readAloud.state === "listening"}
+            aria-label={readAloud.state === "listening" ? "그만 읽기" : "소리 내어 읽기"}
+            className={
+              readAloud.state === "listening"
+                ? "flex h-12 w-12 flex-none items-center justify-center rounded-full bg-coral text-white"
+                : "flex h-12 w-12 flex-none items-center justify-center rounded-full border border-border-strong bg-card text-lg"
+            }
+          >
+            {readAloud.state === "listening" ? (
+              <span className="h-3 w-3 animate-pulse rounded-full bg-white" aria-hidden />
+            ) : (
+              <span aria-hidden>🎤</span>
+            )}
+          </button>
           {/* 서재 책은 DB 행이 있어 바로 독후감으로 이어진다 — /write?book= 이 초고를 만든다 */}
           <Link
             href={`/write?book=${book.id}`}
@@ -520,18 +627,18 @@ export function LibraryScreen({
                 >
                   {/* 문단은 블록으로 쌓는다 — flex 로 감싸면 쪽 경계에서 문단이 쪼개지지 않는다 */}
                   <div className="space-y-5">
-                    {reading.chapter.body
-                      .split(PARAGRAPH_BREAK)
-                      .map((paragraph) => paragraph.trim())
-                      .filter(Boolean)
-                      .map((paragraph, index) => (
+                    {withOffsets(paragraphsOf(reading.chapter.body)).map(
+                      ({ paragraph, offset }, index) => (
                         <Tappable
                           key={index}
                           body={paragraph}
                           active={activeWord}
                           onTap={tap}
+                          offset={offset}
+                          readUpTo={readUpTo}
                         />
-                      ))}
+                      ),
+                    )}
                   </div>
 
                   {!hasNext && (
@@ -543,8 +650,14 @@ export function LibraryScreen({
                     </Link>
                   )}
                 </PagedText>
-                <p className="mt-2 text-center text-xs text-faint">
-                  모르는 단어를 누르면 뜻이 떠요 ✎ · 옆으로 밀어서 넘겨
+                {/* 안내는 한 줄만 — 폰에서 이 아래는 하단 탭바가 덮는다.
+                    소리 내어 읽기 버튼은 그래서 위 머리줄에 둔다 */}
+                <p
+                  className={`mt-2 text-center text-xs ${
+                    readAloud.state === "denied" ? "text-coral-text" : "text-faint"
+                  }`}
+                >
+                  {READ_ALOUD_HINT[readAloud.state]}
                 </p>
               </>
             )}
