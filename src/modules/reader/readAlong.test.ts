@@ -40,13 +40,21 @@ test("잡음이나 딴말이면 커서는 그대로다", () => {
   assert.equal(advance(BOOK, 3, ["오늘", "점심", "뭐", "먹지"]), 3);
 });
 
-test("중간부터 읽기 시작해도 두 낱말이 맞으면 닻을 내린다", () => {
-  // 커서는 0 인데 아이는 "희고도 보드라운 눈송이가" 부터 읽었다 (9~11번째, WINDOW 밖)
-  assert.equal(advance(BOOK, 0, ["희고도", "보드라운", "눈송이가"]), 12);
+test("문장을 건너뛰고 읽으면 따라가지 않는다", () => {
+  // 커서는 0 인데 아이가 "희고도 보드라운 눈송이가" (9~11번째) 부터 읽었다
+  assert.equal(advance(BOOK, 0, ["희고도", "보드라운", "눈송이가"]), 0);
+  assert.equal(advance(BOOK, 0, ["음", "저기", "희고도", "보드라운", "눈송이가"]), 0);
 });
 
-test("들린 말의 첫 쌍이 잡음이어도 뒤 쌍에서 닻을 내린다", () => {
-  assert.equal(advance(BOOK, 0, ["음", "저기", "희고도", "보드라운"]), 11);
+test("세 낱말까지는 인식기가 흘려도 따라간다 — 그보다 많으면 멈춘다", () => {
+  assert.equal(advance(BOOK, 6, ["날개같이"]), 9, "흰·새의 둘을 흘림");
+  assert.equal(advance(BOOK, 6, ["희고도"]), 10, "흰·새의·날개같이 셋을 흘림 (실측)");
+  assert.equal(advance(BOOK, 6, ["보드라운"]), 6, "네 낱말을 건너뜀 — 멈춘다");
+});
+
+test("부호뿐인 칸(─)은 건너뛰기 폭에 세지 않는다 — '펑펑 쏟아져' 는 따라간다", () => {
+  // 본문은 펑(12) ─(13) 펑(14) ─(15) 쏟아져(16). 실측 인식은 "펑펑 쏟아져 내리고"
+  assert.equal(advance(BOOK, 12, splitWords("펑펑 쏟아져 내리고")), 18);
 });
 
 test("이미 읽은 말이 다시 들어와도 뒤로 가지 않는다", () => {
@@ -55,10 +63,7 @@ test("이미 읽은 말이 다시 들어와도 뒤로 가지 않는다", () => {
   assert.equal(advance(BOOK, 12, splitWords("어느 해 몹시 추운 겨울날이었습니다")), 12);
 });
 
-test("닻은 앞쪽 가까운 곳에서만 내린다", () => {
-  const far = [...BOOK, ...Array.from({ length: 200 }, (_, i) => `채움${i}`), "먼", "곳의", "낱말"];
-  assert.equal(advance(far, 0, ["먼", "곳의"]), 0, "200 낱말 뒤는 너무 멀다");
-});
+
 
 /**
  * 아래는 2026-09-18 실제 크롬 음성 인식(구글)이 「참된 동정」 첫 문장들을 듣고 낸
@@ -105,4 +110,31 @@ test("sessionText — 확정과 듣는 중을 나눈다", () => {
   const list = results(["어느 해", true], ["몹시", false]);
   assert.equal(sessionText(list, true), "어느 해");
   assert.equal(sessionText(list, false), "몹시");
+});
+
+/** 「참된 동정」 첫 두 문단 — 실측 버그를 재현한다 */
+const TWO_PARAGRAPHS = splitWords(
+  "어느 해 몹시 추운 겨울날이었습니다. 하늘에서는 흰 새의 날개같이 희고도 보드라운 눈송이가 펑 ─ 펑 ─ 쏟아져 내리고 땅 위에는 바람까지 홱 ─ 홱 ─ 사납게 불어서 두터운 솜옷을 겹겹이 입고 따뜻한 방 속에 가만히 들어앉아 있기에도 추운 생각이 더럭더럭 나는 날이었습니다. " +
+    "이렇게 추운 날인데 오후가 되니까 눈은 더욱 퍼붓고 추위는 점점 더해져서 행길에는 지나다니는 사람조차 많지 않았습니다.",
+);
+
+test("실측 4 — 잘못 들은 흔한 두 낱말로 읽지 않은 문단까지 뛰지 않는다", () => {
+  const endOfFirst = TWO_PARAGRAPHS.indexOf("이렇게");
+  // 첫 문단 끝까지 읽은 뒤 인식기가 "많지 않았습니다" 를 잘못 들었다 (2026-09-18 크롬 실측)
+  const heard = splitWords("나는 날이었습니다 많지 않았습니다 많지 않았습니다");
+  assert.equal(advance(TWO_PARAGRAPHS, endOfFirst, heard), endOfFirst);
+});
+
+test("둘째 문단 끝만 읽으면 따라가지 않고, 이어서 차례로 읽으면 끝까지 간다", () => {
+  const endOfFirst = TWO_PARAGRAPHS.indexOf("이렇게");
+  assert.equal(
+    advance(TWO_PARAGRAPHS, endOfFirst, splitWords("지나다니는 사람조차 많지 않았습니다")),
+    endOfFirst,
+    "건너뛰었다",
+  );
+  const secondParagraph = TWO_PARAGRAPHS.slice(endOfFirst).join(" ");
+  assert.equal(
+    advance(TWO_PARAGRAPHS, endOfFirst, splitWords(secondParagraph)),
+    TWO_PARAGRAPHS.length,
+  );
 });

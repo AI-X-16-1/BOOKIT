@@ -12,12 +12,16 @@
  *   - **바로 다음 한두 낱말**은 비슷하기만 해도 받는다 — 실제 인식이 "해 → 회",
  *     "흰 → 흰색", "희고도 → 이고도" 로 들었다 (2026-09-18 크롬 실측, readAlong.test.ts).
  *     멀리 있는 낱말에는 쓰지 않는다. 짧은 말끼리는 대부분 한 글자 차이라 아무 데나 맞는다
- *   - 커서 뒤 몇 낱말 안에서만 찾는다 — 멀리서 찾으면 흔한 낱말에 엉뚱하게 튄다
- *   - 그래도 못 찾으면 두 낱말이 연달아 맞는 곳을 **앞쪽 두어 쪽 안에서** 찾는다 —
- *     몇 문장을 통째로 못 알아들었거나 중간 쪽부터 읽기 시작한 경우다
- *   - **커서는 절대 뒤로 가지 않는다.** 폰 실측(2026-09-18)에서 읽던 자리가 처음으로
- *     돌아가는 일이 있었다. 안드로이드 크롬은 들은 말을 앞에서부터 쌓아 다시 보내서,
- *     이미 읽은 첫 문장이 또 들어오면 거기로 닻을 내렸다. 아이 눈에는 고장이다
+ *   - **건너뛰면 따라가지 않는다.** 다음 낱말은 커서에서 세 낱말 안에서만 찾는다 —
+ *     인식기가 짧은 말 서너 개를 흘리는 건 받아 주지만(실측에서 "흰 새의 날개같이" 를
+ *     한 번에 흘렸다가 나중에 고쳐 보냈다),
+ *     문장을 건너뛰면 형광펜은 거기서 기다린다. 형광펜 끝이 "여기부터 다시 읽어" 다.
+ *     (폰 실기기 피드백, 2026-09-18: 많이 건너뛰어 읽었는데 그대로 진행됐다)
+ *   - **커서는 절대 뒤로 가지 않는다.** 안드로이드 크롬은 들은 말을 앞에서부터 쌓아
+ *     다시 보내서, 이미 읽은 첫 문장이 또 들어오면 읽던 자리가 처음으로 돌아갔다
+ *
+ * 예전에는 가까이서 못 찾으면 몇 낱말이 연달아 맞는 곳으로 멀리 "닻을 내렸다".
+ * 그게 곧 건너뛰기를 허용하는 길이라 없앴다.
  *
  * 순수 함수만 둔다. 음성 인식은 useReadAloud 가, 색칠은 LibraryScreen 이 한다.
  */
@@ -25,8 +29,20 @@
 /** 본문과 같은 규칙으로 낱말을 나눈다 (LibraryScreen 의 TOKEN_PATTERN) */
 export const TOKEN_PATTERN = /([\s.,!?~"'()[\]{}·…—-]+)/;
 
-/** 커서 뒤로 이만큼 안에서 다음 낱말을 찾는다 */
-export const WINDOW = 8;
+/**
+ * 커서 뒤로 **소리 낼 수 있는 낱말** 이만큼 안에서 다음 낱말을 찾는다.
+ * 4 = 바로 다음 낱말 + 그 뒤 셋. 곧 "인식기가 세 낱말까지 흘려도 따라가고, 그보다
+ * 많이 건너뛰면 멈춘다" 는 뜻이다.
+ *
+ * 부호뿐인 낱말(「펑 ─ 펑」 의 ─)은 세지 않는다. 소리 낼 수 없는 칸이라, 세면
+ * "펑펑 쏟아져" 를 읽어도 쏟아져가 멀리 있는 것처럼 보여 건너뛰기로 판정됐다 (실측)
+ */
+export const WINDOW = 4;
+
+/** 소리 내어 읽을 수 있는 낱말인가 — 부호뿐인 칸(─ …)은 아니다 */
+function readable(word: string): boolean {
+  return normalize(word) !== "";
+}
 
 /** 부호·공백을 지우고 비교한다. 음성 인식은 부호를 거의 안 찍는다 */
 export function normalize(word: string): string {
@@ -109,75 +125,43 @@ export function similarWord(book: string, heard: string): boolean {
 /** 비슷하기만 해도 받는 범위 — 커서 바로 다음 낱말과 그다음 하나 */
 const FUZZY_REACH = 2;
 
-/** 닻을 내릴 수 있는 범위 — 커서 앞쪽으로 이만큼. 폰 한 쪽이 40~60 낱말이다 */
-export const ANCHOR_REACH = 120;
 
-/** 커서부터 WINDOW 안에서 들린 낱말 하나를 찾는다. 찾으면 그 낱말 **다음** 위치 */
+/**
+ * 커서부터 소리 낼 수 있는 낱말 WINDOW 개 안에서 들린 낱말 하나를 찾는다.
+ * 찾으면 그 낱말 **다음** 위치, 못 찾으면 -1
+ */
 function findNear(words: string[], cursor: number, heard: string): number {
-  const end = Math.min(words.length, cursor + WINDOW);
-  for (let j = cursor; j < end; j += 1) {
+  const near: number[] = [];
+  for (let j = cursor; j < words.length && near.length < WINDOW; j += 1) {
+    if (readable(words[j])) near.push(j);
+  }
+  for (const j of near) {
     if (sameWord(words[j], heard)) return j + 1;
   }
-  // 붙어서 들린 말 — 본문 두 낱말을 이어 붙여 본다
-  for (let j = cursor; j + 1 < end; j += 1) {
-    if (sameWord(words[j] + words[j + 1], heard)) return j + 2;
+  // 붙어서 들린 말 — 이웃한 두 낱말을 이어 붙여 본다 (가운데 부호 칸은 건너서)
+  for (let k = 0; k + 1 < near.length; k += 1) {
+    if (sameWord(words[near[k]] + words[near[k + 1]], heard)) return near[k + 1] + 1;
   }
   // 잘못 들린 말 — 바로 다음 한두 낱말만 비슷한지 본다
-  for (let j = cursor; j < Math.min(words.length, cursor + FUZZY_REACH); j += 1) {
+  for (const j of near.slice(0, FUZZY_REACH)) {
     if (similarWord(words[j], heard)) return j + 1;
   }
   return -1;
 }
 
-/**
- * 두 낱말이 연달아 맞는 곳을 커서 앞쪽 ANCHOR_REACH 안에서 찾는다. 뒤는 보지 않는다.
- *
- * 돌려주는 것: 맞은 두 낱말 **다음** 본문 위치와, 들린 말 중 몇 개를 썼는지.
- * 들린 말의 첫 쌍이 잡음이고 둘째 쌍에서 맞을 수도 있어서 둘 다 필요하다.
- */
-function anchor(
-  words: string[],
-  cursor: number,
-  heard: string[],
-): { next: number; used: number } | null {
-  const end = Math.min(words.length, cursor + ANCHOR_REACH);
-  for (let h = 0; h + 1 < heard.length; h += 1) {
-    for (let j = cursor; j < end; j += 1) {
-      if (
-        j + 1 < words.length &&
-        sameWord(words[j], heard[h]) &&
-        sameWord(words[j + 1], heard[h + 1])
-      ) {
-        return { next: j + 2, used: h + 2 };
-      }
-    }
-  }
-  return null;
-}
 
 /**
  * 들린 낱말들로 커서를 옮긴다. 커서 = 지금까지 읽은 본문 낱말 수.
- *
- * 한 번 들어온 말 중 아무것도 가까이서 못 찾으면 전체에서 닻을 내린다.
- * 둘 다 실패하면 커서는 그대로다 — 잡음이나 딴말이다.
+ * 못 찾은 말은 건너뛴다 — 잡음이거나, 딴말이거나, 아이가 건너뛰고 읽은 곳이다.
+ * 커서는 앞으로만 간다.
  */
 export function advance(words: string[], cursor: number, heard: string[]): number {
   let next = cursor;
-  let matched = false;
   for (const word of heard) {
     const found = findNear(words, next, word);
-    if (found >= 0) {
-      next = found;
-      matched = true;
-    }
+    if (found >= 0) next = found;
   }
-  if (matched || heard.length < 2) return next;
-
-  const hit = anchor(words, cursor, heard);
-  if (!hit) return cursor;
-  // 닻을 내린 뒤 남은 말로 조금 더 따라간다
-  const rest = heard.slice(hit.used);
-  return rest.length ? advance(words, hit.next, rest) : hit.next;
+  return next;
 }
 
 /**

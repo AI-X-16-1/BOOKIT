@@ -73,6 +73,20 @@ const READ_ALOUD_HINT: Record<ReturnType<typeof useReadAloud>["state"], string> 
   unsupported: "이 브라우저에서는 소리 내어 읽기를 쓸 수 없어. 크롬에서 열면 돼",
 };
 
+/**
+ * 지금 화면에 보이는 첫 낱말의 번호. 본문은 쪽마다 가로로 흘러 있어서(PagedText)
+ * 다른 쪽 낱말은 화면 밖에 있다. 못 찾으면 0
+ */
+function firstVisibleWord(): number {
+  for (const node of document.querySelectorAll<HTMLElement>("[data-word]")) {
+    const rect = node.getBoundingClientRect();
+    if (rect.width > 0 && rect.left >= 0 && rect.right <= window.innerWidth) {
+      return Number(node.dataset.word) || 0;
+    }
+  }
+  return 0;
+}
+
 /** 본문을 문단으로. 화면과 소리 내어 읽기가 같은 문단 목록을 써야 낱말 번호가 맞는다 */
 function paragraphsOf(body: string): string[] {
   return body
@@ -96,6 +110,7 @@ function Tappable({
   active,
   onTap,
   offset = 0,
+  readFrom = 0,
   readUpTo = 0,
 }: {
   body: string;
@@ -104,7 +119,9 @@ function Tappable({
   onTap: (word: string) => void;
   /** 이 문단 첫 낱말이 장 전체에서 몇 번째인가 (소리 내어 읽기) */
   offset?: number;
-  /** 장 전체에서 이 번호 앞까지 소리 내어 읽었다. 그 낱말들은 색이 바뀐다 */
+  /** 소리 내어 읽기를 시작한 낱말 번호. 이 앞은 칠하지 않는다 (읽지 않고 넘긴 쪽) */
+  readFrom?: number;
+  /** 장 전체에서 이 번호 앞까지 소리 내어 읽었다. 그 낱말들은 형광펜으로 칠한다 */
   readUpTo?: number;
 }) {
   const parts = body.split(TOKEN_PATTERN);
@@ -131,7 +148,8 @@ function Tappable({
       {parts.map((part, index) => {
         // 구분자이거나 빈 조각은 그대로 둔다. 앞뒤를 다 읽었으면 사이도 칠한다
         if (!part || TOKEN_PATTERN.test(part)) {
-          const covered = gapNext[index] > offset && gapNext[index] < readUpTo;
+          const covered =
+            gapNext[index] > Math.max(offset, readFrom) && gapNext[index] < readUpTo;
           return (
             <span key={index} className={covered ? READ_MARK : undefined}>
               {part}
@@ -141,11 +159,12 @@ function Tappable({
 
         // 모든 낱말이 눌린다. 전부에 밑줄을 그으면 본문이 읽히지 않으므로
         // 지금 보고 있는 낱말만 표시한다. 소리 내어 읽은 낱말은 형광펜으로 칠한다
-        const read = wordNos[index] < readUpTo;
+        const read = wordNos[index] >= readFrom && wordNos[index] < readUpTo;
         return (
           <button
             key={index}
             type="button"
+            data-word={wordNos[index]}
             onClick={() => onTap(part)}
             className={
               part === active
@@ -404,6 +423,7 @@ export function LibraryScreen({
     readWords.current = chapterWords;
   }, [chapterWords]);
   const readCursor = useRef(0);
+  const [readFrom, setReadFrom] = useState(0);
   const [readUpTo, setReadUpTo] = useState(0);
   const readAloud = useReadAloud((finals, interim) => {
     readCursor.current = advance(readWords.current, readCursor.current, finals);
@@ -413,7 +433,23 @@ export function LibraryScreen({
   const resetReadAloud = () => {
     readAloud.stop();
     readCursor.current = 0;
+    setReadFrom(0);
     setReadUpTo(0);
+  };
+
+  /**
+   * 🎤 를 누른다. 이 장에서 **처음** 켤 때만 지금 보이는 쪽의 첫 낱말부터 시작한다 —
+   * 2쪽을 펴 놓고 켰는데 1쪽 첫 낱말을 기다리면 영영 안 칠해진다. 앞 쪽은 칠하지 않는다.
+   * 한 번 읽기 시작한 뒤에는 쪽을 넘겨 건너뛰어도 따라가지 않는다 (readAlong 머리말)
+   */
+  const startReadAloud = () => {
+    if (readCursor.current === 0) {
+      const first = firstVisibleWord();
+      readCursor.current = first;
+      setReadFrom(first);
+      setReadUpTo(first);
+    }
+    readAloud.start();
   };
 
   const askCheckpoint = (
@@ -593,7 +629,7 @@ export function LibraryScreen({
           {/* 소리 내어 읽기 (sprint-0918 ③ STT). 누른 동안만 마이크가 켜진다 */}
           <button
             type="button"
-            onClick={readAloud.state === "listening" ? readAloud.stop : readAloud.start}
+            onClick={readAloud.state === "listening" ? readAloud.stop : startReadAloud}
             aria-pressed={readAloud.state === "listening"}
             aria-label={readAloud.state === "listening" ? "그만 읽기" : "소리 내어 읽기"}
             className={
@@ -659,6 +695,7 @@ export function LibraryScreen({
                           active={activeWord}
                           onTap={tap}
                           offset={offset}
+                          readFrom={readFrom}
                           readUpTo={readUpTo}
                         />
                       ),
