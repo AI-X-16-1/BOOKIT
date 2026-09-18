@@ -12,7 +12,7 @@ import type { User } from "@supabase/supabase-js";
 
 import type { BookitClient } from "@/shared/supabase";
 import { createAdminClient } from "@/shared/supabase/admin";
-import type { Class, GradeLevel, Profile } from "@/shared/types";
+import type { Class, ExplorerRank, GradeLevel, Profile } from "@/shared/types";
 
 /**
  * 구글이 준 이름. profiles 행은 온보딩에서 처음 만들어지므로 그때 같이 넣는다.
@@ -45,7 +45,7 @@ const failure = (
 export async function joinClassByCode(
   supabase: BookitClient,
   user: User,
-  input: { grade_level: GradeLevel; join_code: string },
+  input: { grade_level: GradeLevel; join_code: string; explorer_rank?: ExplorerRank | null },
 ): Promise<OnboardingResult<Class>> {
   const userId = user.id;
   const admin = createAdminClient();
@@ -74,6 +74,8 @@ export async function joinClassByCode(
       display_name: displayNameOf(user),
       role: "student",
       grade_level: input.grade_level,
+      // 탐험가 등급은 선택. 안 골랐으면(undefined) 기존 값을 건드리지 않는다
+      ...(input.explorer_rank !== undefined ? { explorer_rank: input.explorer_rank } : {}),
     },
     { onConflict: "id" },
   );
@@ -191,20 +193,20 @@ export async function createClassForTeacher(
 }
 
 /** PATCH /api/profile — 학년만 고친다 */
-export async function updateGradeLevel(
+export async function updateProfile(
   supabase: BookitClient,
   userId: string,
-  gradeLevel: GradeLevel,
+  patch: { grade_level?: GradeLevel; explorer_rank?: ExplorerRank | null },
 ): Promise<OnboardingResult<Profile>> {
   const { data, error } = await supabase
     .from("profiles")
-    .update({ grade_level: gradeLevel })
+    .update(patch)
     .eq("id", userId)
     .select()
     .single();
 
   if (error || !data) {
-    console.error("[auth] 학년 갱신 실패", error);
+    console.error("[auth] 프로필 갱신 실패", error);
     return failure("server_error", "잠깐 문제가 생겼어. 다시 해볼까?", 500);
   }
 

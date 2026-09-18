@@ -225,11 +225,11 @@ All under `/api`. All authenticated except the guardian route. All return `{ dat
 
 ### auth (김민경)
 ```
-POST /api/onboarding/student   { grade_level, join_code }        → { class }
+POST /api/onboarding/student   { grade_level, join_code, explorer_rank? } → { class }   explorer_rank 는 선택 (§2b)
 POST /api/onboarding/teacher   { school_name, grade_level, class_no } → { class, join_code }
 GET   /auth/demo?as=student|teacher                             → 302 "/"   심사위원용 시연 로그인. DEMO_LOGIN_ENABLED 일 때만, 아니면 404. 시드 계정으로 세션을 심는다 (매직링크 토큰을 서버 안에서 소비)
-GET   /api/profile                                              → { display_name, role, grade_level, class_label }   내 정보. class_label 은 "5학년 2반" 꼴, 반이 없으면 null
-PATCH /api/profile             { grade_level }                   → { profile }
+GET   /api/profile                                              → { display_name, role, grade_level, explorer_rank, class_label }   내 정보. class_label 은 "5학년 2반" 꼴, 반이 없으면 null
+PATCH /api/profile             { grade_level?, explorer_rank? }   → { profile }   둘 중 하나 이상. explorer_rank 는 null 로 지울 수 있다 (§2b)
 DELETE /api/profile                                              → { deleted }   계정·데이터 전부 삭제(cascade), 세션 종료. 시드 계정(@bookit.demo)은 403 demo_account
 ```
 
@@ -291,7 +291,7 @@ GET  /api/characters                    → { characters[]: { book_id, name, sta
 POST /api/reading/progress { book_id, chapter_no } → { read_chapters, total_chapters, character_stage }   장 끝에서 리더가 호출. 퍼즐 진행률 + (부화했으면) 새 stage. 강민구(reader)
 POST /api/checkpoints  { book_id, chapter_no }     → { checkpoint_id, question }        AI #6. 이미 있으면 그대로 돌려준다
 POST /api/checkpoints/:id/answer { answer }        → { passed, feedback, character_stage }
-PATCH /api/profile     { explorer_rank }           → { profile }                        ② 온보딩. 기존 grade_level PATCH 와 같은 라우트
+PATCH /api/profile     { explorer_rank }           → { profile }                        ② 온보딩에서 고르고(POST /api/onboarding/student 의 explorer_rank), 나중에 이 라우트로 바꾼다 — 구현됨
 GET  /api/items · POST /api/items/:id/buy          → { balance, owned[] }                ④ 스트레치
 ```
 검증 결과 응답(`POST /api/verifications/:id/answer`)은 **바꾸지 않는다.** 보스전 화면은 그 응답을 그대로 받아 연출만 한다. 통과 뒤 캐릭터가 최종 진화했는지는 화면이 `GET /api/characters` 를 한 번 더 부른다 (트리거가 이미 올려 둔 뒤라 즉시 반영).

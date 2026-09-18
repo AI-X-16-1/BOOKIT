@@ -19,7 +19,7 @@ export async function getMyProfile(
 ): Promise<OnboardingResult<MeResponse>> {
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("display_name, role, grade_level")
+    .select("display_name, role, grade_level, explorer_rank")
     .eq("id", userId)
     .maybeSingle();
 
@@ -66,6 +66,7 @@ export async function getMyProfile(
       display_name: profile.display_name,
       role: profile.role,
       grade_level: profile.grade_level,
+      explorer_rank: profile.explorer_rank,
       class_label: klass ? `${klass.grade_level}학년 ${klass.class_no}반` : null,
     },
   };
