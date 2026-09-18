@@ -141,6 +141,27 @@ function gradeBucket(book: ShelfBook, myGrade: number | null): 0 | 1 | 2 {
   return 0;
 }
 
+/**
+ * 학년대 필터. 44권이 되면서 폰에서 6권씩 8쪽이라, 심사위원이 "중3이 읽을 책" 을
+ * 보려면 여러 쪽을 넘겨야 했다. 이미 있는 target_grade_min/max 로 거른다 —
+ * 장르 태그(GENRE_TAGS)에 학년을 섞으면 도장판이 모르는 장르를 받는다 (#115).
+ */
+const BANDS = [
+  { key: "all", label: "전체", has: () => true },
+  { key: "low", label: "초1~3", has: (b: ShelfBook) => inBand(b, 1, 3) },
+  { key: "mid", label: "초4~6", has: (b: ShelfBook) => inBand(b, 4, 6) },
+  { key: "high", label: "중1~3", has: (b: ShelfBook) => inBand(b, 7, 9) },
+] as const;
+
+type BandKey = (typeof BANDS)[number]["key"];
+
+/** 책의 학년 범위가 이 구간과 겹치면 포함한다 — 초5~중1 책은 두 구간에 다 뜬다 */
+function inBand(book: ShelfBook, from: number, to: number): boolean {
+  const min = book.gradeMin ?? 1;
+  const max = book.gradeMax ?? 9;
+  return min <= to && max >= from;
+}
+
 function subtitleOf(book: ShelfBook): string {
   const grade = gradeLabel(book.gradeMin, book.gradeMax);
   return grade ? `${book.author} · ${grade}` : book.author;
@@ -198,6 +219,7 @@ export function LibraryScreen({
 
   // 목록 쪽. 책을 읽다 돌아와도 보던 쪽이 남는다
   const [shelfPage, setShelfPage] = useState(1);
+  const [band, setBand] = useState<BandKey>("all");
   const pageSize = useShelfPageSize();
 
   // 장을 빠르게 넘기면 늦게 온 이전 장 응답이 새 장을 덮어쓴다. 마지막 요청만 반영한다.
@@ -439,10 +461,11 @@ export function LibraryScreen({
 
   // 폭이 바뀌어 쪽 수가 줄면 마지막 쪽으로 맞춘다
   // 내 학년 책 → 쉬운 책 → 어려운 책. 같은 묶음 안에서는 서버가 준 순서(학년·제목)를 지킨다
+  const picked = books.filter(BANDS.find((b) => b.key === band)?.has ?? (() => true));
   const sorted =
     myGrade === null
-      ? books
-      : [...books].sort((a, b) => gradeBucket(a, myGrade) - gradeBucket(b, myGrade));
+      ? picked
+      : [...picked].sort((a, b) => gradeBucket(a, myGrade) - gradeBucket(b, myGrade));
 
   const pageCount = Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(shelfPage, pageCount);
@@ -465,6 +488,30 @@ export function LibraryScreen({
         </Card>
       ) : (
         <div>
+          {/* 학년대 칩. 누르면 첫 쪽으로 돌아간다 — 3쪽을 보다 필터를 바꾸면 빈 쪽이 뜬다 */}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {BANDS.map((b) => {
+              const count = books.filter(b.has).length;
+              const on = band === b.key;
+              return (
+                <button
+                  key={b.key}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => {
+                    setBand(b.key);
+                    setShelfPage(1);
+                  }}
+                  className={`flex min-h-12 items-center rounded-full px-4 text-[14px] font-bold ${
+                    on ? "bg-ink text-on-dark" : "bg-card text-muted"
+                  }`}
+                >
+                  {b.label} {count}
+                </button>
+              );
+            })}
+          </div>
+
           {/* 폰 1열 · 태블릿 2열 · 넓은 PC 3열. 태블릿은 왼쪽 레일이 자리를 차지해 3열이면 제목이 잘린다 */}
           <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
             {pageBooks.map((book) => (
