@@ -49,3 +49,11 @@ export { tagsFromKdcMajor, needsAiTagging } from "./kdc";
 export type { BookClassification, PassThreshold } from "./server/prompts";
 export { LlmError, type LlmErrorKind } from "./server/llm";
 export type { PromptContext } from "./server/prompts";
+
+/** AI #7 읽기 수준 진단 (2026-09-18). 검증과 무관하고 책갈피를 주지 않는다 */
+export {
+  buildLevelTest,
+  judgeLevelTest,
+  type PassageContext,
+} from "./server/level-test";
+export type { LevelQuestions, LevelResult } from "./schema";

@@ -138,3 +138,57 @@ export const genreTagsSchema = z.object({
 });
 
 export type GenreTagsResult = z.infer<typeof genreTagsSchema>;
+
+/* ── 레벨테스트 (AI #7, 2026-09-18) ──────────────────── */
+
+/**
+ * 읽기 수준 진단 문항. 지문 하나에서 세 문항을 한 번에 받는다.
+ *
+ * 검증(#3)과 달리 **난이도를 나눠서** 묻는다 — 쉬운 것 하나, 보통 하나, 어려운 하나.
+ * 그래야 답을 보고 위아래 어느 쪽으로 옮길지가 나온다. 하나만 물으면
+ * "맞았다/틀렸다" 밖에 안 남는다.
+ *
+ * 배열이 아니라 **이름 붙인 세 칸**인 이유: Anthropic 의 structured output 은
+ * `minItems` 가 0 이나 1 이 아니면 거절한다 (`z.array().min(3)` → 400
+ * "For 'array' type, 'minItems' values other than 0 or 1 are not supported").
+ * 개수를 스키마로 못 박는 대신 칸을 셋 두면 세 개가 오는 것이 보장되고,
+ * 어느 칸이 어느 난이도인지도 이름으로 남는다. 개수 제약을 스키마에 넣지 않는 것은
+ * genreTagsSchema 가 같은 이유로 택한 방식이다.
+ */
+export const levelQuestionsSchema = z.object({
+  easy: z.string().min(1),
+  medium: z.string().min(1),
+  hard: z.string().min(1),
+});
+
+/**
+ * 진단 결과.
+ *
+ * `recommended_grade` 는 1~9 (spec §1 의 grade_level 과 같은 눈금).
+ * 점수가 아니라 **추천**이다 — 학생이 받아들일지 고른다. 합격·불합격이 없다.
+ */
+export const levelResultSchema = z.object({
+  /**
+   * 1~9 를 **문자열 enum** 으로 받는다. Anthropic 의 structured output 은
+   * `integer` 에 `minimum`/`maximum` 을 지원하지 않는다 (400 "For 'integer' type,
+   * properties maximum, minimum are not supported"). 범위를 못 박지 못하면 모델이
+   * 0 이나 12 를 돌려줄 수 있고, 그 값이 그대로 grade_level 추천이 된다.
+   * enum 으로 두면 값 목록이 JSON Schema 로 넘어가 애초에 다른 값이 나오지 않는다 —
+   * GENRE_TAGS 와 같은 이유다. 코드에서 Number() 로 바꿔 쓴다.
+   */
+  recommended_grade: z.enum(["1", "2", "3", "4", "5", "6", "7", "8", "9"]),
+  /** 낮으면 화면이 "그대로 둬도 좋아" 쪽으로 기운다 */
+  confidence: z.enum(["low", "medium", "high"]),
+  /** 아이에게 그대로 보여주는 반말 두세 문장. 잘한 점을 먼저 */
+  feedback: z.string().min(1),
+});
+
+export interface LevelQuestions {
+  questions: string[];
+}
+
+export interface LevelResult {
+  recommendedGrade: number;
+  confidence: "low" | "medium" | "high";
+  feedback: string;
+}
