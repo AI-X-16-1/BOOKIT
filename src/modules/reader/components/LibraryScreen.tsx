@@ -22,7 +22,7 @@ import {
 import { advance, splitWords, START_WINDOW, TOKEN_PATTERN, WINDOW } from "../readAlong";
 import type { ReaderDictResponse, ShelfBook } from "../schema";
 import { PagedText, type PagedTextControl } from "./PagedText";
-import { ShelfPagination, useShelfPageSize } from "./ShelfPagination";
+import { ShelfPagination, useIsWide, useShelfPageSize } from "./ShelfPagination";
 import { useReadAloud } from "./useReadAloud";
 
 /**
@@ -351,6 +351,13 @@ export function LibraryScreen({
   const [shelfPage, setShelfPage] = useState(1);
   const [band, setBand] = useState<BandKey>("all");
   const pageSize = useShelfPageSize();
+  /**
+   * 768px 미만이면 사전·퍼즐이 바텀시트로 **본문을 덮는다**. 그때는 마이크를 끈다 —
+   * 읽을 글자가 가려졌는데 목소리는 계속 구글로 가고, 시트를 보며 한 말이 본문 위치를
+   * 엉뚱하게 앞으로 민다. 768px 이상은 옆 패널이라 본문이 보여 켜 둔다
+   * (#158 사후 리뷰, 박재경 — 체크포인트 시트에서 끄는 것과 같은 이유)
+   */
+  const isWide = useIsWide();
 
   // 장을 빠르게 넘기면 늦게 온 이전 장 응답이 새 장을 덮어쓴다. 마지막 요청만 반영한다.
   const chapterRequest = useRef(0);
@@ -570,6 +577,8 @@ export function LibraryScreen({
   }, []);
 
   const tap = async (word: string) => {
+    // 폰에서는 사전이 시트로 본문을 덮는다 — 마이크를 끈다 (isWide 주석)
+    if (!isWide) readAloud.stop();
     const requestId = ++dictRequest.current;
     setEntry({ state: "loading", word });
 
@@ -626,7 +635,11 @@ export function LibraryScreen({
               <>
                 <button
                   type="button"
-                  onClick={() => setPuzzleOpen(true)}
+                  onClick={() => {
+                    // 폰 전용 칩이라 시트가 언제나 본문을 덮는다 — 마이크를 끈다
+                    readAloud.stop();
+                    setPuzzleOpen(true);
+                  }}
                   aria-label={`표지 조각 ${readChapters[book.id]} / ${book.chapterCount} 보기`}
                   className="flex min-h-12 flex-none items-center gap-1.5 rounded-full bg-yellow-bg px-3.5 text-xs font-bold text-yellow-text md:hidden"
                 >
