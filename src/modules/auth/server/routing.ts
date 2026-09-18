@@ -34,6 +34,7 @@ const STUDENT_PREFIXES = [
   "/home",
   "/write",
   "/collection",
+  "/level-test",
   "/challenge",
   "/me",
   "/library",
