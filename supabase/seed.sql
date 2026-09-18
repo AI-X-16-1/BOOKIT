@@ -41,6 +41,9 @@ delete from streaks            where student_id in (select id from auth.users wh
 delete from genre_stamps       where student_id in (select id from auth.users where email like '%@bookit.demo');
 delete from guardian_links     where student_id in (select id from auth.users where email like '%@bookit.demo');
 delete from challenge_progress where student_id in (select id from auth.users where email like '%@bookit.demo');
+delete from student_characters  where student_id in (select id from auth.users where email like '%@bookit.demo');
+delete from reading_progress    where student_id in (select id from auth.users where email like '%@bookit.demo');
+delete from checkpoints         where student_id in (select id from auth.users where email like '%@bookit.demo');
 delete from challenges         where class_id in (
   select id from classes where teacher_id in (select id from auth.users where email like '%@bookit.demo'));
 -- 고정 id 로 넣는 행은 id 로도 지운다 (시즌 챌린지는 class_id 가 null 이라 위 조건에 안 걸린다).
@@ -9867,6 +9870,7 @@ end $$;
 -- 직접 넣으므로, 여기서는 트리거를 잠깐 꺼 둔다 (SQL Editor 는 service role 이라 가능하다).
 
 alter table points_ledger disable trigger points_ledger_bump_growth;
+alter table points_ledger disable trigger points_ledger_character; -- 0014. 캐릭터 stage 는 §7b 가 직접 넣는다
 
 insert into points_ledger (student_id, delta, reason, ref_id, created_at)
 values ('0000a001-0000-4000-8000-000000000001', 1390, 'admin_adjust', null,
@@ -9885,6 +9889,7 @@ values ('0000a001-0000-4000-8000-000000000001', -300, 'ebook_pass',
         gen_random_uuid(), now() - interval '5 days');
 
 alter table points_ledger enable trigger points_ledger_bump_growth;
+alter table points_ledger enable trigger points_ledger_character;
 
 -- ── 7. 성장 (스트릭 · 도장판) ────────────────────────
 
@@ -9898,6 +9903,52 @@ insert into genre_stamps (student_id, genre, completed_count) values
   ('0000a001-0000-4000-8000-000000000001', '성장소설', 6),
   ('0000a001-0000-4000-8000-000000000001', '고전',     3),
   ('0000a001-0000-4000-8000-000000000001', '동화',     1);
+
+-- ── 7b. 게임화 (0014, spec §2b) ───────────────────────
+-- 캐릭터는 curated 책(시드 15권 + 서재)마다 한 마리. 이름은 제목에서 만든다 —
+-- 강민구가 캐릭터 알·진화 로직을 붙일 때 이름·stage_names·art_seed 를 다듬는다.
+-- 검색으로 들어온 책(curated=false)에는 캐릭터가 없다.
+
+insert into characters (book_id, name, stage_names, art_seed)
+select b.id,
+       b.title || ' 요정',
+       array['알', '아기 ' || b.title || ' 요정', b.title || ' 요정'],
+       substr(md5(b.id::text), 1, 8)
+  from books b
+ where b.curated
+on conflict (book_id) do update
+  set stage_names = excluded.stage_names,
+      art_seed    = excluded.art_seed;
+
+-- 데모 학생: 통과한 9권은 최종(2), 지금 쓰는 「운수 좋은 날」은 알(0),
+-- 서재 「금도끼」는 다 읽어 부화(1). 트리거는 꺼 둔 채 직접 넣는다 (§6 과 같은 이유).
+alter table reading_progress disable trigger reading_progress_character;
+
+insert into student_characters (student_id, book_id, stage, obtained_at, evolved_at)
+select r.student_id, r.book_id, 2, r.created_at, r.updated_at
+  from reviews r
+  join characters c on c.book_id = r.book_id
+ where r.student_id = '0000a001-0000-4000-8000-000000000001'
+   and r.status = 'passed'
+on conflict (student_id, book_id) do update set stage = excluded.stage;
+
+insert into student_characters (student_id, book_id, stage, obtained_at)
+values ('0000a001-0000-4000-8000-000000000001', '0000b001-0000-4000-8000-000000000001', 0, now() - interval '1 day'),
+       ('0000a001-0000-4000-8000-000000000001', '0000b017-0000-4000-8000-000000000017', 1, now() - interval '3 days')
+on conflict (student_id, book_id) do update set stage = excluded.stage;
+
+-- 읽기 진행: 「금도끼」 전 장(퍼즐 완성), 「운수 좋은 날」 1장(퍼즐 시작)
+insert into reading_progress (student_id, book_id, chapter_no, read_at)
+select '0000a001-0000-4000-8000-000000000001', bc.book_id, bc.chapter_no, now() - interval '3 days'
+  from book_contents bc
+ where bc.book_id = '0000b017-0000-4000-8000-000000000017'
+on conflict do nothing;
+
+insert into reading_progress (student_id, book_id, chapter_no, read_at)
+values ('0000a001-0000-4000-8000-000000000001', '0000b001-0000-4000-8000-000000000001', 1, now() - interval '1 day')
+on conflict do nothing;
+
+alter table reading_progress enable trigger reading_progress_character;
 
 -- ── 8. 챌린지 ────────────────────────────────────────
 

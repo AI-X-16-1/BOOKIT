@@ -16,6 +16,8 @@ import type {
   Challenge,
   ChallengeKind,
   ChallengeProgress,
+  Character,
+  Checkpoint,
   Class,
   ClassMember,
   GapType,
@@ -25,11 +27,13 @@ import type {
   PointsLedgerEntry,
   Profile,
   ProfileRole,
+  ReadingProgress,
   Review,
   ReviewGap,
   ReviewStatus,
   ScoreAxis,
   Streak,
+  StudentCharacter,
   StyleAxis,
   Verification,
 } from "@/shared/types/db";
@@ -55,7 +59,7 @@ export interface Database {
     Tables: {
       profiles: {
         Row: Flatten<Profile>;
-        Insert: Insertable<Profile, "role" | "grade_level" | "created_at">;
+        Insert: Insertable<Profile, "role" | "grade_level" | "explorer_rank" | "created_at">;
         Update: Flatten<Partial<Profile>>;
         // id → auth.users. auth 스키마는 PostgREST 에 노출하지 않으므로 비워 둔다.
         Relationships: [];
@@ -302,6 +306,87 @@ export interface Database {
             columns: ["student_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      /* ── 게임화 (0014, spec §2b) ── */
+      characters: {
+        Row: Flatten<Character>;
+        Insert: Insertable<Character, "id" | "art_seed" | "created_at">;
+        Update: Flatten<Partial<Character>>;
+        Relationships: [
+          {
+            foreignKeyName: "characters_book_id_fkey";
+            columns: ["book_id"];
+            isOneToOne: true;
+            referencedRelation: "books";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      student_characters: {
+        Row: Flatten<StudentCharacter>;
+        Insert: Insertable<StudentCharacter, "stage" | "obtained_at" | "evolved_at">;
+        Update: Flatten<Partial<StudentCharacter>>;
+        Relationships: [
+          {
+            foreignKeyName: "student_characters_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "student_characters_book_id_fkey";
+            columns: ["book_id"];
+            isOneToOne: false;
+            referencedRelation: "books";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      reading_progress: {
+        Row: Flatten<ReadingProgress>;
+        Insert: Insertable<ReadingProgress, "read_at">;
+        Update: Flatten<Partial<ReadingProgress>>;
+        Relationships: [
+          {
+            foreignKeyName: "reading_progress_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reading_progress_book_id_fkey";
+            columns: ["book_id"];
+            isOneToOne: false;
+            referencedRelation: "books";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      checkpoints: {
+        Row: Flatten<Checkpoint>;
+        Insert: Insertable<
+          Checkpoint,
+          "id" | "answer" | "passed" | "feedback" | "asked_at" | "answered_at"
+        >;
+        Update: Flatten<Partial<Checkpoint>>;
+        Relationships: [
+          {
+            foreignKeyName: "checkpoints_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "checkpoints_book_id_fkey";
+            columns: ["book_id"];
+            isOneToOne: false;
+            referencedRelation: "books";
             referencedColumns: ["id"];
           },
         ];

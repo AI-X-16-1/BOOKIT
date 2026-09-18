@@ -50,7 +50,59 @@ export interface Profile {
   display_name: string;
   /** 학생만. 교사는 null */
   grade_level: GradeLevel | null;
+  /** 온보딩에서 학생이 고른 탐험가 등급. 화면 톤에만 쓴다 — 학년을 대체하지 않는다 (spec §2b) */
+  explorer_rank: ExplorerRank | null;
   created_at: string;
+}
+
+/* ── 게임화 (spec §2b, 0014) ─────────────────────────── */
+
+export type ExplorerRank = "새싹" | "탐험가" | "대장";
+
+/** 0 알 → 1 부화 → 2 최종(검증 통과). 내려가지 않는다 */
+export type CharacterStage = 0 | 1 | 2;
+
+/** 캐릭터 카탈로그. 책 한 권에 한 마리, curated 책에만 (시드) */
+export interface Character {
+  id: string;
+  book_id: string;
+  name: string;
+  /** 정확히 3개 — 알 · 1단계 · 2단계 이름 */
+  stage_names: string[];
+  /** 그림 대신 표지 그라데이션 위에 그릴 재료. 화면이 해석한다 */
+  art_seed: string;
+  created_at: string;
+}
+
+/** 학생이 가진 캐릭터. stage 는 트리거만 올린다 */
+export interface StudentCharacter {
+  student_id: string;
+  book_id: string;
+  stage: CharacterStage;
+  obtained_at: string;
+  evolved_at: string | null;
+}
+
+/** 서재 읽기 기록 = 표지 퍼즐 조각. 장 끝에서 학생 본인이 넣는다 */
+export interface ReadingProgress {
+  student_id: string;
+  book_id: string;
+  chapter_no: number;
+  read_at: string;
+}
+
+/** 장 끝 한 문항 (AI #6). 책갈피는 없다 — 부화만 */
+export interface Checkpoint {
+  id: string;
+  student_id: string;
+  book_id: string;
+  chapter_no: number;
+  question: string;
+  answer: string | null;
+  passed: boolean | null;
+  feedback: string | null;
+  asked_at: string;
+  answered_at: string | null;
 }
 
 export interface Class {

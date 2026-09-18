@@ -471,6 +471,91 @@ const streakBeforeFail = (await db.query(
 check('실패 채점은 스트릭에 영향을 주지 않는다 (앞서 이미 실패로 기록된 S3 그대로)',
   streakBeforeFail === null, `current_days=${streakBeforeFail}`);
 
+// ── 0014 게임화: RLS 와 진화 트리거 ──────────────────────
+// 서재 책 하나(장 2개)에 캐릭터를 붙인다. 시드가 하는 일과 같다.
+await db.exec(`
+  insert into books (id, title, author, tags, is_public_domain) values
+    ('b2222222-0000-0000-0000-000000000001','알 테스트북','작가Z','{동화}', true);
+  insert into book_contents (book_id, chapter_no, title, body) values
+    ('b2222222-0000-0000-0000-000000000001', 1, '1장', '본문 하나'),
+    ('b2222222-0000-0000-0000-000000000001', 2, '2장', '본문 둘');
+  insert into characters (book_id, name, stage_names) values
+    ('b2222222-0000-0000-0000-000000000001', '알 테스트 요정', '{알,아기 요정,요정}');
+`);
+const GB = 'b2222222-0000-0000-0000-000000000001';
+
+check('카탈로그(characters)는 학생 누구나 읽는다',
+  (await as(S3, `select name from characters where book_id = '${GB}'`)).rows.length === 1);
+
+// 학생은 자기 읽기 기록만 넣는다
+check('학생은 자기 reading_progress 를 넣는다',
+  !(await denied(S1, `insert into reading_progress (student_id, book_id, chapter_no) values ('${S1}', '${GB}', 1)`)));
+check('학생은 남의 reading_progress 를 못 넣는다',
+  await denied(S1, `insert into reading_progress (student_id, book_id, chapter_no) values ('${S3}', '${GB}', 1)`));
+
+// 첫 장을 읽으면 알(stage 0)이 생긴다 — 트리거가 만든다
+const egg = await db.query(
+  `select stage from student_characters where student_id = $1 and book_id = $2`, [S1, GB]);
+check('첫 장을 읽으면 알(stage 0)이 생긴다', Number(egg.rows[0]?.stage) === 0, JSON.stringify(egg.rows[0]));
+check('학생은 자기 캐릭터를 읽는다',
+  (await as(S1, `select stage from student_characters`)).rows.length === 1);
+check('학생은 남의 캐릭터를 못 본다',
+  (await as(S3, `select stage from student_characters`)).rows.length === 0);
+check('학생은 자기 캐릭터 stage 를 직접 못 올린다 (update 정책 없음)',
+  (await as(S1, `update student_characters set stage = 2 where student_id = '${S1}' returning stage`)).rows.length === 0);
+check('교사는 학생 캐릭터를 못 본다 (게임 기록은 성적이 아니다)',
+  (await as(T1, `select stage from student_characters`)).rows.length === 0);
+
+// 마지막 장까지 읽으면 부화(stage 1)
+await as(S1, `insert into reading_progress (student_id, book_id, chapter_no) values ('${S1}', '${GB}', 2)`);
+const hatched = await db.query(
+  `select stage from student_characters where student_id = $1 and book_id = $2`, [S1, GB]);
+check('마지막 장까지 읽으면 부화(stage 1)', Number(hatched.rows[0]?.stage) === 1, JSON.stringify(hatched.rows[0]));
+
+// 체크포인트: 학생은 못 쓰고 읽기만. 통과가 찍히면 부화 (이미 1이면 그대로)
+check('학생은 checkpoints 를 직접 못 만든다',
+  await denied(S1, `insert into checkpoints (student_id, book_id, chapter_no, question) values ('${S1}', '${GB}', 1, 'q')`));
+await db.exec(`insert into checkpoints (id, student_id, book_id, chapter_no, question) values
+  ('c2222222-0000-0000-0000-000000000001', '${S3}', '${GB}', 1, '왜 그렇게 생각했어?')`);
+await db.exec(`update checkpoints set answer = '이래서', answered_at = now(), passed = true
+  where id = 'c2222222-0000-0000-0000-000000000001'`);
+const s3char = await db.query(
+  `select stage from student_characters where student_id = $1 and book_id = $2`, [S3, GB]);
+check('체크포인트를 통과하면 알 없이도 바로 부화(stage 1)', Number(s3char.rows[0]?.stage) === 1, JSON.stringify(s3char.rows[0]));
+check('학생은 자기 체크포인트를 읽는다',
+  (await as(S3, `select question from checkpoints`)).rows.length === 1);
+check('학생은 남의 체크포인트를 못 본다',
+  (await as(S1, `select question from checkpoints`)).rows.length === 0);
+
+// 검증 통과(책갈피 적립)하면 최종 진화(stage 2). 0011 트리거 옆에 하나 더 걸린 것이라 책갈피는 그대로다.
+await db.exec(`
+  insert into reviews (id, student_id, book_id, body, status) values
+    ('d2222222-0000-0000-0000-000000000001','${S1}','${GB}','완독','questioning');
+  insert into review_gaps (id, review_id, ord, quote, gap_type, reason) values
+    ('e2222222-0000-0000-0000-000000000001','d2222222-0000-0000-0000-000000000001',1,'좋았다','feeling_only','감상만 남음');
+  insert into verifications (id, review_id, student_id, attempt_no, gap_id, question) values
+    ('f2222222-0000-0000-0000-000000000001','d2222222-0000-0000-0000-000000000001','${S1}',1,'e2222222-0000-0000-0000-000000000001','왜?');
+`);
+const balanceBefore = Number((await db.query(`select coalesce(sum(delta),0) as s from points_ledger where student_id = $1`, [S1])).rows[0].s);
+await record(null, 'f2222222-0000-0000-0000-000000000001', S1, true);
+const finalStage = await db.query(
+  `select stage, evolved_at from student_characters where student_id = $1 and book_id = $2`, [S1, GB]);
+check('검증을 통과하면 최종 진화(stage 2)', Number(finalStage.rows[0]?.stage) === 2, JSON.stringify(finalStage.rows[0]));
+const balanceAfter = Number((await db.query(`select coalesce(sum(delta),0) as s from points_ledger where student_id = $1`, [S1])).rows[0].s);
+check('진화 트리거가 붙어도 책갈피는 그대로 +50', balanceAfter - balanceBefore === 50, `${balanceBefore} → ${balanceAfter}`);
+
+// 캐릭터 없는 책(검색 유입분)은 통과해도 student_characters 에 아무것도 생기지 않는다
+const noChar = await db.query(
+  `select count(*)::int as n from student_characters where student_id = $1 and book_id = 'b1111111-0000-0000-0000-000000000004'`, [S1]);
+check('캐릭터 없는 책은 통과해도 캐릭터 행이 생기지 않는다', noChar.rows[0].n === 0, `${noChar.rows[0].n}행`);
+
+// 탐험가 등급: 본인 profiles 갱신, 값 제약
+check('학생은 자기 탐험가 등급을 고른다',
+  !(await denied(S1, `update profiles set explorer_rank = '탐험가' where id = '${S1}'`)));
+let badRank = false;
+try { await db.exec(`update profiles set explorer_rank = '왕' where id = '${S1}'`); } catch (e) { badRank = /check constraint|violates/.test(e.message); }
+check('탐험가 등급은 정해진 셋 중 하나만', badRank);
+
 // ── 출력 ─────────────────────────────────────────────
 const failed = results.filter(r => !r.ok);
 for (const r of results) {

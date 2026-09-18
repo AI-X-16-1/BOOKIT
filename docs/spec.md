@@ -125,14 +125,14 @@ Never delete a failed attempt. Retry inserts a new row with `attempt_no + 1` and
 
 ## 2b. 게임화 (2026-09-18 추가 — 마감 스프린트, `docs/sprint-0918.md`)
 
-**Status: DRAFT — 9/18 중 확정.** 마이그레이션 `0014_gamification.sql` 하나로 들어간다. 기존 테이블·정책·`record_verification_result`·`points_ledger` 규칙은 건드리지 않는다.
+**Status: 확정 (2026-09-18, #132 → 0014).** 마이그레이션 `0014_gamification.sql` 하나로 들어간다. 기존 테이블·정책·`record_verification_result`·`points_ledger` 규칙은 건드리지 않는다.
 아래 "가정" 은 김민경이 정한 초안이다. 다르게 가야 하면 9/18 오전 안에 말한다 — 그 뒤엔 코드가 시작된다.
 
 ### characters — 캐릭터 도감 (카탈로그, 정적)
 | column | type | note |
 |---|---|---|
 | id | uuid PK | |
-| book_id | uuid FK books **unique** | **가정: 책 한 권 = 캐릭터 한 마리.** 서재 책(`is_public_domain`)에만 붙인다. 시드로 넣는다 |
+| book_id | uuid FK books **unique** | **책 한 권 = 캐릭터 한 마리.** `curated` 책(시드 15권 + 서재)에 붙인다 — 데모 학생이 통과한 책이 서재 밖(아몬드·완득이…)이라 서재만으로는 도감이 빈다. 검색 유입분에는 없다. 시드로 넣는다 |
 | name | text | 예: 「눈 어두운 포수」→ "안경 사슴" |
 | stage_names | text[3] | 알 → 1단계 → 2단계 이름. `['알', '아기 사슴', '안경 사슴']` |
 | art_seed | text | 그림이 없으니 `COVER` 그라데이션 + 이모지/색으로 그린다. 표지와 합성해 도감에 보인다 |
