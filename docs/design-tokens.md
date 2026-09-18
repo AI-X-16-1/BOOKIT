@@ -27,6 +27,11 @@ Extracted from the approved mockups (1~6). Do not invent new colors — if you n
   --panel-inner:     #3A2D25;
   --panel-line:      #463830;
 
+  /* boss-fight — mockups 7·8 (2026-09-18), verification result only */
+  --boss-bg:         #1D1621;
+  --boss-panel:      #2E2436;
+  --boss-accent:     #C69BFF;
+
   /* accent */
   --coral:           #FF6B4A;
   --coral-light:     #FF8F75;
@@ -99,7 +104,7 @@ Bottom tab bar 86px tall including safe area.
 
 Base width 430px. Breakpoint 768px.
 
-- `< 768px` — bottom tab bar: 홈 / 독후감 / 챌린지 / 나 / 서재. Write and AI panel are two sequential steps. Dictionary is a bottom sheet.
+- `< 768px` — bottom tab bar: 홈 / 독후감 / 도감 / 나 / 서재 (2026-09-18 개편, 목업 7·8 — 챌린지는 탭에서 빠지고 주소로만 남는다). Write and AI panel are two sequential steps. Dictionary is a bottom sheet.
 - `>= 768px` — left icon rail replaces tabs. Write and AI panel sit side by side. Dictionary is a right side panel.
 - `>= 1024px` — teacher dashboard. No mobile layout for it.
 

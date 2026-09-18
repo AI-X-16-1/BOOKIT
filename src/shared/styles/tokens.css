@@ -60,6 +60,12 @@
 
   /* 검증 플로우에서 추가로 발견 (목업 2·3) */
   --coral-text:      #B5502F;  /* 코랄 배경 위 라벨 — 목업 2 L112 */
+  /* boss-fight — 목업 7 #2·#3 (2026-09-18 개편). 검증 결과(포획 성공/실패)에만 쓴다.
+     §7 의 "검증은 어둡다" 대비를 유지하되 색조만 보라로 — 다른 화면에서 쓰지 말 것 */
+  --boss-bg:         #1D1621;
+  --boss-panel:      #2E2436;
+  --boss-accent:     #C69BFF;
+
   --panel-muted:     #A4917F;  /* 다크 패널 위 보조 문구 — 목업 3 L44, L52 */
   --panel-text:      #E8DCCD;  /* 다크 패널 위 본문·답변 — 목업 3 L46, L50 */
   --star-warm:       #FFC93C;  /* 결과 화면 장식 별 — 목업 3 L58 */
@@ -97,6 +103,9 @@
   --color-panel:        var(--panel);
   --color-panel-inner:  var(--panel-inner);
   --color-panel-line:   var(--panel-line);
+  --color-boss-bg:      var(--boss-bg);
+  --color-boss-panel:   var(--boss-panel);
+  --color-boss-accent:  var(--boss-accent);
 
   /* accent */
   --color-coral:        var(--coral);
