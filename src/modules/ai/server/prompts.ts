@@ -391,3 +391,77 @@ export function checkpointJudgeUser(
 물어본 것: ${question}
 아이의 답: """${answer}"""`;
 }
+
+/* ── 레벨테스트 (AI #7, 2026-09-18) ──────────────────── */
+
+/**
+ * 진단에 쓰는 지문. 서재(공개 도메인) 본문에서 뽑아 넘긴다 — 새로 쓰지 않는다.
+ * 아이가 화면에서 1~2분 안에 읽을 분량이라 장 전체가 아니라 앞부분만 쓴다.
+ */
+export interface PassageContext {
+  bookTitle: string;
+  author: string;
+  body: string;
+}
+
+/** 진단 지문 상한. 초1도 1~2분에 읽을 분량 (체크포인트의 8,000자와 다른 이유다) */
+export const PASSAGE_MAX_CHARS = 1_200;
+
+export const LEVEL_TEST_SYSTEM = `너는 아이가 방금 읽은 짧은 지문으로 **읽기 수준을 가늠하는** 질문 세 개를 만든다.
+
+시험이 아니다. 아이를 떨어뜨리는 것이 아니라, 이 아이에게 맞는 책의 난이도를 찾는 것이다.
+
+세 문항은 난이도가 달라야 한다. 순서대로:
+1. **쉬움** — 지문에 그대로 적힌 일을 제 말로 옮기면 답이 되는 것
+2. **보통** — 인물이 왜 그랬는지, 어느 대목에서 그렇게 보였는지
+3. **어려움** — 지문 전체를 묶어야 답이 되는 것 (분위기가 바뀐 지점, 말하지 않은 마음)
+
+규칙:
+- 정답이 하나로 정해지는 퀴즈를 만들지 마라. 이름·숫자·지명처럼 외워야 답하는 것은 묻지 않는다.
+- 보기를 주지 마라. 고르게 하면 읽지 않고도 맞힌다.
+- 지문에 없는 것을 묻지 마라.
+- 반말로 한 문장씩. 아이가 한두 문장으로 답할 크기여야 한다.
+- 시험처럼 들리지 않게. "맞혀 봐" 가 아니라 "어떻게 봤어" 를 묻는다.`;
+
+export function levelTestUser(passage: PassageContext, gradeLevel?: number): string {
+  const body = passage.body.slice(0, PASSAGE_MAX_CHARS);
+  const said = gradeLevel ? `아이가 고른 학년: ${gradeLevel}학년\n` : "";
+
+  return `${said}지문: ${passage.bookTitle} (${passage.author})
+"""${body}"""`;
+}
+
+export const LEVEL_JUDGE_SYSTEM = `너는 아이가 짧은 지문을 읽고 쓴 답 세 개를 보고, **어느 학년 난이도의 책이 맞을지** 고른다.
+
+눈금은 1~9 다. 1~6 은 초등 1~6학년, 7~9 는 중1~중3.
+
+보는 것:
+- 지문에 적힌 것을 제 말로 옮기는가 (1번)
+- 인물의 행동에 이유를 붙이는가, 근거를 지문에서 가져오는가 (2번)
+- 흩어진 대목을 묶어 말하는가 (3번)
+
+규칙:
+- **맞다/틀리다로 보지 마라.** 맞춤법·글자 수·문장 다듬기는 보지 않는다. 짧아도 짚었으면 짚은 것이다.
+- 아이가 고른 학년에서 함부로 멀리 옮기지 마라. 한 단계 위아래가 보통이고, 두 단계는 답 셋이 모두 같은 방향일 때만이다.
+- 답이 비었거나 "몰라" 뿐이면 **학년을 내리지 말고** 아이가 고른 학년을 그대로 두고 confidence 를 low 로 해라. 한 번 못 푼 것으로 수준을 낮추지 않는다.
+- feedback 은 아이에게 그대로 보여준다. 반말로 두세 문장. **잘한 것을 먼저 말하고**, 다음에 읽을 책이 어떤 쪽이면 좋은지 한 줄. 점수·등급·합격 같은 말은 쓰지 마라.
+- 어느 문항을 틀렸는지 나열하지 마라. 이건 성적표가 아니다.`;
+
+export function levelJudgeUser(
+  passage: PassageContext,
+  questions: string[],
+  answers: string[],
+  gradeLevel?: number,
+): string {
+  const body = passage.body.slice(0, PASSAGE_MAX_CHARS);
+  const said = gradeLevel ? `아이가 고른 학년: ${gradeLevel}학년\n` : "";
+  const pairs = questions
+    .map((q, i) => `${i + 1}. ${q}\n   답: """${(answers[i] ?? "").trim() || "(비어 있음)"}"""`)
+    .join("\n");
+
+  return `${said}지문: ${passage.bookTitle} (${passage.author})
+"""${body}"""
+
+물어본 것과 답:
+${pairs}`;
+}
