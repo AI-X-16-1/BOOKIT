@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CoverPuzzle } from "@/modules/review";
 import { CheckpointPanel, CheckpointSheet } from "@/modules/verification";
 import type {
@@ -19,9 +19,11 @@ import {
   openCheckpoint,
   recordChapterRead,
 } from "../api";
+import { advance, splitWords, START_WINDOW, TOKEN_PATTERN, WINDOW } from "../readAlong";
 import type { ReaderDictResponse, ShelfBook } from "../schema";
 import { PagedText } from "./PagedText";
 import { ShelfPagination, useShelfPageSize } from "./ShelfPagination";
+import { useReadAloud } from "./useReadAloud";
 
 /**
  * 책잇 서재. 목업 6 L386-404.
@@ -38,45 +40,138 @@ import { ShelfPagination, useShelfPageSize } from "./ShelfPagination";
  * 사전은 문맥을 모르므로 뜻이 여럿이면 모두 보여주고 아이가 고른다 (#43).
  */
 
-/** 낱말과 그 사이의 공백·문장부호를 나눈다. 낱말만 누를 수 있다. */
-const TOKEN_PATTERN = /([\s.,!?~"'()[\]{}·…—-]+)/;
+// 낱말과 그 사이의 공백·문장부호를 나누는 규칙(TOKEN_PATTERN)은 readAlong 에 있다.
+// 소리 내어 읽기가 세는 낱말 번호가 여기 낱말 버튼과 하나씩 맞아야 해서 한 곳에 둔다.
 
 /** 본문은 빈 줄로 문단을 나눈다 (supabase/seed.sql 의 위키문헌 원문). */
 const PARAGRAPH_BREAK = /\n\s*\n/;
 
 const FALLBACK_MESSAGE = "잠깐 문제가 생겼어. 다시 해볼까?";
 
+/**
+ * 소리 내어 읽은 곳 — 형광펜처럼 글자 뒤에 노란 배경. 글자색만 바꿨더니 폰에서
+ * 구분이 안 된다는 실기기 피드백을 받았다 (2026-09-18). 색은 토큰의 yellow 다
+ */
+const READ_MARK = "bg-yellow";
+/**
+ * 읽은 낱말 버튼. 버튼은 줄 높이(18px × 2)만큼 상자가 커서 그 전체가 칠해지고,
+ * 사이 띄어쓰기(span)는 글자 높이만 칠해져 낱말 사이에 흰 틈이 났다.
+ * 버튼은 display 를 inline 으로 바꿔도 브라우저가 inline-block 으로 다룬다(HTML 규칙) —
+ * 그래서 버튼의 줄 높이를 글자 높이로 줄여 칠하는 높이를 맞춘다. 줄 간격은 문단(p)이
+ * 정하므로 본문 배치는 그대로다
+ */
+const READ_WORD = `leading-[normal] ${READ_MARK} text-ink`;
+
+/**
+ * 본문 아래 안내 한 줄. 소리 내어 읽기 상태에 따라 바뀐다.
+ * 듣는 동안에는 목소리가 어디로 가는지 적는다 — 브라우저가 구글 음성 인식으로 보낸다.
+ */
+const READ_ALOUD_HINT: Record<ReturnType<typeof useReadAloud>["state"], string> = {
+  idle: "모르는 단어를 누르면 뜻이 떠요 ✎ · 🎤 누르고 소리 내어 읽어 봐",
+  listening: "이제 소리 내어 읽어 봐 · 구글 음성 인식으로 듣고, 목소리는 저장하지 않아",
+  denied: "마이크를 쓸 수 없어. 브라우저에서 마이크를 허락해 줘",
+  unsupported: "이 브라우저에서는 소리 내어 읽기를 쓸 수 없어. 크롬에서 열면 돼",
+};
+
+/**
+ * 지금 화면에 보이는 첫 낱말의 번호. 본문은 쪽마다 가로로 흘러 있어서(PagedText)
+ * 다른 쪽 낱말은 화면 밖에 있다. 못 찾으면 0
+ */
+function firstVisibleWord(): number {
+  for (const node of document.querySelectorAll<HTMLElement>("[data-word]")) {
+    const rect = node.getBoundingClientRect();
+    if (rect.width > 0 && rect.left >= 0 && rect.right <= window.innerWidth) {
+      return Number(node.dataset.word) || 0;
+    }
+  }
+  return 0;
+}
+
+/** 본문을 문단으로. 화면과 소리 내어 읽기가 같은 문단 목록을 써야 낱말 번호가 맞는다 */
+function paragraphsOf(body: string): string[] {
+  return body
+    .split(PARAGRAPH_BREAK)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
+}
+
+/** 문단마다 첫 낱말의 장 전체 번호를 붙인다 */
+function withOffsets(paragraphs: string[]): { paragraph: string; offset: number }[] {
+  let offset = 0;
+  return paragraphs.map((paragraph) => {
+    const entry = { paragraph, offset };
+    offset += splitWords(paragraph).length;
+    return entry;
+  });
+}
+
 function Tappable({
   body,
   active,
   onTap,
+  offset = 0,
+  readFrom = 0,
+  readUpTo = 0,
 }: {
   body: string;
   /** 지금 뜻을 보고 있는 낱말. 본문에서 그 낱말만 표시한다 */
   active: string | null;
   onTap: (word: string) => void;
+  /** 이 문단 첫 낱말이 장 전체에서 몇 번째인가 (소리 내어 읽기) */
+  offset?: number;
+  /** 소리 내어 읽기를 시작한 낱말 번호. 이 앞은 칠하지 않는다 (읽지 않고 넘긴 쪽) */
+  readFrom?: number;
+  /** 장 전체에서 이 번호 앞까지 소리 내어 읽었다. 그 낱말들은 형광펜으로 칠한다 */
+  readUpTo?: number;
 }) {
   const parts = body.split(TOKEN_PATTERN);
+  // 낱말 버튼마다 장 전체 번호를 매긴다 — readAlong.splitWords 와 같은 순서다.
+  // 구분자 조각은 -1. 아래 map 안에서 세면 렌더 뒤 재할당이 되어 미리 센다
+  const wordNos: number[] = [];
+  // 구분자(띄어쓰기·부호)는 그 뒤에 올 낱말 번호를 적어 둔다. 앞뒤 낱말을 다 읽었으면
+  // 사이도 칠해서 형광펜을 한 번에 그은 것처럼 이어 보이게 한다
+  const gapNext: number[] = [];
+  let next = offset;
+  for (const part of parts) {
+    if (part && !TOKEN_PATTERN.test(part)) {
+      wordNos.push(next);
+      gapNext.push(-1);
+      next += 1;
+    } else {
+      wordNos.push(-1);
+      gapNext.push(next);
+    }
+  }
 
   return (
     <p className="text-[18px] leading-[2] text-ink-soft">
       {parts.map((part, index) => {
-        // 구분자이거나 빈 조각은 그대로 둔다
+        // 구분자이거나 빈 조각은 그대로 둔다. 앞뒤를 다 읽었으면 사이도 칠한다
         if (!part || TOKEN_PATTERN.test(part)) {
-          return <span key={index}>{part}</span>;
+          const covered =
+            gapNext[index] > Math.max(offset, readFrom) && gapNext[index] < readUpTo;
+          return (
+            <span key={index} className={covered ? READ_MARK : undefined}>
+              {part}
+            </span>
+          );
         }
 
         // 모든 낱말이 눌린다. 전부에 밑줄을 그으면 본문이 읽히지 않으므로
-        // 지금 보고 있는 낱말만 표시한다.
+        // 지금 보고 있는 낱말만 표시한다. 소리 내어 읽은 낱말은 형광펜으로 칠한다
+        const read = wordNos[index] >= readFrom && wordNos[index] < readUpTo;
         return (
           <button
             key={index}
             type="button"
+            data-word={wordNos[index]}
             onClick={() => onTap(part)}
             className={
               part === active
                 ? "border-b-2 border-b-coral text-coral-deep"
-                : "hover:text-coral-deep"
+                : read
+                  ? READ_WORD
+                  : "hover:text-coral-deep"
             }
           >
             {part}
@@ -307,6 +402,71 @@ export function LibraryScreen({
   /** 768px 미만에서 표지 퍼즐을 담는 바텀시트 (CLAUDE.md §8) */
   const [puzzleOpen, setPuzzleOpen] = useState(false);
 
+  /**
+   * 소리 내어 읽기 — STT 낭독 하이라이트 (sprint-0918 ③, 기획 §3).
+   *
+   * 들린 말을 readAlong 으로 본문 낱말에 맞춰, 읽은 곳까지 형광펜처럼 칠한다.
+   * 판정이 아니라 연출이다 — 책갈피도 기록도 없고, 들린 말은 어디에도 남기지 않는다.
+   *
+   * 커서가 둘이다. 확정된 말로 옮긴 커서(readCursor)와, 아직 듣는 중인 말까지 더해
+   * 미리 칠하는 위치(readUpTo). 확정만 기다리면 한 문장이 끝날 때까지 색이 멈춘다.
+   */
+  const chapterWords = useMemo(
+    () =>
+      reading?.state === "ready"
+        ? paragraphsOf(reading.chapter.body).flatMap(splitWords)
+        : [],
+    [reading],
+  );
+  const readWords = useRef<string[]>([]);
+  useEffect(() => {
+    readWords.current = chapterWords;
+  }, [chapterWords]);
+  const readCursor = useRef(0);
+  const [readFrom, setReadFrom] = useState(0);
+  const [readUpTo, setReadUpTo] = useState(0);
+  /** 숨 없이 너무 길게 이어져 초기화했다는 안내 (몇 초 뒤 사라진다) */
+  const [breathless, setBreathless] = useState(false);
+  const readAloud = useReadAloud(
+    (finals, interim) => {
+      // 아직 한 낱말도 못 맞췄으면 첫 문장 안에서 찾는다 — 🎤 를 누르자마자 읽어서
+      // 인식기가 앞 낱말을 흘린 경우다 (readAlong 의 START_WINDOW)
+      const width = () => (readCursor.current === readFrom ? START_WINDOW : WINDOW);
+      readCursor.current = advance(readWords.current, readCursor.current, finals, width());
+      setReadUpTo(advance(readWords.current, readCursor.current, interim, width()));
+    },
+    // 숨 쉴 틈 없이 10초 넘게 이어졌다 — 사람이 아니라 TTS 로 틀어 놓았을 수 있다 (breath.ts).
+    // 이번에 읽기 시작한 곳으로 형광펜을 되돌린다. 마이크는 켜 둔다 — 다시 읽으면 된다
+    () => {
+      readCursor.current = readFrom;
+      setReadUpTo(readFrom);
+      setBreathless(true);
+      window.setTimeout(() => setBreathless(false), 5000);
+    },
+  );
+  /** 장을 옮기거나 목록으로 나가면 마이크를 끄고 처음부터 */
+  const resetReadAloud = () => {
+    readAloud.stop();
+    readCursor.current = 0;
+    setReadFrom(0);
+    setReadUpTo(0);
+  };
+
+  /**
+   * 🎤 를 누른다. 이 장에서 **처음** 켤 때만 지금 보이는 쪽의 첫 낱말부터 시작한다 —
+   * 2쪽을 펴 놓고 켰는데 1쪽 첫 낱말을 기다리면 영영 안 칠해진다. 앞 쪽은 칠하지 않는다.
+   * 한 번 읽기 시작한 뒤에는 쪽을 넘겨 건너뛰어도 따라가지 않는다 (readAlong 머리말)
+   */
+  const startReadAloud = () => {
+    if (readCursor.current === 0) {
+      const first = firstVisibleWord();
+      readCursor.current = first;
+      setReadFrom(first);
+      setReadUpTo(first);
+    }
+    readAloud.start();
+  };
+
   const askCheckpoint = (
     bookId: string,
     chapterNo: number,
@@ -322,6 +482,8 @@ export function LibraryScreen({
         // 뜻을 보던 중에 마지막 쪽으로 넘기면 실제로 그렇게 된다
         close();
         setPuzzleOpen(false);
+        // 읽기가 끝났다. 문항을 소리 내 읽으면 본문 색이 엉뚱하게 튀므로 마이크를 끈다
+        readAloud.stop();
         setCheckpoint({
           id: checkpoint_id,
           chapterNo,
@@ -390,6 +552,7 @@ export function LibraryScreen({
     // 장을 옮기면 앞 장 문항은 닫는다 — 지난 장을 묻는 문항이 새 본문 옆에 남으면 안 된다
     setCheckpoint(null);
     setPuzzleOpen(false);
+    resetReadAloud();
     setReading({ book, chapterNo, startAt, state: "loading" });
     window.scrollTo({ top: 0 });
     void loadChapter(book, chapterNo, startAt, requestId);
@@ -437,6 +600,7 @@ export function LibraryScreen({
               chapterRequest.current++;
               setReading(null);
               close();
+              resetReadAloud();
               // ?book= 으로 들어왔다면 주소를 목록으로 돌린다 — 새로고침에 그 책이 다시 열리지 않게
               window.history.replaceState(null, "", "/library");
             }}
@@ -477,6 +641,24 @@ export function LibraryScreen({
                 {chapterNo} / {book.chapterCount}장
               </Chip>
             ))}
+          {/* 소리 내어 읽기 (sprint-0918 ③ STT). 누른 동안만 마이크가 켜진다 */}
+          <button
+            type="button"
+            onClick={readAloud.state === "listening" ? readAloud.stop : startReadAloud}
+            aria-pressed={readAloud.state === "listening"}
+            aria-label={readAloud.state === "listening" ? "그만 읽기" : "소리 내어 읽기"}
+            className={
+              readAloud.state === "listening"
+                ? "flex h-12 w-12 flex-none items-center justify-center rounded-full bg-coral text-white"
+                : "flex h-12 w-12 flex-none items-center justify-center rounded-full border border-border-strong bg-card text-lg"
+            }
+          >
+            {readAloud.state === "listening" ? (
+              <span className="h-3 w-3 animate-pulse rounded-full bg-white" aria-hidden />
+            ) : (
+              <span aria-hidden>🎤</span>
+            )}
+          </button>
           {/* 서재 책은 DB 행이 있어 바로 독후감으로 이어진다 — /write?book= 이 초고를 만든다 */}
           <Link
             href={`/write?book=${book.id}`}
@@ -520,18 +702,19 @@ export function LibraryScreen({
                 >
                   {/* 문단은 블록으로 쌓는다 — flex 로 감싸면 쪽 경계에서 문단이 쪼개지지 않는다 */}
                   <div className="space-y-5">
-                    {reading.chapter.body
-                      .split(PARAGRAPH_BREAK)
-                      .map((paragraph) => paragraph.trim())
-                      .filter(Boolean)
-                      .map((paragraph, index) => (
+                    {withOffsets(paragraphsOf(reading.chapter.body)).map(
+                      ({ paragraph, offset }, index) => (
                         <Tappable
                           key={index}
                           body={paragraph}
                           active={activeWord}
                           onTap={tap}
+                          offset={offset}
+                          readFrom={readFrom}
+                          readUpTo={readUpTo}
                         />
-                      ))}
+                      ),
+                    )}
                   </div>
 
                   {!hasNext && (
@@ -543,8 +726,20 @@ export function LibraryScreen({
                     </Link>
                   )}
                 </PagedText>
-                <p className="mt-2 text-center text-xs text-faint">
-                  모르는 단어를 누르면 뜻이 떠요 ✎ · 옆으로 밀어서 넘겨
+                {/* 안내는 한 줄만 — 폰에서 이 아래는 하단 탭바가 덮는다.
+                    소리 내어 읽기 버튼은 그래서 위 머리줄에 둔다 */}
+                <p
+                  className={`mt-2 text-center text-xs ${
+                    readAloud.state === "denied" || breathless ? "text-coral-text" : "text-faint"
+                  }`}
+                >
+                  {breathless
+                    ? "숨 쉴 틈 없이 너무 길게 이어졌어. 네 목소리로 처음부터 다시 읽어 볼까?"
+                    : readAloud.state === "listening" && readAloud.lastHeard
+                      ? `🎤 들은 말: “${readAloud.lastHeard}”`
+                      : readAloud.state === "listening" && !readAloud.ready
+                        ? "🎤 준비 중… 잠깐만"
+                        : READ_ALOUD_HINT[readAloud.state]}
                 </p>
               </>
             )}
