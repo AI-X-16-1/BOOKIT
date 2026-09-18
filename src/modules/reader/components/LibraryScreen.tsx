@@ -425,25 +425,13 @@ export function LibraryScreen({
   const readCursor = useRef(0);
   const [readFrom, setReadFrom] = useState(0);
   const [readUpTo, setReadUpTo] = useState(0);
-  /** 숨 없이 너무 길게 이어져 초기화했다는 안내 (몇 초 뒤 사라진다) */
-  const [breathless, setBreathless] = useState(false);
-  const readAloud = useReadAloud(
-    (finals, interim) => {
-      // 아직 한 낱말도 못 맞췄으면 첫 문장 안에서 찾는다 — 🎤 를 누르자마자 읽어서
-      // 인식기가 앞 낱말을 흘린 경우다 (readAlong 의 START_WINDOW)
-      const width = () => (readCursor.current === readFrom ? START_WINDOW : WINDOW);
-      readCursor.current = advance(readWords.current, readCursor.current, finals, width());
-      setReadUpTo(advance(readWords.current, readCursor.current, interim, width()));
-    },
-    // 숨 쉴 틈 없이 10초 넘게 이어졌다 — 사람이 아니라 TTS 로 틀어 놓았을 수 있다 (breath.ts).
-    // 이번에 읽기 시작한 곳으로 형광펜을 되돌린다. 마이크는 켜 둔다 — 다시 읽으면 된다
-    () => {
-      readCursor.current = readFrom;
-      setReadUpTo(readFrom);
-      setBreathless(true);
-      window.setTimeout(() => setBreathless(false), 5000);
-    },
-  );
+  const readAloud = useReadAloud((finals, interim) => {
+    // 아직 한 낱말도 못 맞췄으면 첫 문장 안에서 찾는다 — 🎤 를 누르자마자 읽어서
+    // 인식기가 앞 낱말을 흘린 경우다 (readAlong 의 START_WINDOW)
+    const width = () => (readCursor.current === readFrom ? START_WINDOW : WINDOW);
+    readCursor.current = advance(readWords.current, readCursor.current, finals, width());
+    setReadUpTo(advance(readWords.current, readCursor.current, interim, width()));
+  });
   /** 장을 옮기거나 목록으로 나가면 마이크를 끄고 처음부터 */
   const resetReadAloud = () => {
     readAloud.stop();
@@ -730,12 +718,10 @@ export function LibraryScreen({
                     소리 내어 읽기 버튼은 그래서 위 머리줄에 둔다 */}
                 <p
                   className={`mt-2 text-center text-xs ${
-                    readAloud.state === "denied" || breathless ? "text-coral-text" : "text-faint"
+                    readAloud.state === "denied" ? "text-coral-text" : "text-faint"
                   }`}
                 >
-                  {breathless
-                    ? "숨 쉴 틈 없이 너무 길게 이어졌어. 네 목소리로 처음부터 다시 읽어 볼까?"
-                    : readAloud.state === "listening" && readAloud.lastHeard
+                  {readAloud.state === "listening" && readAloud.lastHeard
                       ? `🎤 들은 말: “${readAloud.lastHeard}”`
                       : readAloud.state === "listening" && !readAloud.ready
                         ? "🎤 준비 중… 잠깐만"
