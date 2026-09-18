@@ -17,7 +17,8 @@ import { cn } from "./cn";
 export const NAV_ITEMS = [
   { href: "/home", label: "홈", glyph: "⌂" },
   { href: "/write", label: "독후감", glyph: "✎" },
-  { href: "/challenge", label: "챌린지", glyph: "◈" },
+  // 목업 7·8(2026-09-18 개편)이 챌린지 자리를 도감으로 바꿨다. /challenge 는 주소로는 남는다
+  { href: "/collection", label: "도감", glyph: "◈" },
   { href: "/me", label: "나", glyph: "☺" },
   { href: "/library", label: "서재", glyph: "▤" },
 ] as const;

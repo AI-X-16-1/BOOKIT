@@ -25,10 +25,15 @@ export const AUTH_PATHS = {
   teacherHome: "/teacher",
 } as const;
 
-/** 학생 전용 화면. 하단 탭 5개와 같다 (CLAUDE.md §8) */
+/**
+ * 학생 전용 화면. 하단 탭 5개(홈·독후감·도감·나·서재) + 탭에서 빠진 /challenge.
+ * 학생 라우트를 새로 만들면 여기에도 넣어야 교사가 못 들어간다 — 빠지면 리다이렉트 없이
+ * 열린다 (#145 에서 /collection 이 그랬다. RLS 가 데이터는 막았지만 빈 화면이 보였다).
+ */
 const STUDENT_PREFIXES = [
   "/home",
   "/write",
+  "/collection",
   "/challenge",
   "/me",
   "/library",

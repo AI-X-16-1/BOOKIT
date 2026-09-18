@@ -141,7 +141,7 @@ The verification screens are intentionally dark. That contrast marks "you are be
 
 Mobile first, 430px base. Breakpoint at 768px.
 
-- Under 768px: bottom tab bar with 5 items — 홈 / 독후감 / 챌린지 / 나 / 서재. Write + AI panel becomes two sequential steps. Dictionary opens as a bottom sheet.
+- Under 768px: bottom tab bar with 5 items — 홈 / 독후감 / 도감 / 나 / 서재 (2026-09-18: 도감 replaced 챌린지, mockups 7·8; `/challenge` stays reachable by URL). Write + AI panel becomes two sequential steps. Dictionary opens as a bottom sheet.
 - 768px and up: left icon rail replaces the bottom tabs. Write + AI panel becomes a side-by-side split. Dictionary opens as a side panel.
 - Teacher dashboard is desktop only (1024px+). Do not build mobile layouts for it.
 
