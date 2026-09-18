@@ -374,6 +374,23 @@ export function LibraryScreen({
    */
   const router = useRouter();
   const recorded = useRef(new Set<string>());
+  /**
+   * 소리 내어 읽는 중에 장 끝에 닿아 **미뤄 둔 체크포인트**.
+   * 자동 쪽 넘김은 앞 쪽을 다 읽는 순간 마지막 쪽을 펼쳐서, 마지막 쪽이 나타나자마자
+   * 문항을 띄우면 그 쪽을 읽으려는 순간 폰에서는 시트가 본문을 덮는다 (#173 리뷰, 박재경).
+   * 그래서 마지막 낱말까지 다 읽었을 때 띄운다 — "다 읽었으니 확인" (강민구 결정, 9/18).
+   * 도중에 "그만 읽기" 를 누르면 그때 띄운다. 읽기 기록(퍼즐·알)은 미루지 않는다.
+   * 띄우는 곳은 맨 아래 effect 다 (readToEnd)
+   */
+  const pendingCheckpoint = useRef<{
+    bookId: string;
+    chapterNo: number;
+    progress: ReadingProgressResponse;
+  } | null>(null);
+  /** 소리 내어 읽기로 이 장을 끝까지 읽었거나 "그만 읽기" 를 눌렀다 — 미뤄 둔 문항을 띄울 때 */
+  const [readToEnd, setReadToEnd] = useState(false);
+  /** 기록 요청이 돌아오는 사이에 상태가 바뀌므로, 그 순간 값을 읽으려고 따로 둔다 */
+  const deferNow = useRef(false);
   const markChapterRead = (bookId: string, chapterNo: number) => {
     const key = `${bookId}:${chapterNo}`;
     if (recorded.current.has(key)) return;
@@ -383,8 +400,10 @@ export function LibraryScreen({
       .then((progress) => {
         router.refresh();
         // 기록이 남은 **뒤에** 문항을 부른다 — 순서가 뒤집히면 서버가 409
-        // not_read_yet 으로 막는다 (reader/server/checkpoint.ts 의 openCheckpoint)
-        askCheckpoint(bookId, chapterNo, progress);
+        // not_read_yet 으로 막는다 (reader/server/checkpoint.ts 의 openCheckpoint).
+        // 소리 내어 읽는 중이고 아직 끝까지 안 읽었으면 미룬다 (pendingCheckpoint)
+        if (deferNow.current) pendingCheckpoint.current = { bookId, chapterNo, progress };
+        else askCheckpoint(bookId, chapterNo, progress);
       })
       .catch(() => {
         // 다음에 다시 닿으면 또 보낸다
@@ -451,9 +470,25 @@ export function LibraryScreen({
     setReadUpTo(shown.current);
     // 다음에 읽을 낱말이 다음 쪽에 있으면 = 이 쪽을 끝까지 읽었으면 쪽을 넘긴다
     paged.current?.reveal(shown.current);
+    // 이 장을 끝까지 소리 내어 읽었다 — 미뤄 둔 체크포인트를 띄울 때 (맨 아래 effect)
+    if (shown.current >= readWords.current.length) {
+      deferNow.current = false;
+      setReadToEnd(true);
+    }
   });
+  /** "그만 읽기" — 마지막 쪽에서 멈췄으면 그 장은 다 본 것이라 미뤄 둔 문항을 띄운다 */
+  const stopReadAloud = () => {
+    readAloud.stop();
+    deferNow.current = false;
+    setReadToEnd(true);
+  };
+
   /** 장을 옮기거나 목록으로 나가면 마이크를 끄고 처음부터 */
   const resetReadAloud = () => {
+    // 옮겨 간 장 옆에 지난 장 문항이 뜨면 안 된다
+    pendingCheckpoint.current = null;
+    deferNow.current = false;
+    setReadToEnd(false);
     readAloud.stop();
     readCursor.current = 0;
     shown.current = 0;
@@ -467,6 +502,9 @@ export function LibraryScreen({
    * 한 번 읽기 시작한 뒤에는 쪽을 넘겨 건너뛰어도 따라가지 않는다 (readAlong 머리말)
    */
   const startReadAloud = () => {
+    // 읽는 동안에는 장 끝 문항을 미룬다 — 마지막 낱말까지 읽거나 "그만 읽기" 때 띄운다
+    deferNow.current = true;
+    setReadToEnd(false);
     if (readCursor.current === 0) {
       const first = firstVisibleWord();
       readCursor.current = first;
@@ -596,6 +634,17 @@ export function LibraryScreen({
     dictRequest.current++;
     setEntry({ state: "idle" });
   };
+  // 미뤄 둔 체크포인트를 띄운다. 모든 함수가 선언된 뒤라 askCheckpoint 를 그대로 부를 수 있다
+  useEffect(() => {
+    if (!readToEnd) return;
+    const pending = pendingCheckpoint.current;
+    if (!pending) return;
+    pendingCheckpoint.current = null;
+    askCheckpoint(pending.bookId, pending.chapterNo, pending.progress);
+    // askCheckpoint 는 매 렌더 새로 만들어진다. readToEnd 가 바뀔 때만 본다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readToEnd]);
+
   const activeWord = entry.state === "idle" ? null : entry.word;
 
   if (reading) {
@@ -660,7 +709,7 @@ export function LibraryScreen({
           {/* 소리 내어 읽기 (sprint-0918 ③ STT). 누른 동안만 마이크가 켜진다 */}
           <button
             type="button"
-            onClick={readAloud.state === "listening" ? readAloud.stop : startReadAloud}
+            onClick={readAloud.state === "listening" ? stopReadAloud : startReadAloud}
             aria-pressed={readAloud.state === "listening"}
             aria-label={readAloud.state === "listening" ? "그만 읽기" : "소리 내어 읽기"}
             className={
