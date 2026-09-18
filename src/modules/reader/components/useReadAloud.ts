@@ -31,6 +31,7 @@ interface Recognition {
   onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
   onstart: (() => void) | null;
+  onaudiostart: (() => void) | null;
   start: () => void;
   stop: () => void;
   abort: () => void;
@@ -109,6 +110,11 @@ export function useReadAloud(
   const [state, setState] = useState<ReadAloudState>("idle");
   /** 방금 들은 말 몇 낱말. 화면 안내 줄에만 띄우고 어디에도 남기지 않는다 */
   const [lastHeard, setLastHeard] = useState("");
+  /**
+   * 마이크가 실제로 소리를 받기 시작했는가 (audiostart). 🎤 를 누른 뒤 이 순간까지는
+   * 읽어도 못 듣는다 — 화면이 "준비 중" 을 띄워 너무 일찍 읽지 않게 한다
+   */
+  const [ready, setReady] = useState(false);
   /** 지난번까지 넘긴 확정문. 새 확정문이 이걸로 시작하면 뒷부분만 새것이다 */
   const lastFinal = useRef("");
   const recognition = useRef<Recognition | null>(null);
@@ -168,6 +174,7 @@ export function useReadAloud(
     next.onstart = () => {
       lastFinal.current = "";
     };
+    next.onaudiostart = () => setReady(true);
 
     next.onerror = (event) => {
       // 마이크를 막았거나 마이크가 없으면 다시 켜도 소용없다.
@@ -204,6 +211,7 @@ export function useReadAloud(
     recognition.current = next;
     lastFinal.current = "";
     setLastHeard("");
+    setReady(false);
     next.start();
     setState("listening");
 
@@ -224,5 +232,5 @@ export function useReadAloud(
     [],
   );
 
-  return { state, start, stop, lastHeard };
+  return { state, start, stop, lastHeard, ready };
 }

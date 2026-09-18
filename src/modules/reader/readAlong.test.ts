@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { advance, normalize, sameWord, sessionText, splitWords } from "./readAlong";
+import {
+  advance,
+  normalize,
+  sameWord,
+  sessionText,
+  splitWords,
+  START_WINDOW,
+  WINDOW,
+} from "./readAlong";
 
 const BOOK = splitWords(
   "어느 해 몹시 추운 겨울날이었습니다. 하늘에서는 흰 새의 날개같이 희고도 보드라운 눈송이가 펑 ─ 펑 ─ 쏟아져 내리고",
@@ -44,6 +52,15 @@ test("문장을 건너뛰고 읽으면 따라가지 않는다", () => {
   // 커서는 0 인데 아이가 "희고도 보드라운 눈송이가" (9~11번째) 부터 읽었다
   assert.equal(advance(BOOK, 0, ["희고도", "보드라운", "눈송이가"]), 0);
   assert.equal(advance(BOOK, 0, ["음", "저기", "희고도", "보드라운", "눈송이가"]), 0);
+});
+
+test("막 읽기 시작했을 때 앞 낱말을 흘렸으면 첫 문장 안에서는 찾아 준다", () => {
+  // 🎤 를 누르자마자 읽어서 "어느 해 몹시 추운" 을 인식기가 못 들었다
+  const heard = splitWords("겨울날이었습니다 하늘에서는 흰");
+  assert.equal(advance(BOOK, 0, heard), 0, "보통 폭으로는 건너뛰기라 멈춘다");
+  assert.equal(advance(BOOK, 0, heard, START_WINDOW), 7, "시작 폭이면 따라간다");
+  // 한 낱말이라도 맞춘 뒤로는 보통 폭 — 건너뛰기는 여전히 막힌다
+  assert.equal(advance(BOOK, 1, ["희고도"], WINDOW), 1);
 });
 
 test("세 낱말까지는 인식기가 흘려도 따라간다 — 그보다 많으면 멈춘다", () => {

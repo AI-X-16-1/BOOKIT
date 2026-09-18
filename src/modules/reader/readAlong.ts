@@ -39,6 +39,14 @@ export const TOKEN_PATTERN = /([\s.,!?~"'()[\]{}·…—-]+)/;
  */
 export const WINDOW = 4;
 
+/**
+ * 이번에 읽기 시작한 뒤 **아직 한 낱말도 못 맞췄을 때**만 쓰는 넓은 폭 — 첫 문장 하나.
+ * 🎤 를 누르고 인식기가 실제로 듣기 시작하기까지 틈이 있어서(데스크톱 실측 0.2초,
+ * 폰은 더 길다) 곧바로 읽기 시작하면 앞 낱말 몇 개를 흘린다. 그걸 건너뛰기로 보면
+ * 처음에서 영영 멈춘다 (폰 실기기: TTS 로 틀었더니 처음부터 진행이 안 됐다)
+ */
+export const START_WINDOW = 12;
+
 /** 소리 내어 읽을 수 있는 낱말인가 — 부호뿐인 칸(─ …)은 아니다 */
 function readable(word: string): boolean {
   return normalize(word) !== "";
@@ -130,9 +138,9 @@ const FUZZY_REACH = 2;
  * 커서부터 소리 낼 수 있는 낱말 WINDOW 개 안에서 들린 낱말 하나를 찾는다.
  * 찾으면 그 낱말 **다음** 위치, 못 찾으면 -1
  */
-function findNear(words: string[], cursor: number, heard: string): number {
+function findNear(words: string[], cursor: number, heard: string, width: number): number {
   const near: number[] = [];
-  for (let j = cursor; j < words.length && near.length < WINDOW; j += 1) {
+  for (let j = cursor; j < words.length && near.length < width; j += 1) {
     if (readable(words[j])) near.push(j);
   }
   for (const j of near) {
@@ -155,10 +163,16 @@ function findNear(words: string[], cursor: number, heard: string): number {
  * 못 찾은 말은 건너뛴다 — 잡음이거나, 딴말이거나, 아이가 건너뛰고 읽은 곳이다.
  * 커서는 앞으로만 간다.
  */
-export function advance(words: string[], cursor: number, heard: string[]): number {
+export function advance(
+  words: string[],
+  cursor: number,
+  heard: string[],
+  /** 첫 낱말을 찾을 폭. 아직 하나도 못 맞췄으면 START_WINDOW 를 넘긴다 */
+  firstWidth: number = WINDOW,
+): number {
   let next = cursor;
   for (const word of heard) {
-    const found = findNear(words, next, word);
+    const found = findNear(words, next, word, next === cursor ? firstWidth : WINDOW);
     if (found >= 0) next = found;
   }
   return next;

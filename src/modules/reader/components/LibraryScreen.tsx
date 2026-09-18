@@ -19,7 +19,7 @@ import {
   openCheckpoint,
   recordChapterRead,
 } from "../api";
-import { advance, splitWords, TOKEN_PATTERN } from "../readAlong";
+import { advance, splitWords, START_WINDOW, TOKEN_PATTERN, WINDOW } from "../readAlong";
 import type { ReaderDictResponse, ShelfBook } from "../schema";
 import { PagedText } from "./PagedText";
 import { ShelfPagination, useShelfPageSize } from "./ShelfPagination";
@@ -68,7 +68,7 @@ const READ_WORD = `leading-[normal] ${READ_MARK} text-ink`;
  */
 const READ_ALOUD_HINT: Record<ReturnType<typeof useReadAloud>["state"], string> = {
   idle: "모르는 단어를 누르면 뜻이 떠요 ✎ · 🎤 누르고 소리 내어 읽어 봐",
-  listening: "구글 음성 인식으로 듣는 중 · 목소리는 저장하지 않아",
+  listening: "이제 소리 내어 읽어 봐 · 구글 음성 인식으로 듣고, 목소리는 저장하지 않아",
   denied: "마이크를 쓸 수 없어. 브라우저에서 마이크를 허락해 줘",
   unsupported: "이 브라우저에서는 소리 내어 읽기를 쓸 수 없어. 크롬에서 열면 돼",
 };
@@ -429,8 +429,11 @@ export function LibraryScreen({
   const [breathless, setBreathless] = useState(false);
   const readAloud = useReadAloud(
     (finals, interim) => {
-      readCursor.current = advance(readWords.current, readCursor.current, finals);
-      setReadUpTo(advance(readWords.current, readCursor.current, interim));
+      // 아직 한 낱말도 못 맞췄으면 첫 문장 안에서 찾는다 — 🎤 를 누르자마자 읽어서
+      // 인식기가 앞 낱말을 흘린 경우다 (readAlong 의 START_WINDOW)
+      const width = () => (readCursor.current === readFrom ? START_WINDOW : WINDOW);
+      readCursor.current = advance(readWords.current, readCursor.current, finals, width());
+      setReadUpTo(advance(readWords.current, readCursor.current, interim, width()));
     },
     // 숨 쉴 틈 없이 10초 넘게 이어졌다 — 사람이 아니라 TTS 로 틀어 놓았을 수 있다 (breath.ts).
     // 이번에 읽기 시작한 곳으로 형광펜을 되돌린다. 마이크는 켜 둔다 — 다시 읽으면 된다
@@ -734,7 +737,9 @@ export function LibraryScreen({
                     ? "숨 쉴 틈 없이 너무 길게 이어졌어. 네 목소리로 처음부터 다시 읽어 볼까?"
                     : readAloud.state === "listening" && readAloud.lastHeard
                       ? `🎤 들은 말: “${readAloud.lastHeard}”`
-                      : READ_ALOUD_HINT[readAloud.state]}
+                      : readAloud.state === "listening" && !readAloud.ready
+                        ? "🎤 준비 중… 잠깐만"
+                        : READ_ALOUD_HINT[readAloud.state]}
                 </p>
               </>
             )}
