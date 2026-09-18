@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CoverPuzzle } from "@/modules/review";
 import type { ReaderChapterResponse } from "@/shared/types";
 import { ApiClientError } from "@/shared/api/client";
 import { BottomSheet, Button, Card, Chip } from "@/shared/ui";
-import { fetchChapter, fetchDictEntry } from "../api";
+import { fetchChapter, fetchDictEntry, recordChapterRead } from "../api";
 import type { ReaderDictResponse, ShelfBook } from "../schema";
 import { PagedText } from "./PagedText";
 import { ShelfPagination, useShelfPageSize } from "./ShelfPagination";
@@ -232,6 +233,31 @@ export function LibraryScreen({
 
   // 장을 빠르게 넘기면 늦게 온 이전 장 응답이 새 장을 덮어쓴다. 마지막 요청만 반영한다.
   const chapterRequest = useRef(0);
+
+  /**
+   * 장 끝에 닿으면 읽었다고 적는다 (POST /api/reading/progress, sprint-0918 ①).
+   *
+   * 표지 퍼즐 조각과 캐릭터 알·부화가 여기서 나온다. 읽는 흐름을 막을 것은 아니라
+   * 실패는 조용히 넘긴다 — 다시 그 장에 닿으면 또 보내고, 서버가 중복을 무시한다.
+   *
+   * 처음 적은 장일 때만 화면을 새로 고친다. 퍼즐은 서버 컴포넌트가 넘긴 값으로
+   * 그려서(#140), 새로고침 없이는 읽는 중에 조각이 열리지 않는다. 이미 적힌 장에는
+   * 바뀔 것이 없으니 부르지 않는다 — 읽는 중에 서재를 다시 불러올 이유가 없다.
+   */
+  const router = useRouter();
+  const recorded = useRef(new Set<string>());
+  const markChapterRead = (bookId: string, chapterNo: number) => {
+    const key = `${bookId}:${chapterNo}`;
+    if (recorded.current.has(key)) return;
+    recorded.current.add(key);
+
+    void recordChapterRead(bookId, chapterNo)
+      .then(() => router.refresh())
+      .catch(() => {
+        // 다음에 다시 닿으면 또 보낸다
+        recorded.current.delete(key);
+      });
+  };
   const dictRequest = useRef(0);
 
   const loadChapter = async (
@@ -363,6 +389,7 @@ export function LibraryScreen({
                   hasNextChapter={hasNext}
                   onPrevChapter={() => openChapter(book, chapterNo - 1, "end")}
                   onNextChapter={() => openChapter(book, chapterNo + 1, "start")}
+                  onReachEnd={() => markChapterRead(book.id, chapterNo)}
                 >
                   {/* 문단은 블록으로 쌓는다 — flex 로 감싸면 쪽 경계에서 문단이 쪼개지지 않는다 */}
                   <div className="space-y-5">
