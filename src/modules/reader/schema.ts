@@ -34,6 +34,8 @@ export interface ShelfBook {
   gradeMax: number | null;
   /** book_contents 의 장 수. 1장부터 빈틈 없이 이어진다고 가정한다 */
   chapterCount: number;
+  /** 표지. 서재 책은 `/covers/<id>.webp` (오프라인 배치, scripts/covers-generate.mjs). 없으면 그라데이션 */
+  coverUrl: string | null;
 }
 
 /**
