@@ -12,7 +12,9 @@
 
 import type {
   Book,
+  CharacterStage,
   Class,
+  ExplorerRank,
   GapType,
   GradeLevel,
   PointReason,
@@ -176,6 +178,61 @@ export interface DictResponse {
   source: string;
   /** 쉬운 등급의 표제어부터, 사전에 적힌 순서대로. 1~5개 (#43) */
   senses: DictSense[];
+}
+
+/* ── 게임화 (spec §5b, 2026-09-18) ─────────────────── */
+
+/** GET /api/characters — 도감 한 칸 */
+export interface CharacterView {
+  book_id: string;
+  book_title: string;
+  cover_url: string | null;
+  name: string;
+  stage: CharacterStage;
+  /** stage_names[stage] */
+  stage_name: string;
+  art_seed: string;
+  obtained_at: string;
+}
+export interface CharactersResponse {
+  characters: CharacterView[];
+}
+
+/** POST /api/reading/progress */
+export interface ReadingProgressRequest {
+  book_id: string;
+  chapter_no: number;
+}
+export interface ReadingProgressResponse {
+  read_chapters: number;
+  total_chapters: number;
+  /** 캐릭터 없는 책이면 null */
+  character_stage: CharacterStage | null;
+}
+
+/** POST /api/checkpoints */
+export interface CreateCheckpointRequest {
+  book_id: string;
+  chapter_no: number;
+}
+export interface CreateCheckpointResponse {
+  checkpoint_id: string;
+  question: string;
+}
+
+/** POST /api/checkpoints/:id/answer */
+export interface AnswerCheckpointRequest {
+  answer: string;
+}
+export interface AnswerCheckpointResponse {
+  passed: boolean;
+  feedback: string;
+  character_stage: CharacterStage | null;
+}
+
+/** PATCH /api/profile — 탐험가 등급 (② 온보딩). grade_level 과 같은 라우트, 둘 중 하나만 */
+export interface UpdateExplorerRankRequest {
+  explorer_rank: ExplorerRank;
 }
 
 /* ── rewards / growth / ranking / guardian (문민재) ── */
