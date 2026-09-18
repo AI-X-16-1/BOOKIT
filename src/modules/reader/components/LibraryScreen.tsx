@@ -427,20 +427,29 @@ export function LibraryScreen({
   const [readUpTo, setReadUpTo] = useState(0);
   /** 쪽을 넘기는 손잡이 — 쪽 끝까지 읽으면 다음 쪽을 펼친다 */
   const paged = useRef<PagedTextControl>(null);
+  /** 화면에 칠해 둔 끝. 줄어들지 않는다 — 아래 useReadAloud 의 주석 */
+  const shown = useRef(0);
   const readAloud = useReadAloud((finals, interim) => {
     // 아직 한 낱말도 못 맞췄으면 첫 문장 안에서 찾는다 — 🎤 를 누르자마자 읽어서
     // 인식기가 앞 낱말을 흘린 경우다 (readAlong 의 START_WINDOW)
     const width = () => (readCursor.current === readFrom ? START_WINDOW : WINDOW);
     readCursor.current = advance(readWords.current, readCursor.current, finals, width());
-    const upTo = advance(readWords.current, readCursor.current, interim, width());
-    setReadUpTo(upTo);
+    const heardUpTo = advance(readWords.current, readCursor.current, interim, width());
+    // **보이는 형광펜은 줄어들지 않는다.** 듣는 중인 말로 미리 칠한 만큼은, 인식기가
+    // 확정하며 말을 고치거나(“흰 새의” → “흰색 나에게”) 잠깐 쉬며 듣는 중인 말을 비우면
+    // 사라졌다 — 읽었는데 자꾸 뒤로 돌아가는 것처럼 보였다 (실기기, 9/18).
+    // 다음 말을 맞추는 기준은 확정 커서(readCursor) 그대로라 칠만 붙잡아 둔다.
+    // 이 장에서 처음 켤 때·장을 옮길 때는 resetReadAloud/startReadAloud 가 따로 되돌린다
+    shown.current = Math.max(shown.current, readCursor.current, heardUpTo);
+    setReadUpTo(shown.current);
     // 다음에 읽을 낱말이 다음 쪽에 있으면 = 이 쪽을 끝까지 읽었으면 쪽을 넘긴다
-    paged.current?.reveal(upTo);
+    paged.current?.reveal(shown.current);
   });
   /** 장을 옮기거나 목록으로 나가면 마이크를 끄고 처음부터 */
   const resetReadAloud = () => {
     readAloud.stop();
     readCursor.current = 0;
+    shown.current = 0;
     setReadFrom(0);
     setReadUpTo(0);
   };
@@ -454,6 +463,7 @@ export function LibraryScreen({
     if (readCursor.current === 0) {
       const first = firstVisibleWord();
       readCursor.current = first;
+      shown.current = first;
       setReadFrom(first);
       setReadUpTo(first);
     }
