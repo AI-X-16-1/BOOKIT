@@ -55,6 +55,7 @@ export function PagedText({
   onNextChapter,
   onReachEnd,
   onPage,
+  lockForward = false,
   control,
 }: {
   /** 흘려 놓을 본문. 문단은 블록 요소로 — flex 로 감싸면 쪽 경계에서 문단이 안 쪼개진다 */
@@ -76,6 +77,12 @@ export function PagedText({
    * 낱말 퀴즈가 "다음 쪽으로 넘길 때" 뜨는 데 쓴다
    */
   onPage?: (page: number, pageCount: number) => void;
+  /**
+   * 앞으로(다음 쪽·다음 장) 못 넘기게 막는다 — 낱말 퀴즈를 맞히기 전 (WordQuiz 머리말).
+   * 버튼·옆으로 밀기·방향키·소리 내어 읽기의 저절로 넘김을 모두 막는다. 앞 쪽으로 돌아가
+   * 다시 읽는 것은 막지 않는다
+   */
+  lockForward?: boolean;
   /** 소리 내어 읽기가 쪽을 넘기는 손잡이 (PagedTextControl) */
   control?: Ref<PagedTextControl>;
 }) {
@@ -153,6 +160,12 @@ export function PagedText({
 
   // 소리 내어 읽기 — 다음에 읽을 낱말이 뒤쪽 쪽에 있으면 거기로 넘긴다.
   // 낱말의 가로 위치로 몇 번째 쪽인지 안다 (한 단 = 한 쪽, 단 사이 COLUMN_GAP)
+  // reveal 은 바깥에서 불려서 그 순간의 잠금을 읽어야 한다
+  const lockRef = useRef(lockForward);
+  useEffect(() => {
+    lockRef.current = lockForward;
+  }, [lockForward]);
+
   /** 이 낱말이 몇 번째 쪽에 흘러 있나 — 낱말의 가로 위치로 안다 */
   const pageOfNode = (node: HTMLElement): number | null => {
     const scroller = scrollerRef.current;
@@ -167,6 +180,7 @@ export function PagedText({
       const target = contentRef.current?.querySelector<HTMLElement>(`[data-word="${wordNo}"]`);
       if (!target) return;
       const pageOf = pageOfNode(target);
+      if (lockRef.current) return;
       if (pageOf !== null && pageOf > pageRef.current) goTo(pageOf);
     },
     pageStartWord: (page: number) => {
@@ -201,6 +215,7 @@ export function PagedText({
     else if (hasPrevChapter) onPrevChapter();
   };
   const next = () => {
+    if (lockForward) return;
     if (!atEnd) goTo(page + 1);
     else if (hasNextChapter) onNextChapter();
   };
@@ -285,12 +300,12 @@ export function PagedText({
           {atStart && hasPrevChapter ? "← 앞 장" : "←"}
         </button>
         <div className="flex-1 text-center text-[13px] text-muted" aria-live="polite">
-          {page + 1} / {pageCount}쪽
+          {lockForward ? "🎮 퀴즈를 맞히면 넘어갈 수 있어" : `${page + 1} / ${pageCount}쪽`}
         </div>
         <button
           type="button"
           onClick={next}
-          disabled={atEnd && !hasNextChapter}
+          disabled={lockForward || (atEnd && !hasNextChapter)}
           className={NAV_BUTTON}
           aria-label={atEnd ? "다음 장으로" : "다음 쪽으로"}
         >

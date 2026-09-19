@@ -260,7 +260,7 @@ The same question is reused if the student opens that chapter's checkpoint again
 
 ## 8. Word quiz (mid-reading mini-game — 2026-09-19)
 
-**When this runs.** In the 서재 reader, when the student turns past 25 / 50 / 75 % of the book's pages (books under 8 pages: 50 % only). The reader prefetches it one page early (`POST /api/reading/quiz`, `modules/ai/server/word-quiz.ts`) so it appears the moment the page turns. One call; nothing is stored, and the answer is checked in the browser.
+**When this runs.** In the 서재 reader, when the student turns past 25 / 50 / 75 % of the book's pages (books under 8 pages: 50 % only). The reader prefetches it two pages early (`POST /api/reading/quiz`, `modules/ai/server/word-quiz.ts`) so it appears the moment the page turns. One call; nothing is stored, and the answer is checked in the browser. The child must pick the right meaning to turn the page — wrong choices are struck out and the child picks again (three choices, so at most two misses).
 
 **Why multiple choice here, when call 6 bans it.** Call 6 asks *did you read this chapter*, so choices would give the answer away. This one is a vocabulary game in the middle of reading — no points, no hatching, nothing to cheat for — and it has to be one tap so the reading flow is not broken.
 

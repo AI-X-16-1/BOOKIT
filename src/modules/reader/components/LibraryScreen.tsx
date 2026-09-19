@@ -26,7 +26,7 @@ import type { ReaderDictResponse, ShelfBook, WordQuizResponse } from "../schema"
 import { PagedText, type PagedTextControl } from "./PagedText";
 import { ShelfPagination, useIsWide, useShelfPageSize } from "./ShelfPagination";
 import { useReadAloud } from "./useReadAloud";
-import { WordQuiz } from "./WordQuiz";
+import { WordQuiz, WordQuizSheet } from "./WordQuiz";
 
 /**
  * 책잇 서재. 목업 6 L386-404.
@@ -86,7 +86,7 @@ const QUIZ_MARKS_SHORT = [0.5];
 const SHORT_BOOK_PAGES = 8;
 
 /**
- * 이 쪽을 펼친 순간 책의 몇 %를 지나왔나(start), 다음 쪽을 펼치면 몇 %인가(next), 책 전체는
+ * 이 쪽을 펼친 순간 책의 몇 %를 지나왔나(start), 다음 쪽·그다음 쪽을 펼치면 몇 %인가(next·next2), 책 전체는
  * 대략 몇 쪽인가. 쪽 수는 지금 장만 잴 수 있어서(PagedText), 지금 장의 "글자 수 ÷ 쪽 수" 로
  * 다른 장의 쪽 수를 어림한다. 글자 수를 아직 못 받았으면 장마다 쪽 수가 같다고 본다
  */
@@ -96,7 +96,7 @@ function bookProgress(
   chapterNo: number,
   page: number,
   pageCount: number,
-): { start: number; next: number; pages: number } {
+): { start: number; next: number; next2: number; pages: number } {
   const here = lengths?.[chapterNo - 1];
   if (lengths && lengths.length === chapterCount && here) {
     const perPage = here / pageCount;
@@ -105,12 +105,14 @@ function bookProgress(
     return {
       start: (before + page * perPage) / total,
       next: (before + (page + 1) * perPage) / total,
+      next2: (before + (page + 2) * perPage) / total,
       pages: total / perPage,
     };
   }
   return {
     start: (chapterNo - 1 + page / pageCount) / chapterCount,
     next: (chapterNo - 1 + (page + 1) / pageCount) / chapterCount,
+    next2: (chapterNo - 1 + (page + 2) / pageCount) / chapterCount,
     pages: chapterCount * pageCount,
   };
 }
@@ -473,12 +475,18 @@ export function LibraryScreen({
   /**
    * 낱말 퀴즈 — 읽는 도중의 미니게임 (AI #8, 2026-09-19, 기획 §4-1).
    * 책 전체 쪽의 25·50·75%(쪽이 적은 책은 50%) 지점을 지나 **다음 쪽을 펼칠 때** 뜬다.
-   * 문제는 그 앞 쪽에서 미리 받아 둔다 — 모델이 몇 초 걸려서, 넘기는 순간 바로 떠야 한다.
+   * 문제는 **두 쪽 앞**에서 미리 받아 둔다 — 모델이 3~4초 걸려서, 한 쪽 앞에서 받으면 빨리
+   * 넘기는 아이에게는 늦었다 (강민구 결정, 9/19). 맞혀야 다음 쪽으로 넘어간다.
    * 저장하지 않는다. 책갈피도 기록도 없는 놀이라 새로 고치면 다시 나온다 (spec §2b)
    */
-  const [quiz, setQuiz] = useState<{ data: WordQuizResponse; picked: number | null } | null>(
-    null,
-  );
+  const [quiz, setQuiz] = useState<{
+    data: WordQuizResponse;
+    /** 골랐다가 틀린 보기들 */
+    wrong: number[];
+    solved: boolean;
+  } | null>(null);
+  /** 맞히기 전에는 다음 쪽으로 못 넘긴다 (WordQuiz 머리말 — 강민구 결정, 9/19) */
+  const quizLocked = quiz !== null && !quiz.solved;
   /** 퀴즈가 떠 있나 — 비동기로 도착하는 체크포인트가 그 순간 값을 읽는다 */
   const quizOpen = useRef(false);
   /** 퀴즈가 떠 있는 동안 도착한 체크포인트. 퀴즈를 닫으면 띄운다 */
@@ -697,7 +705,7 @@ export function LibraryScreen({
     heldQuiz.current = null;
     if (held) {
       quizOpen.current = true;
-      setQuiz({ data: held, picked: null });
+      setQuiz({ data: held, wrong: [], solved: false });
     }
     setPuzzleOpen(false);
     resetReadAloud();
@@ -748,7 +756,16 @@ export function LibraryScreen({
     setPuzzleOpen(false);
     readAloud.stop();
     quizOpen.current = true;
-    setQuiz({ data, picked: null });
+    setQuiz({ data, wrong: [], solved: false });
+  };
+
+  const pickQuiz = (choice: number) => {
+    setQuiz((current) => {
+      if (!current || current.solved) return current;
+      return choice === current.data.answer
+        ? { ...current, solved: true }
+        : { ...current, wrong: [...current.wrong, choice] };
+    });
   };
 
   /** 체크포인트를 닫는다. 그동안 기다린 퀴즈가 있으면 이어서 띄운다 */
@@ -785,7 +802,7 @@ export function LibraryScreen({
    * **다음 쪽**에서 지날 것 같으면 문제를 미리 받아 둔다
    */
   const onPageTurn = (book: ShelfBook, chapterNo: number, page: number, pageCount: number) => {
-    const { start, next, pages } = bookProgress(
+    const { start, next, next2, pages } = bookProgress(
       chapterLengths.current.get(book.id),
       book.chapterCount,
       chapterNo,
@@ -809,16 +826,20 @@ export function LibraryScreen({
       }
     }
 
-    // 다음 쪽에서 지날 지점이 있으면 지금 받아 둔다. 책의 마지막 쪽 다음은 없다
-    const upcoming = marks.find((mark) => start < mark && mark <= next && next < 1);
+    // 다음 쪽이나 그다음 쪽에서 지날 지점이 있으면 지금 받아 둔다. 책의 마지막 쪽 다음은 없다
+    const upcoming = marks.find(
+      (mark) => start < mark && ((mark <= next && next < 1) || (mark <= next2 && next2 < 1)),
+    );
     if (upcoming === undefined) return;
     const key = `${book.id}:${upcoming}`;
     if (quizPrefetch.current?.key === key) return;
-    // 이 장의 마지막 쪽이면 다음 쪽은 다음 장 첫 쪽이다 — 이 장 끝까지가 지문이다
+    // 지문은 퀴즈가 뜰 쪽 앞까지다. 그 쪽이 이 장을 넘어가면 이 장 끝까지 —
+    // 다음 장 첫 쪽이면 정확하고, 그다음 쪽이면 한 쪽 모자라지만 방금 읽은 대목인 건 같다
+    const showAt = upcoming <= next ? page + 1 : page + 2;
     const upto =
-      page >= pageCount - 1
+      showAt >= pageCount
         ? chapterWords.length
-        : (paged.current?.pageStartWord(page + 1) ?? chapterWords.length);
+        : (paged.current?.pageStartWord(showAt) ?? chapterWords.length);
     const promise = fetchWordQuiz(book.id, chapterNo, upto);
     promise.catch(() => {
       // 띄울 때 다시 받는다 (showQuiz)
@@ -963,6 +984,7 @@ export function LibraryScreen({
                   onNextChapter={() => openChapter(book, chapterNo + 1, "start")}
                   onReachEnd={() => markChapterRead(book.id, chapterNo)}
                   onPage={(page, pageCount) => onPageTurn(book, chapterNo, page, pageCount)}
+                  lockForward={quizLocked}
                   control={paged}
                 >
                   {/* 문단은 블록으로 쌓는다 — flex 로 감싸면 쪽 경계에서 문단이 쪼개지지 않는다 */}
@@ -1019,8 +1041,9 @@ export function LibraryScreen({
               <Card raised className="mb-4">
                 <WordQuiz
                   quiz={quiz.data}
-                  picked={quiz.picked}
-                  onPick={(choice) => setQuiz({ ...quiz, picked: choice })}
+                  wrong={quiz.wrong}
+                  solved={quiz.solved}
+                  onPick={pickQuiz}
                   onClose={closeQuiz}
                 />
               </Card>
@@ -1123,20 +1146,21 @@ export function LibraryScreen({
           </BottomSheet>
         </div>
 
-        {/* 768px 미만 — 낱말 퀴즈 바텀시트. 체크포인트와 같이 뜨지 않는다 (quizOpen) */}
-        <div className="md:hidden">
-          <BottomSheet open={quiz !== null} onClose={closeQuiz} label="낱말 퀴즈">
-            {quiz && (
+        {/* 768px 미만 — 낱말 퀴즈 시트. 맞히기 전에는 닫히지 않는다 (WordQuizSheet).
+            체크포인트와 같이 뜨지 않는다 (quizOpen · heldQuiz) */}
+        {quiz && (
+          <div className="md:hidden">
+            <WordQuizSheet>
               <WordQuiz
                 quiz={quiz.data}
-                picked={quiz.picked}
-                onPick={(choice) => setQuiz({ ...quiz, picked: choice })}
+                wrong={quiz.wrong}
+                solved={quiz.solved}
+                onPick={pickQuiz}
                 onClose={closeQuiz}
-                closable={false}
               />
-            )}
-          </BottomSheet>
-        </div>
+            </WordQuizSheet>
+          </div>
+        )}
 
         {/* 768px 미만 — 체크포인트는 바텀시트 (CLAUDE.md §8, 목업 7 #7).
             사전 시트와 같은 자리를 쓰지만 동시에 뜰 일은 없다 — 문항이 뜨면
