@@ -3,8 +3,8 @@
  *
  * 소유: 김민경 (CLAUDE.md §3). 2026-09-18, 제출 직전 한 번 돌리는 오프라인 배치다.
  *
- * 왜: 서재 56권(저작권 만료 원문)과 검색 유입 도서 대부분이 cover_url 이 없어 표지 퍼즐·도감·홈이
- * 전부 초록 자리표시자였다. 런타임 생성 파이프라인은 새 벤더·저장소·비동기 잡이 필요해 제출 전엔
+ * 왜: 서재 56권(저작권 만료 원문)은 알라딘 표지가 없어 표지 퍼즐·도감·홈이 전부 초록
+ * 자리표시자였다. 런타임 생성 파이프라인은 새 벤더·저장소·비동기 잡이 필요해 제출 전엔
  * 무리라, 우리가 한 번 생성해 `public/covers/<book_id>.webp` 로 커밋하고 books.cover_url 을 그리로 돌린다.
  * 런타임엔 아무 벤더도 안 붙는다 — 아이 데이터가 나갈 경로가 없다.
  *
@@ -12,8 +12,11 @@
  * 정책 확인 2026-09-18: 미성년자 직접 이용에만 보호자 동의 조건이 있고 우리 구조엔 해당 없음.
  * 실존 인물·특정 화풍 지정 없음. 잔혹 장면은 프롬프트에서 뺀다 — 아이 화면이다.
  *
+ * 저작권 만료 도서(is_public_domain)만 만든다. 저작권이 살아 있는 책에 AI 표지를 붙이면
+ * 실제 출간 도서의 표지로 오해된다 — 그 책들은 알라딘 image URL 을 쓴다 (CLAUDE.md §10, #178).
+ *
  * 재실행 안전: 파일이 이미 있으면 건너뛴다. 실패는 모아서 마지막에 찍는다.
- *   --scope curated (기본) | all      curated = 서재 56 + 시드 15. all 은 검색 유입분(교재 제외)까지
+ *   --scope curated (기본) | all      curated = 서재(추천 후보) 만. all 은 검색 유입된 저작권 만료 도서까지
  *   --limit N                          N 권만
  *   --only "제목"                      한 권만 (재생성하려면 파일을 먼저 지운다)
  *   --model gpt-image-1  --quality medium  --size 1024x1536
@@ -54,9 +57,10 @@ const db = createClient(env("NEXT_PUBLIC_SUPABASE_URL"), env("SUPABASE_SERVICE_R
 
 if (SYNC_DB) {
   const ids = existsSync(OUT_DIR) ? readdirSync(OUT_DIR).filter((f) => f.endsWith(".webp")).map((f) => f.slice(0, -5)) : [];
-  const { data: rows, error: e } = await db.from("books").select("id, title, cover_url").in("id", ids);
+  const { data: rows, error: e } = await db.from("books").select("id, title, cover_url, is_public_domain").in("id", ids);
   if (e) { console.error(e.message); process.exit(1); }
-  const stale = rows.filter((b) => b.cover_url !== `/covers/${b.id}.webp`);
+  for (const b of rows.filter((b) => !b.is_public_domain)) console.log(`  ! ${b.title}: 저작권이 살아 있는 책이다 — 파일을 지워라. DB 에 안 넣는다`);
+  const stale = rows.filter((b) => b.is_public_domain && b.cover_url !== `/covers/${b.id}.webp`);
   console.log(`파일 ${ids.length}개 · DB 와 다른 것 ${stale.length}건`);
   let n = 0;
   for (const b of stale) {
@@ -77,6 +81,7 @@ const { data: books, error } = await db
 if (error) { console.error(error.message); process.exit(1); }
 
 let targets = books.filter((b) => !b.cover_url || b.cover_url.startsWith("/covers/"));
+targets = targets.filter((b) => b.is_public_domain);
 if (SCOPE === "curated") targets = targets.filter((b) => b.curated);
 // 학습지·교재·웹툰은 태그가 없다 (#103) — 독후감 대상이 아니라 표지도 안 만든다
 targets = targets.filter((b) => (b.tags ?? []).length > 0);
@@ -96,7 +101,6 @@ const STYLE =
   "주인공을 한 장면으로. 세로형 책 표지 구도, 여백은 위쪽에.";
 
 async function sceneHint(book) {
-  if (!book.is_public_domain) return "";
   const { data } = await db.from("book_contents").select("body").eq("book_id", book.id).eq("chapter_no", 1).maybeSingle();
   const text = (data?.body ?? "").replace(/\s+/g, " ").slice(0, 400);
   return text ? `\n이야기 첫 부분: "${text}"` : "";
