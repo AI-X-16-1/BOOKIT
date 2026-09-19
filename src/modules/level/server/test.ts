@@ -18,11 +18,17 @@
  */
 import "server-only";
 
-import { buildLevelTest, judgeLevelTest, type PassageContext } from "@/modules/ai";
+import {
+  buildLevelTest,
+  cutPassage,
+  judgeLevelTest,
+  passageLimitFor,
+  type PassageContext,
+} from "@/modules/ai";
 import type { BookitClient } from "@/shared/supabase";
 
-/** 진단 지문으로 쓸 분량. 프롬프트의 PASSAGE_MAX_CHARS 와 같은 뜻이다 */
-const PASSAGE_CHARS = 1_200;
+// 지문 분량은 학년이 정한다 — ai 의 passageLimitFor. 아이가 화면에서 본 것과
+// 판정에 넘기는 것이 같아야 하므로 양쪽 모두 같은 함수를 쓴다.
 
 export interface LevelTestStart {
   bookId: string;
@@ -120,7 +126,7 @@ async function pickPassage(
       bookId: chosen.id,
       title: chosen.title,
       author: chosen.author,
-      body: chapter.body.slice(0, PASSAGE_CHARS),
+      body: cutPassage(chapter.body, passageLimitFor(gradeLevel)),
     },
   };
 }
@@ -197,7 +203,7 @@ export async function finishLevelTest(
   const passage: PassageContext = {
     bookTitle: book.title,
     author: book.author,
-    body: chapter.body.slice(0, PASSAGE_CHARS),
+    body: cutPassage(chapter.body, passageLimitFor(gradeLevel)),
   };
 
   const result = await judgeLevelTest(

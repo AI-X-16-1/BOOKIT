@@ -404,8 +404,40 @@ export interface PassageContext {
   body: string;
 }
 
-/** 진단 지문 상한. 초1도 1~2분에 읽을 분량 (체크포인트의 8,000자와 다른 이유다) */
+/** 진단 지문 상한 — 중학생 기준. 체크포인트의 8,000자와 다른 이유는 여기가 "읽고 답하는" 자리라서다 */
 export const PASSAGE_MAX_CHARS = 1_200;
+
+/**
+ * 학년별 지문 분량. 원래 뜻은 "1~2분에 읽을 분량" 이었는데 값이 하나뿐이라 저학년이
+ * 지키지 못했다 — 서재의 초1~2 책 22권 중 18권이 1장부터 1,200자를 넘어서(1장 길이
+ * 중앙값 2,800자), 초1 이 중3 과 같은 양을 받고 있었다.
+ *
+ * 학년마다 1~2분을 다시 맞춘다. 읽기 속도가 학년에 따라 크게 다르기 때문이다.
+ */
+export function passageLimitFor(gradeLevel?: number | null): number {
+  const grade = gradeLevel ?? 9;
+  if (grade <= 2) return 400;
+  if (grade <= 4) return 700;
+  if (grade <= 6) return 1_000;
+  return PASSAGE_MAX_CHARS;
+}
+
+/**
+ * 상한에서 그냥 자르면 문장이 토막 난다 — 저학년일수록 상한이 낮아 더 자주 걸린다.
+ * 마지막 문장 끝에서 끊고, 문장 끝이 너무 앞이면(상한의 절반 미만) 그냥 상한에서 자른다.
+ */
+export function cutPassage(body: string, limit: number): string {
+  if (body.length <= limit) return body.trim();
+
+  const head = body.slice(0, limit);
+  const end = Math.max(
+    head.lastIndexOf("."),
+    head.lastIndexOf("!"),
+    head.lastIndexOf("?"),
+    head.lastIndexOf("”"),
+  );
+  return (end >= limit * 0.5 ? head.slice(0, end + 1) : head).trim();
+}
 
 export const LEVEL_TEST_SYSTEM = `너는 아이가 방금 읽은 짧은 지문으로 **읽기 수준을 가늠하는** 질문 세 개를 만든다.
 
@@ -437,7 +469,7 @@ export const LEVEL_TEST_SYSTEM = `너는 아이가 방금 읽은 짧은 지문�
 - 시험처럼 들리지 않게. "맞혀 봐" 가 아니라 "어떻게 봤어" 를 묻는다.`;
 
 export function levelTestUser(passage: PassageContext, gradeLevel?: number): string {
-  const body = passage.body.slice(0, PASSAGE_MAX_CHARS);
+  const body = cutPassage(passage.body, passageLimitFor(gradeLevel));
   const said = gradeLevel ? `아이가 고른 학년: ${gradeLevel}학년\n` : "";
 
   return `${said}지문: ${passage.bookTitle} (${passage.author})
@@ -470,7 +502,7 @@ export function levelJudgeUser(
   answers: string[],
   gradeLevel?: number,
 ): string {
-  const body = passage.body.slice(0, PASSAGE_MAX_CHARS);
+  const body = cutPassage(passage.body, passageLimitFor(gradeLevel));
   const said = gradeLevel ? `아이가 고른 학년: ${gradeLevel}학년\n` : "";
   const pairs = questions
     .map((q, i) => `${i + 1}. ${q}\n   답: """${(answers[i] ?? "").trim() || "(비어 있음)"}"""`)
