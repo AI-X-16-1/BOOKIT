@@ -9,7 +9,9 @@ import {
   splitWords,
   START_WINDOW,
   WINDOW,
+  wordOffset,
 } from "./readAlong";
+import { pickPartner } from "./partner";
 
 const BOOK = splitWords(
   "어느 해 몹시 추운 겨울날이었습니다. 하늘에서는 흰 새의 날개같이 희고도 보드라운 눈송이가 펑 ─ 펑 ─ 쏟아져 내리고",
@@ -55,18 +57,27 @@ test("문장을 건너뛰고 읽으면 따라가지 않는다", () => {
 });
 
 test("막 읽기 시작했을 때 앞 낱말을 흘렸으면 첫 문장 안에서는 찾아 준다", () => {
-  // 🎤 를 누르자마자 읽어서 "어느 해 몹시 추운" 을 인식기가 못 들었다
-  const heard = splitWords("겨울날이었습니다 하늘에서는 흰");
+  // 🎤 를 누르자마자 읽어서 "어느 해 몹시 추운 겨울날이었습니다 하늘에서는" 을 인식기가 못 들었다
+  const heard = splitWords("흰 새의 날개같이");
   assert.equal(advance(BOOK, 0, heard), 0, "보통 폭으로는 건너뛰기라 멈춘다");
-  assert.equal(advance(BOOK, 0, heard, START_WINDOW), 7, "시작 폭이면 따라간다");
+  assert.equal(advance(BOOK, 0, heard, START_WINDOW), 9, "시작 폭이면 따라간다");
   // 한 낱말이라도 맞춘 뒤로는 보통 폭 — 건너뛰기는 여전히 막힌다
   assert.equal(advance(BOOK, 1, ["희고도"], WINDOW), 1);
 });
 
-test("세 낱말까지는 인식기가 흘려도 따라간다 — 그보다 많으면 멈춘다", () => {
+test("다섯 낱말까지는 인식기가 흘려도 따라간다 — 그보다 많으면 멈춘다", () => {
   assert.equal(advance(BOOK, 6, ["날개같이"]), 9, "흰·새의 둘을 흘림");
   assert.equal(advance(BOOK, 6, ["희고도"]), 10, "흰·새의·날개같이 셋을 흘림 (실측)");
-  assert.equal(advance(BOOK, 6, ["보드라운"]), 6, "네 낱말을 건너뜀 — 멈춘다");
+  // 9/19 폰 실기기: 확실히 읽었는데 멈추는 때가 있어 넷·다섯까지 넉넉하게 받는다
+  assert.equal(advance(BOOK, 6, ["보드라운"]), 11, "넷을 흘림");
+  assert.equal(advance(BOOK, 6, ["눈송이가"]), 12, "다섯을 흘림");
+  // 본문 12 는 펑, 13 은 ─ (부호라 세지 않음), 14 는 펑 — 여섯을 건너뛰면 멈춘다
+  assert.equal(advance(BOOK, 6, ["쏟아져"]), 6, "여섯 넘게 건너뜀 — 멈춘다");
+});
+
+test("비슷한 말은 커서 뒤 세 번째 낱말까지 받는다", () => {
+  // "몹씨" 는 "몹시" 와 자모 한 자 차이. 커서 0 에서 몹시는 세 번째 낱말이다
+  assert.equal(advance(BOOK, 0, ["몹씨"]), 3);
 });
 
 test("부호뿐인 칸(─)은 건너뛰기 폭에 세지 않는다 — '펑펑 쏟아져' 는 따라간다", () => {
@@ -100,7 +111,7 @@ test("실측 3 — '하늘에서는 흰색 나에게 같이 이고도 보도록'
   assert.equal(advance(BOOK, 5, splitWords("하늘에서는 흰색 나에게 같이 이고도 보도록")), 10);
 });
 
-test("비슷한 말은 바로 다음 한두 낱말에만 받는다 — 멀리 있는 한 글자 말에 튀지 않는다", () => {
+test("비슷한 말은 바로 다음 몇 낱말에만 받는다 — 멀리 있는 한 글자 말에 튀지 않는다", () => {
   // "회" 는 "해" 와 자모 한 자 차이 — 바로 다음이거나 그다음이면 받는다
   assert.equal(advance(BOOK, 1, ["회"]), 2, "바로 다음(해)");
   assert.equal(advance(BOOK, 0, ["회"]), 2, "그다음(해) — '어느' 를 못 들었어도 따라간다");
@@ -154,4 +165,35 @@ test("둘째 문단 끝만 읽으면 따라가지 않고, 이어서 차례로 �
     advance(TWO_PARAGRAPHS, endOfFirst, splitWords(secondParagraph)),
     TWO_PARAGRAPHS.length,
   );
+});
+
+test("맞춘 낱말 뒤의 부호뿐인 칸은 함께 넘긴다 — 쪽 끝이 ” 로 끝나도 다음 칸은 낱말이다", () => {
+  // 「참된 동정」 1쪽 끝은 "… 줍시요 ”" 이고 2쪽은 "하고" 로 시작한다
+  const words = splitWords("“돈 한 푼 줍시요!” 하고 떨면서");
+  assert.equal(words[words.indexOf("줍시요") + 1], "”");
+  const cursor = advance(words, 0, splitWords("돈 한 푼 줍시요"));
+  assert.equal(words[cursor], "하고");
+});
+
+test("wordOffset — 화면의 낱말 번호로 원문 글자 위치를 찾는다 (낱말 퀴즈 지문 자르기)", () => {
+  const body = "어느 해 몹시 추운 겨울날이었습니다.\n\n하늘에서는 흰 새의";
+  const words = splitWords(body);
+  for (let n = 0; n < words.length; n += 1) {
+    assert.ok(body.startsWith(words[n], wordOffset(body, n)), `${n}번째 ${words[n]}`);
+  }
+  assert.equal(wordOffset(body, words.length), body.length, "끝을 넘으면 본문 길이");
+  assert.equal(body.slice(0, wordOffset(body, 5)).trim(), "어느 해 몹시 추운 겨울날이었습니다.");
+});
+
+test("pickPartner — 가장 많이 자란 캐릭터가 파트너, 같으면 최근 것", () => {
+  const base = { book_title: "책", cover_url: null, name: "이름", art_seed: "592b93bc" };
+  const list = [
+    { ...base, book_id: "a", stage: 1 as const, stage_name: "아기 나귀", obtained_at: "2026-09-18T01:00:00Z" },
+    { ...base, book_id: "b", stage: 2 as const, stage_name: "달밤 나귀", obtained_at: "2026-09-17T01:00:00Z" },
+    { ...base, book_id: "c", stage: 2 as const, stage_name: "새 친구", obtained_at: "2026-09-18T02:00:00Z" },
+  ];
+  assert.equal(pickPartner(list)?.name, "새 친구");
+  assert.equal(pickPartner([list[0]])?.face, "🐣");
+  assert.equal(pickPartner([]), null);
+  assert.ok(["🐉", "🦊", "🐢", "🦉", "🐯", "🐰", "🐻", "🦋"].includes(pickPartner(list)!.face));
 });

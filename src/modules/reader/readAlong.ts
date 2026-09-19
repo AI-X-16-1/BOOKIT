@@ -12,8 +12,8 @@
  *   - **바로 다음 한두 낱말**은 비슷하기만 해도 받는다 — 실제 인식이 "해 → 회",
  *     "흰 → 흰색", "희고도 → 이고도" 로 들었다 (2026-09-18 크롬 실측, readAlong.test.ts).
  *     멀리 있는 낱말에는 쓰지 않는다. 짧은 말끼리는 대부분 한 글자 차이라 아무 데나 맞는다
- *   - **건너뛰면 따라가지 않는다.** 다음 낱말은 커서에서 세 낱말 안에서만 찾는다 —
- *     인식기가 짧은 말 서너 개를 흘리는 건 받아 주지만(실측에서 "흰 새의 날개같이" 를
+ *   - **건너뛰면 따라가지 않는다.** 다음 낱말은 커서에서 여섯 낱말 안에서만 찾는다 —
+ *     인식기가 짧은 말 몇 개를 흘리는 건 받아 주지만(실측에서 "흰 새의 날개같이" 를
  *     한 번에 흘렸다가 나중에 고쳐 보냈다),
  *     문장을 건너뛰면 형광펜은 거기서 기다린다. 형광펜 끝이 "여기부터 다시 읽어" 다.
  *     (폰 실기기 피드백, 2026-09-18: 많이 건너뛰어 읽었는데 그대로 진행됐다)
@@ -31,13 +31,17 @@ export const TOKEN_PATTERN = /([\s.,!?~"'()[\]{}·…—-]+)/;
 
 /**
  * 커서 뒤로 **소리 낼 수 있는 낱말** 이만큼 안에서 다음 낱말을 찾는다.
- * 4 = 바로 다음 낱말 + 그 뒤 셋. 곧 "인식기가 세 낱말까지 흘려도 따라가고, 그보다
- * 많이 건너뛰면 멈춘다" 는 뜻이다.
+ * 6 = 바로 다음 낱말 + 그 뒤 다섯. 곧 "인식기가 다섯 낱말까지 흘려도 따라가고, 그보다
+ * 많이 건너뛰면 멈춘다" 는 뜻이다. 한 문장(이 책들은 대개 여섯 낱말 넘게)을 통째로
+ * 건너뛰면 여전히 멈춘다.
+ *
+ * 처음엔 4 였다. 폰 실기기에서 "확실히 읽었는데 진행이 안 되는" 때가 있었다 (9/19) —
+ * 인식기가 한 번에 흘리는 말이 셋을 넘는 때가 있어서 넉넉하게 늘렸다.
  *
  * 부호뿐인 낱말(「펑 ─ 펑」 의 ─)은 세지 않는다. 소리 낼 수 없는 칸이라, 세면
  * "펑펑 쏟아져" 를 읽어도 쏟아져가 멀리 있는 것처럼 보여 건너뛰기로 판정됐다 (실측)
  */
-export const WINDOW = 4;
+export const WINDOW = 6;
 
 /**
  * 이번에 읽기 시작한 뒤 **아직 한 낱말도 못 맞췄을 때**만 쓰는 넓은 폭 — 첫 문장 하나.
@@ -119,7 +123,7 @@ function distance(a: string, b: string): number {
  * 비슷한 낱말인가 — 자모로 폈을 때 긴 쪽의 40% 까지 (짧아도 한 자는) 달라도 된다.
  * 한쪽이 다른 쪽으로 시작하면 한 글자짜리도 받는다 ("흰" ↔ "흰색", "추운" ↔ "추").
  * "추운 겨울날이었습니다" 를 "추 결말이었습니다" 로 들어도 따라간다.
- * **바로 다음 한두 낱말에만** 쓴다 (findNear) — 넓게 쓰면 짧은 말이 아무 데나 맞는다
+ * **바로 다음 몇 낱말에만** 쓴다 (findNear, FUZZY_REACH) — 넓게 쓰면 짧은 말이 아무 데나 맞는다
  */
 export function similarWord(book: string, heard: string): boolean {
   const a = normalize(book);
@@ -130,8 +134,11 @@ export function similarWord(book: string, heard: string): boolean {
   return distance(a, b) <= Math.max(1, Math.floor(longest * 0.4));
 }
 
-/** 비슷하기만 해도 받는 범위 — 커서 바로 다음 낱말과 그다음 하나 */
-const FUZZY_REACH = 2;
+/**
+ * 비슷하기만 해도 받는 범위 — 커서 바로 다음 낱말부터 셋 (처음엔 둘이었다. 9/19 넉넉하게,
+ * WINDOW 머리말). 더 넓히면 짧은 말끼리 아무 데나 맞는다
+ */
+const FUZZY_REACH = 3;
 
 
 /**
@@ -173,7 +180,12 @@ export function advance(
   let next = cursor;
   for (const word of heard) {
     const found = findNear(words, next, word, next === cursor ? firstWidth : WINDOW);
-    if (found >= 0) next = found;
+    if (found < 0) continue;
+    next = found;
+    // 맞춘 낱말 바로 뒤의 부호뿐인 칸(” ─ …)은 소리 낼 수 없으니 함께 넘긴다.
+    // 넘기지 않으면 "다음에 읽을 칸" 이 부호를 가리켜, 쪽 끝이 ” 로 끝날 때 다음 쪽으로
+    // 안 넘어갔다 (「참된 동정」 1쪽 끝: … 줍시요 ”)
+    while (next < words.length && !readable(words[next])) next += 1;
   }
   return next;
 }
@@ -203,4 +215,24 @@ export function sessionText(results: ResultListLike, final: boolean): string {
     else if (last === undefined || !last.startsWith(text)) parts.push(text);
   }
   return parts.join(" ");
+}
+
+/**
+ * 본문에서 n 번째 낱말(0부터, splitWords 와 같은 번호)이 시작하는 글자 위치.
+ * n 이 낱말 수 이상이면 본문 길이. 낱말 퀴즈가 "방금 읽은 대목" 을 자를 때 쓴다 —
+ * 화면은 낱말 번호(data-word)만 알고, 서버는 원문을 문장부호째 잘라야 한다.
+ *
+ * 문단 사이 빈 줄도 구분자라, 화면처럼 문단별로 나눠 센 번호와 같다
+ */
+export function wordOffset(body: string, n: number): number {
+  let at = 0;
+  let count = 0;
+  for (const part of body.split(TOKEN_PATTERN)) {
+    if (part && !TOKEN_PATTERN.test(part) && part.trim()) {
+      if (count === n) return at + (part.length - part.trimStart().length);
+      count += 1;
+    }
+    at += part.length;
+  }
+  return body.length;
 }

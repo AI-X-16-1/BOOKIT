@@ -14,7 +14,7 @@ import type { ShelfBook } from "../schema";
 export async function listShelf(supabase: BookitClient): Promise<ShelfBook[]> {
   const { data: books, error: booksError } = await supabase
     .from("books")
-    .select("id, title, author, target_grade_min, target_grade_max")
+    .select("id, title, author, target_grade_min, target_grade_max, cover_url")
     .eq("is_public_domain", true);
 
   if (booksError) {
@@ -48,6 +48,7 @@ export async function listShelf(supabase: BookitClient): Promise<ShelfBook[]> {
       gradeMin: book.target_grade_min,
       gradeMax: book.target_grade_max,
       chapterCount: counts.get(book.id) ?? 0,
+      coverUrl: book.cover_url,
     }))
     .filter((book) => book.chapterCount > 0)
     .sort(

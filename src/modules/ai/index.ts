@@ -60,3 +60,7 @@ export {
 // 아이가 본 것과 판정에 넘기는 것이 달라지면 추천이 뜻을 잃는다
 export { passageLimitFor, cutPassage, PASSAGE_MAX_CHARS } from "./server/prompts";
 export type { LevelQuestions, LevelResult } from "./schema";
+
+/** AI #8 낱말 퀴즈 (2026-09-19) — 서재에서 읽는 도중의 미니게임. 책갈피를 주지 않는다 */
+export { makeWordQuiz } from "./server/word-quiz";
+export type { WordQuiz } from "./schema";

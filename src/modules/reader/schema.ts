@@ -34,6 +34,8 @@ export interface ShelfBook {
   gradeMax: number | null;
   /** book_contents 의 장 수. 1장부터 빈틈 없이 이어진다고 가정한다 */
   chapterCount: number;
+  /** 표지. 서재 책은 `/covers/<id>.webp` (오프라인 배치, scripts/covers-generate.mjs). 없으면 그라데이션 */
+  coverUrl: string | null;
 }
 
 /**
@@ -46,3 +48,34 @@ export const readingProgressSchema = z.object({
   book_id: z.guid(),
   chapter_no: z.number().int().min(1),
 });
+
+/**
+ * POST /api/reading/quiz  { book_id, chapter_no, upto_word } → WordQuizResponse | null
+ *
+ * 낱말 퀴즈 (AI #8, 2026-09-19). 읽는 도중에 뜨는 미니게임 한 문제.
+ * `upto_word` = 지금 펼친 쪽의 첫 낱말 번호(data-word). 그 앞까지가 "방금 읽은 대목" 이다.
+ * 0 이면 앞 장의 끝을 쓴다 — 새 장 첫 쪽을 펼친 순간이 곧 앞 장을 다 읽은 순간이다
+ */
+export const wordQuizRequestSchema = z.object({
+  book_id: z.guid(),
+  chapter_no: z.number().int().min(1),
+  upto_word: z.number().int().min(0),
+  /** 이 책에서 이미 물어본 낱말 — 같은 낱말을 또 내지 않는다. 화면이 들고 있다 */
+  // 프롬프트에 그대로 들어가므로 낱말 모양(글자·숫자·띄어쓰기, 40자 안)만 남긴다.
+  // 거절하지 않고 거른다 — 모델이 "의관을 정제하고" 같은 구절을 고르기도 해서, 거절하면
+  // 그다음 퀴즈 요청이 통째로 400 이 된다
+  avoid: z
+    .array(z.string().max(80))
+    .max(10)
+    .default([])
+    .transform((words) => words.filter((word) => /^[\p{L}\p{N} ]{1,40}$/u.test(word))),
+});
+
+/** 퀴즈 한 문제. 정답 자리를 같이 준다 — 걸린 것이 없는 놀이라 화면이 바로 맞춘다 */
+export interface WordQuizResponse {
+  word: string;
+  sentence: string;
+  choices: [string, string, string];
+  answer: number;
+}
+
