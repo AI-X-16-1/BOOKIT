@@ -15,15 +15,20 @@ import { BottomSheet, Button, Card, Chip } from "@/shared/ui";
 import {
   answerCheckpoint,
   fetchChapter,
+  fetchChapterLengths,
   fetchDictEntry,
+  fetchMyCharacters,
+  fetchWordQuiz,
   openCheckpoint,
   recordChapterRead,
 } from "../api";
 import { advance, splitWords, START_WINDOW, TOKEN_PATTERN, WINDOW } from "../readAlong";
-import type { ReaderDictResponse, ShelfBook } from "../schema";
+import type { ReaderDictResponse, ShelfBook, WordQuizResponse } from "../schema";
 import { PagedText, type PagedTextControl } from "./PagedText";
 import { ShelfPagination, useIsWide, useShelfPageSize } from "./ShelfPagination";
 import { useReadAloud } from "./useReadAloud";
+import { WordQuiz, WordQuizSheet } from "./WordQuiz";
+import { pickPartner, type Partner } from "../partner";
 
 /**
  * 책잇 서재. 목업 6 L386-404.
@@ -72,6 +77,47 @@ const READ_ALOUD_HINT: Record<ReturnType<typeof useReadAloud>["state"], string> 
   denied: "마이크를 쓸 수 없어. 브라우저에서 마이크를 허락해 줘",
   unsupported: "이 브라우저에서는 소리 내어 읽기를 쓸 수 없어. 크롬에서 열면 돼",
 };
+
+/**
+ * 낱말 퀴즈(AI #8)가 뜨는 곳 — 책 전체 **쪽** 의 몇 % 지점에서. 쪽이 적은 책은 한가운데
+ * 한 번만 (쪽마다 퀴즈가 뜨면 읽는 게 아니라 퀴즈를 푸는 게 된다 — 강민구 결정, 9/19)
+ */
+const QUIZ_MARKS = [0.25, 0.5, 0.75];
+const QUIZ_MARKS_SHORT = [0.5];
+/** 책 전체가 이보다 적은 쪽이면 "쪽이 적은 책" */
+const SHORT_BOOK_PAGES = 8;
+
+/**
+ * 이 쪽을 펼친 순간 책의 몇 %를 지나왔나(start), 다음 쪽·그다음 쪽을 펼치면 몇 %인가(next·next2), 책 전체는
+ * 대략 몇 쪽인가. 쪽 수는 지금 장만 잴 수 있어서(PagedText), 지금 장의 "글자 수 ÷ 쪽 수" 로
+ * 다른 장의 쪽 수를 어림한다. 글자 수를 아직 못 받았으면 장마다 쪽 수가 같다고 본다
+ */
+function bookProgress(
+  lengths: number[] | undefined,
+  chapterCount: number,
+  chapterNo: number,
+  page: number,
+  pageCount: number,
+): { start: number; next: number; next2: number; pages: number } {
+  const here = lengths?.[chapterNo - 1];
+  if (lengths && lengths.length === chapterCount && here) {
+    const perPage = here / pageCount;
+    const before = lengths.slice(0, chapterNo - 1).reduce((sum, n) => sum + n, 0);
+    const total = lengths.reduce((sum, n) => sum + n, 0);
+    return {
+      start: (before + page * perPage) / total,
+      next: (before + (page + 1) * perPage) / total,
+      next2: (before + (page + 2) * perPage) / total,
+      pages: total / perPage,
+    };
+  }
+  return {
+    start: (chapterNo - 1 + page / pageCount) / chapterCount,
+    next: (chapterNo - 1 + (page + 1) / pageCount) / chapterCount,
+    next2: (chapterNo - 1 + (page + 2) / pageCount) / chapterCount,
+    pages: chapterCount * pageCount,
+  };
+}
 
 /**
  * 지금 화면에 보이는 첫 낱말의 번호. 본문은 쪽마다 가로로 흘러 있어서(PagedText)
@@ -443,6 +489,97 @@ export function LibraryScreen({
   const [puzzleOpen, setPuzzleOpen] = useState(false);
 
   /**
+   * 낱말 퀴즈 — 읽는 도중의 미니게임 (AI #8, 2026-09-19, 기획 §4-1).
+   * 책 전체 쪽의 25·50·75%(쪽이 적은 책은 50%) 지점을 지나 **다음 쪽을 펼칠 때** 뜬다.
+   * 문제는 **두 쪽 앞**에서 미리 받아 둔다 — 모델이 3~4초 걸려서, 한 쪽 앞에서 받으면 빨리
+   * 넘기는 아이에게는 늦었다 (강민구 결정, 9/19). 맞혀야 다음 쪽으로 넘어간다.
+   * 저장하지 않는다. 책갈피도 기록도 없는 놀이라 새로 고치면 다시 나온다 (spec §2b)
+   */
+  const [quiz, setQuiz] = useState<{
+    data: WordQuizResponse;
+    /** 골랐다가 틀린 보기들 */
+    wrong: number[];
+    solved: boolean;
+  } | null>(null);
+  /** 맞히기 전에는 다음 쪽으로 못 넘긴다 (WordQuiz 머리말 — 강민구 결정, 9/19) */
+  const quizLocked = quiz !== null && !quiz.solved;
+  /** 퀴즈가 떠 있나 — 비동기로 도착하는 체크포인트가 그 순간 값을 읽는다 */
+  const quizOpen = useRef(false);
+  /** 퀴즈가 떠 있는 동안 도착한 체크포인트. 퀴즈를 닫으면 띄운다 */
+  const queuedCheckpoint = useRef<CheckpointView | null>(null);
+  /**
+   * 반대로 체크포인트가 떠 있는 동안 도착한 퀴즈. 체크포인트를 닫으면 띄운다 —
+   * 장 끝 쪽이 퀴즈 지점이면 둘이 같이 온다. 폰에서는 시트 두 장이 겹치고, 넓은 화면도
+   * 문항 둘이 한꺼번에 뜨면 무엇부터 할지 모른다
+   */
+  const heldQuiz = useRef<WordQuizResponse | null>(null);
+  /** 체크포인트가 떠 있나 — 비동기로 도착하는 퀴즈가 그 순간 값을 읽는다 */
+  const checkpointShown = useRef(false);
+  useEffect(() => {
+    checkpointShown.current = checkpoint !== null;
+  }, [checkpoint]);
+  /** 책 → 장마다 글자 수 (책 전체 쪽 수 어림) */
+  const chapterLengths = useRef(new Map<string, number[]>());
+  /** 책 → 지금까지 펼친 가장 먼 곳 (0~1). 뒤로 갔다 다시 와도 같은 지점에서 두 번 안 뜬다 */
+  const quizSeen = useRef(new Map<string, number>());
+  /** 이번에 이미 낸 지점 "책:지점" */
+  const quizDone = useRef(new Set<string>());
+  /**
+   * 책 → 못 푼 채 두고 나간 퀴즈. 서재 목록으로 나갔다 다시 들어오면 그 자리에서 다시 띄운다 —
+   * 없으면 나갔다 들어오는 것만으로 "맞혀야 넘어간다" 를 빠져나갈 수 있다 (9/19 점검)
+   */
+  const unsolvedQuiz = useRef(new Map<string, WordQuizResponse>());
+  /**
+   * 책 → 이미 받은 문제의 낱말. 다음 문제를 받을 때 넘겨서 같은 낱말을 또 묻지 않는다 —
+   * 세 문제가 모두 같은 낱말로 나왔다 (9/19 실기기)
+   */
+  const quizWords = useRef(new Map<string, string[]>());
+  /** 문제를 받는다. 받은 낱말은 그 책의 "이미 낸 낱말" 에 적는다 */
+  const requestQuiz = (bookId: string, chapterNo: number, uptoWord: number) => {
+    const promise = fetchWordQuiz(bookId, chapterNo, uptoWord, quizWords.current.get(bookId) ?? []);
+    void promise
+      .then((data) => {
+        if (data) quizWords.current.set(bookId, [...(quizWords.current.get(bookId) ?? []), data.word]);
+      })
+      .catch(() => {
+        // 띄우는 쪽이 따로 처리한다
+      });
+    return promise;
+  };
+  /** 미리 받아 둔 문제 */
+  const quizPrefetch = useRef<{
+    key: string;
+    promise: Promise<WordQuizResponse | null>;
+  } | null>(null);
+  /**
+   * 같이 읽는 내 파트너 (partner.ts). 책을 펼칠 때 한 번 불러온다 — 방금 부화·진화했으면
+   * 다음 책부터 바뀐다. 못 불러오거나 아직 캐릭터가 없으면 이 책의 알이 파트너다
+   */
+  const [partner, setPartner] = useState<Partner | null>(null);
+  // 이름 뒤에 "의 공격" 이 붙는다 — "이 책의 알의 공격" 은 어색해서 "알 친구" 로 부른다
+  const partnerOf = (): Partner => partner ?? { face: "🥚", name: "알 친구", stage: 0 };
+  /** 지금 펼친 책. 늦게 도착한 퀴즈가 다른 책 위에 뜨지 않게 */
+  const openBookId = useRef<string | null>(null);
+  const readingBookId = reading?.book.id ?? null;
+  useEffect(() => {
+    if (!readingBookId) return;
+    void fetchMyCharacters()
+      .then(({ characters }) => setPartner(pickPartner(characters)))
+      .catch(() => {
+        // 못 받으면 이 책의 알이 파트너다 (partnerOf)
+      });
+  }, [readingBookId]);
+  useEffect(() => {
+    openBookId.current = readingBookId;
+    if (!readingBookId || chapterLengths.current.has(readingBookId)) return;
+    void fetchChapterLengths(readingBookId)
+      .then((lengths) => chapterLengths.current.set(readingBookId, lengths))
+      .catch(() => {
+        // 못 받으면 장마다 쪽 수가 같다고 보고 어림한다 (bookProgress)
+      });
+  }, [readingBookId]);
+
+  /**
    * 소리 내어 읽기 — STT 낭독 하이라이트 (sprint-0918 ③, 기획 §3).
    *
    * 들린 말을 readAlong 으로 본문 낱말에 맞춰, 읽은 곳까지 형광펜처럼 칠한다.
@@ -546,7 +683,7 @@ export function LibraryScreen({
         setPuzzleOpen(false);
         // 읽기가 끝났다. 문항을 소리 내 읽으면 본문 색이 엉뚱하게 튀므로 마이크를 끈다
         readAloud.stop();
-        setCheckpoint({
+        const view: CheckpointView = {
           id: checkpoint_id,
           chapterNo,
           question,
@@ -556,7 +693,10 @@ export function LibraryScreen({
           result: null,
           submitting: false,
           error: null,
-        });
+        };
+        // 낱말 퀴즈가 떠 있으면 퀴즈를 닫을 때 띄운다 — 짧은 책은 퀴즈 쪽이 곧 마지막 쪽이다
+        if (quizOpen.current) queuedCheckpoint.current = view;
+        else setCheckpoint(view);
       })
       .catch(() => {
         // 못 받았으면 이 장에서는 그냥 넘어간다. 다음 장에서 다시 시도한다
@@ -613,6 +753,13 @@ export function LibraryScreen({
     setEntry({ state: "idle" });
     // 장을 옮기면 앞 장 문항은 닫는다 — 지난 장을 묻는 문항이 새 본문 옆에 남으면 안 된다
     setCheckpoint(null);
+    // 문항 뒤에서 기다리던 낱말 퀴즈는 띄운다 — 방금 읽은 대목의 낱말이라 새 장에서도 맞다
+    const held = heldQuiz.current;
+    heldQuiz.current = null;
+    if (held) {
+      quizOpen.current = true;
+      setQuiz({ data: held, wrong: [], solved: false });
+    }
     setPuzzleOpen(false);
     resetReadAloud();
     setReading({ book, chapterNo, startAt, state: "loading" });
@@ -648,6 +795,120 @@ export function LibraryScreen({
     dictRequest.current++;
     setEntry({ state: "idle" });
   };
+  const closeQuiz = () => {
+    setQuiz(null);
+    quizOpen.current = false;
+    const queued = queuedCheckpoint.current;
+    queuedCheckpoint.current = null;
+    if (queued) setCheckpoint(queued);
+  };
+
+  const openQuiz = (data: WordQuizResponse) => {
+    // 사전·퍼즐 시트를 닫고 마이크를 끈다 — 체크포인트가 뜰 때와 같은 이유다
+    close();
+    setPuzzleOpen(false);
+    readAloud.stop();
+    quizOpen.current = true;
+    setQuiz({ data, wrong: [], solved: false });
+  };
+
+  const pickQuiz = (choice: number) => {
+    setQuiz((current) => {
+      if (!current || current.solved) return current;
+      return choice === current.data.answer
+        ? { ...current, solved: true }
+        : { ...current, wrong: [...current.wrong, choice] };
+    });
+  };
+
+  /** 체크포인트를 닫는다. 그동안 기다린 퀴즈가 있으면 이어서 띄운다 */
+  const dismissCheckpoint = () => {
+    setCheckpoint(null);
+    checkpointShown.current = false;
+    const held = heldQuiz.current;
+    heldQuiz.current = null;
+    if (held && openBookId.current) openQuiz(held);
+  };
+
+  /** 문제를 띄운다. 미리 받아 둔 것이 있으면 그것을, 없으면 지금 받는다 */
+  const showQuiz = (book: ShelfBook, chapterNo: number, uptoWord: number, key: string) => {
+    const ready = quizPrefetch.current?.key === key ? quizPrefetch.current.promise : null;
+    quizPrefetch.current = null;
+    void (ready ?? requestQuiz(book.id, chapterNo, uptoWord))
+      .then((data) => {
+        // 문제를 못 냈거나(null) 그사이 책을 나갔으면 조용히 넘어간다
+        if (!data || openBookId.current !== book.id) return;
+        // 체크포인트가 떠 있으면 그걸 닫을 때 띄운다 (heldQuiz)
+        if (checkpointShown.current) {
+          heldQuiz.current = data;
+          return;
+        }
+        openQuiz(data);
+      })
+      .catch(() => {
+        // 놀이다. 못 받으면 그냥 계속 읽는다
+      });
+  };
+
+  /**
+   * 쪽을 펼칠 때마다 (PagedText.onPage). 이 쪽에서 퀴즈 지점을 지났으면 띄우고,
+   * **다음 쪽**에서 지날 것 같으면 문제를 미리 받아 둔다
+   */
+  const onPageTurn = (book: ShelfBook, chapterNo: number, page: number, pageCount: number) => {
+    const { start, next, next2, pages } = bookProgress(
+      chapterLengths.current.get(book.id),
+      book.chapterCount,
+      chapterNo,
+      page,
+      pageCount,
+    );
+    // 못 푼 채 두고 나갔던 퀴즈가 있으면 다시 펼친 첫 쪽에서 띄운다
+    const unsolved = unsolvedQuiz.current.get(book.id);
+    if (unsolved && !quizOpen.current) {
+      unsolvedQuiz.current.delete(book.id);
+      if (checkpointShown.current) heldQuiz.current = unsolved;
+      else openQuiz(unsolved);
+    }
+
+    const marks = (pages < SHORT_BOOK_PAGES ? QUIZ_MARKS_SHORT : QUIZ_MARKS).filter(
+      (mark) => !quizDone.current.has(`${book.id}:${mark}`),
+    );
+
+    // 처음 펼친 곳(이어 읽기로 3장부터 열었다든지)에서는 안 띄운다 — 넘겨서 지나야 뜬다
+    const seen = quizSeen.current.get(book.id);
+    quizSeen.current.set(book.id, Math.max(seen ?? start, start));
+    if (seen !== undefined) {
+      const crossed = marks.filter((mark) => seen < mark && mark <= start);
+      if (crossed.length > 0) {
+        for (const mark of crossed) quizDone.current.add(`${book.id}:${mark}`);
+        const key = `${book.id}:${crossed[crossed.length - 1]}`;
+        showQuiz(book, chapterNo, paged.current?.pageStartWord(page) ?? firstVisibleWord(), key);
+        return;
+      }
+    }
+
+    // 다음 쪽이나 그다음 쪽에서 지날 지점이 있으면 지금 받아 둔다. 책의 마지막 쪽 다음은 없다
+    const upcoming = marks.find(
+      (mark) => start < mark && ((mark <= next && next < 1) || (mark <= next2 && next2 < 1)),
+    );
+    if (upcoming === undefined) return;
+    const key = `${book.id}:${upcoming}`;
+    if (quizPrefetch.current?.key === key) return;
+    // 지문은 퀴즈가 뜰 쪽 앞까지다. 그 쪽이 이 장을 넘어가면 이 장 끝까지 —
+    // 다음 장 첫 쪽이면 정확하고, 그다음 쪽이면 한 쪽 모자라지만 방금 읽은 대목인 건 같다
+    const showAt = upcoming <= next ? page + 1 : page + 2;
+    const upto =
+      showAt >= pageCount
+        ? chapterWords.length
+        : (paged.current?.pageStartWord(showAt) ?? chapterWords.length);
+    const promise = requestQuiz(book.id, chapterNo, upto);
+    promise.catch(() => {
+      // 띄울 때 다시 받는다 (showQuiz)
+      if (quizPrefetch.current?.key === key) quizPrefetch.current = null;
+    });
+    quizPrefetch.current = { key, promise };
+  };
+
   // 미뤄 둔 체크포인트를 띄운다. 모든 함수가 선언된 뒤라 askCheckpoint 를 그대로 부를 수 있다
   useEffect(() => {
     if (!readToEnd) return;
@@ -676,6 +937,14 @@ export function LibraryScreen({
               setReading(null);
               close();
               resetReadAloud();
+              // 떠 있던 퀴즈와 그 뒤에 미뤄 둔 문항은 버린다 — 목록 위에 뜨면 안 된다.
+              // 못 푼 퀴즈는 그 책에 적어 두고 다시 펼치면 띄운다 (unsolvedQuiz)
+              if (quiz && !quiz.solved) unsolvedQuiz.current.set(book.id, quiz.data);
+              else if (heldQuiz.current) unsolvedQuiz.current.set(book.id, heldQuiz.current);
+              setQuiz(null);
+              quizOpen.current = false;
+              queuedCheckpoint.current = null;
+              heldQuiz.current = null;
               // ?book= 으로 들어왔다면 주소를 목록으로 돌린다 — 새로고침에 그 책이 다시 열리지 않게
               window.history.replaceState(null, "", "/library");
             }}
@@ -778,6 +1047,17 @@ export function LibraryScreen({
                   onPrevChapter={() => openChapter(book, chapterNo - 1, "end")}
                   onNextChapter={() => openChapter(book, chapterNo + 1, "start")}
                   onReachEnd={() => markChapterRead(book.id, chapterNo)}
+                  onPage={(page, pageCount) => onPageTurn(book, chapterNo, page, pageCount)}
+                  lockForward={quizLocked}
+                  companion={
+                    <span
+                      className="flex items-center gap-1 rounded-full bg-sunken px-2.5 py-1 text-xs font-bold text-ink"
+                      title={`${partnerOf().name} — 같이 읽는 파트너`}
+                    >
+                      <span aria-hidden>{partnerOf().face}</span>
+                      <span className="max-w-[5.5rem] truncate">{partnerOf().name}</span>
+                    </span>
+                  }
                   control={paged}
                 >
                   {/* 문단은 블록으로 쌓는다 — flex 로 감싸면 쪽 경계에서 문단이 쪼개지지 않는다 */}
@@ -829,6 +1109,21 @@ export function LibraryScreen({
                 사전은 접지 않고 아래에 같이 둔다 — 문항에 답하려고 모르는 낱말을
                 찾는 건 자연스러운 흐름이고, 접어 두면 낱말을 눌러도 아무것도 안 뜬다
                 (본문 강조까지는 되므로 아이는 눌린 줄 알고 기다린다, #152 리뷰) */}
+            {/* 낱말 퀴즈 — 읽는 도중의 미니게임 (AI #8). 밝은 카드다 (WordQuiz 머리말) */}
+            {quiz && (
+              <Card raised className="mb-4">
+                <WordQuiz
+                  quiz={quiz.data}
+                  wrong={quiz.wrong}
+                  solved={quiz.solved}
+                  onPick={pickQuiz}
+                  onClose={closeQuiz}
+                  partner={partnerOf()}
+                  bossName={book.title}
+                />
+              </Card>
+            )}
+
             {checkpoint && (
               <div className="mb-4 rounded-card bg-panel p-4">
                 <CheckpointPanel
@@ -841,14 +1136,14 @@ export function LibraryScreen({
                   submitting={checkpoint.submitting}
                   error={checkpoint.error}
                   onSubmit={submitCheckpoint}
-                  onClose={() => setCheckpoint(null)}
+                  onClose={dismissCheckpoint}
                 />
               </div>
             )}
 
             {/* 표지 퍼즐 — 목업 7 #4 · 목업 8 #5 (sprint-0918 ①, 박재경).
                 사전 패널 위에 둔다. 사전이 뜨면 뜻이 우선이라 접는다 */}
-            {!checkpoint && entry.state === "idle" && readChapters[book.id] !== undefined && (
+            {!checkpoint && !quiz && entry.state === "idle" && readChapters[book.id] !== undefined && (
               <div className="mb-4">
                 <div className="mb-2 text-[13px] font-bold text-ink">
                   읽을수록 표지가 드러나요
@@ -864,7 +1159,7 @@ export function LibraryScreen({
             {entry.state === "idle" ? (
               // 문항이 떠 있는 동안에는 안내를 접는다 — 문항이 주인공이어야 한다.
               // 낱말을 누르면 아래 뜻 카드는 그대로 뜬다
-              checkpoint ? null : (
+              checkpoint || quiz ? null : (
                 <p className="text-xs text-faint">낱말을 누르면 여기 뜻이 떠요</p>
               )
             ) : (
@@ -926,6 +1221,24 @@ export function LibraryScreen({
           </BottomSheet>
         </div>
 
+        {/* 768px 미만 — 낱말 퀴즈 시트. 맞히기 전에는 닫히지 않는다 (WordQuizSheet).
+            체크포인트와 같이 뜨지 않는다 (quizOpen · heldQuiz) */}
+        {quiz && (
+          <div className="md:hidden">
+            <WordQuizSheet>
+              <WordQuiz
+                quiz={quiz.data}
+                wrong={quiz.wrong}
+                solved={quiz.solved}
+                onPick={pickQuiz}
+                onClose={closeQuiz}
+                partner={partnerOf()}
+                bossName={book.title}
+              />
+            </WordQuizSheet>
+          </div>
+        )}
+
         {/* 768px 미만 — 체크포인트는 바텀시트 (CLAUDE.md §8, 목업 7 #7).
             사전 시트와 같은 자리를 쓰지만 동시에 뜰 일은 없다 — 문항이 뜨면
             본문을 가리므로 낱말을 누를 수 없다 */}
@@ -942,7 +1255,7 @@ export function LibraryScreen({
               submitting={checkpoint.submitting}
               error={checkpoint.error}
               onSubmit={submitCheckpoint}
-              onClose={() => setCheckpoint(null)}
+              onClose={dismissCheckpoint}
             />
           )}
         </div>

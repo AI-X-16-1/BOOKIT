@@ -27,5 +27,5 @@
 export { LibraryScreen } from "./components/LibraryScreen";
 export { fetchChapter, fetchDictEntry, recordChapterRead } from "./api";
 export { libraryHref } from "./links";
-export { readingProgressSchema } from "./schema";
-export type { ShelfBook } from "./schema";
+export { readingProgressSchema, wordQuizRequestSchema } from "./schema";
+export type { ShelfBook, WordQuizResponse } from "./schema";

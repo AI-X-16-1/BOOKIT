@@ -216,3 +216,23 @@ export function sessionText(results: ResultListLike, final: boolean): string {
   }
   return parts.join(" ");
 }
+
+/**
+ * 본문에서 n 번째 낱말(0부터, splitWords 와 같은 번호)이 시작하는 글자 위치.
+ * n 이 낱말 수 이상이면 본문 길이. 낱말 퀴즈가 "방금 읽은 대목" 을 자를 때 쓴다 —
+ * 화면은 낱말 번호(data-word)만 알고, 서버는 원문을 문장부호째 잘라야 한다.
+ *
+ * 문단 사이 빈 줄도 구분자라, 화면처럼 문단별로 나눠 센 번호와 같다
+ */
+export function wordOffset(body: string, n: number): number {
+  let at = 0;
+  let count = 0;
+  for (const part of body.split(TOKEN_PATTERN)) {
+    if (part && !TOKEN_PATTERN.test(part) && part.trim()) {
+      if (count === n) return at + (part.length - part.trimStart().length);
+      count += 1;
+    }
+    at += part.length;
+  }
+  return body.length;
+}
