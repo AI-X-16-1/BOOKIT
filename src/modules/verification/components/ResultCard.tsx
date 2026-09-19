@@ -154,7 +154,7 @@ export function ResultCard({
         {passed && (
           <div className="absolute -top-5 -right-3.5 flex h-[78px] w-[78px] -rotate-8 flex-col items-center justify-center rounded-full border-[3px] border-dashed border-stamp-ring bg-yellow shadow-[0_8px_20px_rgba(0,0,0,.3)]">
             <span className="text-[15px] text-yellow-text">★</span>
-            <span className="text-xs font-bold text-stamp-text">포획</span>
+            <span className="text-xs font-bold text-stamp-text">처치</span>
           </div>
         )}
 
@@ -166,7 +166,7 @@ export function ResultCard({
           </div>
           <div className="min-w-0">
             <div className="text-2xl font-bold text-ink">
-              {passed ? "포획 성공!" : "놓쳤어요!"}
+              {passed ? "처치 성공!" : "놓쳤어요!"}
             </div>
             <div className="mt-[3px] text-[13px] text-muted">
               {passed
@@ -210,7 +210,7 @@ export function ResultCard({
         {!passed && (
           <div className="mt-3.5 flex items-center justify-between gap-3 rounded-xl bg-sunken px-4 py-3.5">
             <span className="text-[13px] text-coral-text-2">
-              책갈피는 포획 성공에만 지급돼요
+              책갈피는 처치 성공에만 지급돼요
             </span>
             <span className="flex-none text-[15px] font-bold text-faint">+0</span>
           </div>
@@ -226,7 +226,7 @@ export function ResultCard({
           </div>
           {streakDays > 0 && (
             <p className="mt-3 text-center text-sm text-panel-muted">
-              {streakDays}일째 연속으로 포획하고 있어요 🔥
+              {streakDays}일째 연속으로 보스를 처치하고 있어요 🔥
             </p>
           )}
         </>

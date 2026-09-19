@@ -116,7 +116,7 @@ function Slot({ entry }: { entry: CollectionEntryView }) {
           captured ? "text-ink" : "text-muted",
         )}
       >
-        {captured ? entry.bookTitle : "미포획"}
+        {captured ? entry.bookTitle : "미처치"}
       </div>
       {/* 못 잡은 칸의 둘째 줄은 **책 제목**이다. 목업은 "-" 였지만 서재가 71권이라
           빈 칸이 수십 개 이어지고, 전부 "?" 면 다음에 뭘 읽을지 고를 수가 없다.
@@ -151,7 +151,7 @@ export function CollectionScreen({
         <div className="min-w-0">
           <h1 className="text-[22px] font-bold text-ink">나의 도감</h1>
           <p className="mt-[5px] text-[13px] text-muted">
-            포획한 책이 캐릭터가 되어 들어와요
+            보스를 처치한 책의 캐릭터가 여기 들어와요
           </p>
         </div>
         <span className="flex-none rounded-xl bg-panel px-3.5 py-2.5 text-[13px] font-bold text-yellow">

@@ -118,7 +118,7 @@ export function HomeScreen({ draft, reading }: HomeScreenProps) {
           {streak === null
             ? "책을 읽고 독후감을 써 보자"
             : streak > 0
-              ? `${streak}일째 연속 포획 성공 🔥`
+              ? `${streak}일째 연속 처치 성공 🔥`
               : "오늘 한 권 읽고 연속 기록을 시작해 볼까?"}
         </p>
       </div>
