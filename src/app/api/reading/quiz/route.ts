@@ -35,6 +35,7 @@ export async function POST(
         parsed.data.book_id,
         parsed.data.chapter_no,
         parsed.data.upto_word,
+        parsed.data.avoid,
       ),
     );
   } catch (cause) {

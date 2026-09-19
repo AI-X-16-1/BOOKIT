@@ -19,8 +19,8 @@ import { readMyGrade } from "./shelf";
 
 /** 지문이 이보다 짧으면 문제를 안 낸다 — 고를 낱말이 모자라 뻔한 문제가 나온다 */
 const MIN_PASSAGE_CHARS = 200;
-/** 방금 읽은 한두 쪽 */
-const PASSAGE_CHARS = 1_500;
+/** 방금 읽은 한두 쪽 (ai 의 QUIZ_PASSAGE_MAX_CHARS 와 같게 — 지문이 겹치지 않게 줄였다) */
+const PASSAGE_CHARS = 900;
 
 async function chapterBody(
   supabase: BookitClient,
@@ -47,6 +47,7 @@ export async function openWordQuiz(
   bookId: string,
   chapterNo: number,
   uptoWord: number,
+  avoid: string[] = [],
 ): Promise<WordQuiz | null> {
   const [book, body] = await Promise.all([
     supabase.from("books").select("title").eq("id", bookId).maybeSingle(),
@@ -64,7 +65,12 @@ export async function openWordQuiz(
   if (passage.length < MIN_PASSAGE_CHARS) return null;
 
   const grade = await readMyGrade(supabase, userId);
-  return makeWordQuiz(book.data.title, passage, grade ? { gradeLevel: grade as GradeLevel } : undefined);
+  return makeWordQuiz(
+    book.data.title,
+    passage,
+    grade ? { gradeLevel: grade as GradeLevel } : undefined,
+    avoid,
+  );
 }
 
 /**

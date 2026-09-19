@@ -498,15 +498,23 @@ sentence: 그 낱말이 든 문장을 대목 그대로 옮겨라. 길면 그 낱
   - 셋의 길이와 말투를 비슷하게 맞춰라. 정답만 길거나 자세하면 읽지 않고도 맞힌다.
 - 무섭거나 잔인한 말은 고르지 마라. 아이 화면이다.`;
 
-/** 퀴즈 지문 상한. 방금 읽은 한두 쪽이면 충분하다 */
-export const QUIZ_PASSAGE_MAX_CHARS = 1_500;
+/**
+ * 퀴즈 지문 상한 — 방금 읽은 한두 쪽. 처음엔 1,500자였는데, 짧은 책은 25·50·75% 지점
+ * 사이가 그보다 가까워 세 문제의 지문이 거의 겹쳤고 **세 번 다 같은 낱말**이 나왔다 (9/19 실기기)
+ */
+export const QUIZ_PASSAGE_MAX_CHARS = 900;
 
 export function wordQuizUser(
   bookTitle: string,
   passage: string,
   context?: PromptContext,
+  /** 이 책에서 이미 물어본 낱말. 같은 낱말을 또 묻지 않게 */
+  avoid: string[] = [],
 ): string {
-  return `${gradeLine(context)}책: ${bookTitle}
+  const asked = avoid.length
+    ? `\n이 책에서 이미 물어본 낱말 — 이 낱말들은 고르지 마라: ${avoid.join(", ")}`
+    : "";
+  return `${gradeLine(context)}책: ${bookTitle}${asked}
 방금 읽은 대목:
 """${passage.slice(-QUIZ_PASSAGE_MAX_CHARS)}"""`;
 }

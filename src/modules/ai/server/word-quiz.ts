@@ -81,14 +81,45 @@ export async function makeWordQuiz(
   bookTitle: string,
   passage: string,
   context?: PromptContext,
+  /** 이 책에서 이미 물어본 낱말 — 같은 낱말을 또 내지 않는다 */
+  avoid: string[] = [],
   /** 섞기 — 테스트에서 고정한다 */
   random: () => number = Math.random,
+): Promise<WordQuiz | null> {
+  // 프롬프트로 막아도 모델이 같은 낱말을 또 고를 때가 있다 — 한 번만 다시 묻는다
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const quiz = await makeOnce(bookTitle, passage, context, avoid, random);
+    if (quiz === null) return null;
+    if (!alreadyAsked(quiz.word, avoid)) return quiz;
+  }
+  return null;
+}
+
+/**
+ * 이미 물어본 낱말인가. 활용형이 달라도 같은 낱말이다 — "애걸애걸하는" 과 "애걸애걸하며".
+ * 두 낱말의 앞 두 글자 이상이 겹치고 한쪽이 다른 쪽의 앞머리(끝 한 글자 뺀)로 시작하면 같다고 본다
+ */
+export function alreadyAsked(word: string, avoid: string[]): boolean {
+  return avoid.some((asked) => {
+    if (asked === word) return true;
+    const a = asked.slice(0, Math.max(2, asked.length - 1));
+    const b = word.slice(0, Math.max(2, word.length - 1));
+    return word.startsWith(a) || asked.startsWith(b);
+  });
+}
+
+async function makeOnce(
+  bookTitle: string,
+  passage: string,
+  context: PromptContext | undefined,
+  avoid: string[],
+  random: () => number,
 ): Promise<WordQuiz | null> {
   const result = await callJson({
     label: "word-quiz",
     schema: wordQuizSchema,
     system: WORD_QUIZ_SYSTEM,
-    user: wordQuizUser(bookTitle, passage, context),
+    user: wordQuizUser(bookTitle, passage, context, avoid),
     maxTokens: 4096,
   });
 

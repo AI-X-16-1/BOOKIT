@@ -508,6 +508,23 @@ export function LibraryScreen({
   const quizSeen = useRef(new Map<string, number>());
   /** 이번에 이미 낸 지점 "책:지점" */
   const quizDone = useRef(new Set<string>());
+  /**
+   * 책 → 이미 받은 문제의 낱말. 다음 문제를 받을 때 넘겨서 같은 낱말을 또 묻지 않는다 —
+   * 세 문제가 모두 같은 낱말로 나왔다 (9/19 실기기)
+   */
+  const quizWords = useRef(new Map<string, string[]>());
+  /** 문제를 받는다. 받은 낱말은 그 책의 "이미 낸 낱말" 에 적는다 */
+  const requestQuiz = (bookId: string, chapterNo: number, uptoWord: number) => {
+    const promise = fetchWordQuiz(bookId, chapterNo, uptoWord, quizWords.current.get(bookId) ?? []);
+    void promise
+      .then((data) => {
+        if (data) quizWords.current.set(bookId, [...(quizWords.current.get(bookId) ?? []), data.word]);
+      })
+      .catch(() => {
+        // 띄우는 쪽이 따로 처리한다
+      });
+    return promise;
+  };
   /** 미리 받아 둔 문제 */
   const quizPrefetch = useRef<{
     key: string;
@@ -781,7 +798,7 @@ export function LibraryScreen({
   const showQuiz = (book: ShelfBook, chapterNo: number, uptoWord: number, key: string) => {
     const ready = quizPrefetch.current?.key === key ? quizPrefetch.current.promise : null;
     quizPrefetch.current = null;
-    void (ready ?? fetchWordQuiz(book.id, chapterNo, uptoWord))
+    void (ready ?? requestQuiz(book.id, chapterNo, uptoWord))
       .then((data) => {
         // 문제를 못 냈거나(null) 그사이 책을 나갔으면 조용히 넘어간다
         if (!data || openBookId.current !== book.id) return;
@@ -840,7 +857,7 @@ export function LibraryScreen({
       showAt >= pageCount
         ? chapterWords.length
         : (paged.current?.pageStartWord(showAt) ?? chapterWords.length);
-    const promise = fetchWordQuiz(book.id, chapterNo, upto);
+    const promise = requestQuiz(book.id, chapterNo, upto);
     promise.catch(() => {
       // 띄울 때 다시 받는다 (showQuiz)
       if (quizPrefetch.current?.key === key) quizPrefetch.current = null;

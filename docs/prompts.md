@@ -264,14 +264,15 @@ The same question is reused if the student opens that chapter's checkpoint again
 
 **Why multiple choice here, when call 6 bans it.** Call 6 asks *did you read this chapter*, so choices would give the answer away. This one is a vocabulary game in the middle of reading — no points, no hatching, nothing to cheat for — and it has to be one tap so the reading flow is not broken.
 
-Three things the code does instead of trusting the model:
+Four things the code does instead of trusting the model:
 
 1. **The word must appear verbatim in the passage.** The model sometimes lemmatises ("쿨룩거리기는" → "쿨룩거리다") or invents a near word. Such a quiz is dropped — the child could not find it on the page or tap it for the dictionary.
 2. **The sentence is cut from the source by the server** (`sentenceAround`), not taken from the model. The model re-typed quotes (“ → ") often enough that verbatim matching threw good quizzes away. Short fragments ("…” 하고 탄식을 하였습니다.") are extended back to the previous sentence, up to its opening quote.
-3. **The server shuffles the answer position.** The model puts the right answer first. Choices come back as three fields (`meaning`, `wrong1`, `wrong2`), not an array — the vendor schema rejects `minItems` other than 0/1 (same wall as call 7).
+3. **No repeated word within a book.** With a 1,500-char passage, the 25/50/75 % passages of a short book overlapped and all three quizzes asked the same word (device test). The passage is now 900 chars, the reader sends the words already asked, and the server retries once if the model picks one of them anyway (`alreadyAsked`, conjugation-tolerant).
+4. **The server shuffles the answer position.** The model puts the right answer first. Choices come back as three fields (`meaning`, `wrong1`, `wrong2`), not an array — the vendor schema rejects `minItems` other than 0/1 (same wall as call 7).
 
 ```
-입력: 학년 + 방금 읽은 대목 (서재 원문, 최대 1,500자). 아이가 쓴 것은 없다.
+입력: 학년 + 방금 읽은 대목 (서재 원문, 최대 900자) + 이 책에서 이미 물어본 낱말. 아이가 쓴 것은 없다.
 낱말: 대목에 그대로 나온 꼴. 오늘날에도 쓰는 말. 옛 표기·사투리·고유명사·한 글자·너무 쉬운 말 제외.
 보기: 그 문장에서의 뜻 1 + 그럴듯한 오답 2. 길이·말투를 맞춘다.
 출력: {"word","sentence","meaning","wrong1","wrong2"}

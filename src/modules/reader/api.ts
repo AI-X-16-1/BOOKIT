@@ -83,11 +83,14 @@ export function fetchWordQuiz(
   bookId: string,
   chapterNo: number,
   uptoWord: number,
+  /** 이 책에서 이미 물어본 낱말 */
+  avoid: string[] = [],
 ): Promise<WordQuizResponse | null> {
   return apiPost<WordQuizResponse | null>("/api/reading/quiz", {
     book_id: bookId,
     chapter_no: chapterNo,
     upto_word: uptoWord,
+    avoid,
   });
 }
 

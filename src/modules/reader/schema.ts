@@ -60,6 +60,8 @@ export const wordQuizRequestSchema = z.object({
   book_id: z.guid(),
   chapter_no: z.number().int().min(1),
   upto_word: z.number().int().min(0),
+  /** 이 책에서 이미 물어본 낱말 — 같은 낱말을 또 내지 않는다. 화면이 들고 있다 */
+  avoid: z.array(z.string().min(1).max(40)).max(10).default([]),
 });
 
 /** 퀴즈 한 문제. 정답 자리를 같이 준다 — 걸린 것이 없는 놀이라 화면이 바로 맞춘다 */
