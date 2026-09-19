@@ -93,6 +93,12 @@ for (const p of ["/privacy", "/terms"]) {
 }
 const anonHome = await get(null, "/home");
 check("비로그인 /home → /login", anonHome.status === 307 && /\/login/.test(anonHome.headers.get("location") ?? ""), `${anonHome.status} ${anonHome.headers.get("location")}`);
+// 서재 읽기 보조 라우트(#183) — 로그인 없이는 닫혀 있어야 한다. 퀴즈는 LLM 을 부르므로 세션으로는 안 친다
+const SHELF_BOOK = "0000b001-0000-4000-8000-000000000001"; // 운수 좋은 날 (seed)
+const anonLengths = await get(null, `/api/reader/${SHELF_BOOK}/lengths`);
+check("비로그인 GET /api/reader/:id/lengths 401", anonLengths.status === 401, `${anonLengths.status}`);
+const anonQuiz = await fetch(BASE + "/api/reading/quiz", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+check("비로그인 POST /api/reading/quiz 401", anonQuiz.status === 401, `${anonQuiz.status}`);
 
 /* ── 2. 학생 세션 ────────────────────────────────────── */
 
@@ -110,6 +116,9 @@ for (const p of ["/home", "/library", "/collection", "/me", "/write", "/level-te
   const r = await get(student, p);
   check(`학생 ${p} 200`, r.status === 200, `${r.status} ${r.headers.get("location") ?? ""}`);
 }
+const sLengths = await get(student, `/api/reader/${SHELF_BOOK}/lengths`);
+const sLengthsData = await json(sLengths);
+check("학생 GET /api/reader/:id/lengths 200 + 장별 글자 수", sLengths.status === 200 && Array.isArray(sLengthsData?.data) && sLengthsData.data.length > 0, `${sLengths.status} ${JSON.stringify(sLengthsData)?.slice(0, 80)}`);
 for (const p of ["/api/teacher/class", "/api/teacher/students", "/api/teacher/ranking"]) {
   const r = await get(student, p);
   check(`학생이 ${p} 를 부르면 거부 (401/403/404)`, [401, 403, 404].includes(r.status), `${r.status}`);
