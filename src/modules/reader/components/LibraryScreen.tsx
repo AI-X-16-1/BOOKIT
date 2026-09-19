@@ -525,6 +525,11 @@ export function LibraryScreen({
   /** 이번에 이미 낸 지점 "책:지점" */
   const quizDone = useRef(new Set<string>());
   /**
+   * 책 → 못 푼 채 두고 나간 퀴즈. 서재 목록으로 나갔다 다시 들어오면 그 자리에서 다시 띄운다 —
+   * 없으면 나갔다 들어오는 것만으로 "맞혀야 넘어간다" 를 빠져나갈 수 있다 (9/19 점검)
+   */
+  const unsolvedQuiz = useRef(new Map<string, WordQuizResponse>());
+  /**
    * 책 → 이미 받은 문제의 낱말. 다음 문제를 받을 때 넘겨서 같은 낱말을 또 묻지 않는다 —
    * 세 문제가 모두 같은 낱말로 나왔다 (9/19 실기기)
    */
@@ -551,7 +556,8 @@ export function LibraryScreen({
    * 다음 책부터 바뀐다. 못 불러오거나 아직 캐릭터가 없으면 이 책의 알이 파트너다
    */
   const [partner, setPartner] = useState<Partner | null>(null);
-  const partnerOf = (): Partner => partner ?? { face: "🥚", name: "이 책의 알", stage: 0 };
+  // 이름 뒤에 "의 공격" 이 붙는다 — "이 책의 알의 공격" 은 어색해서 "알 친구" 로 부른다
+  const partnerOf = (): Partner => partner ?? { face: "🥚", name: "알 친구", stage: 0 };
   /** 지금 펼친 책. 늦게 도착한 퀴즈가 다른 책 위에 뜨지 않게 */
   const openBookId = useRef<string | null>(null);
   const readingBookId = reading?.book.id ?? null;
@@ -856,6 +862,14 @@ export function LibraryScreen({
       page,
       pageCount,
     );
+    // 못 푼 채 두고 나갔던 퀴즈가 있으면 다시 펼친 첫 쪽에서 띄운다
+    const unsolved = unsolvedQuiz.current.get(book.id);
+    if (unsolved && !quizOpen.current) {
+      unsolvedQuiz.current.delete(book.id);
+      if (checkpointShown.current) heldQuiz.current = unsolved;
+      else openQuiz(unsolved);
+    }
+
     const marks = (pages < SHORT_BOOK_PAGES ? QUIZ_MARKS_SHORT : QUIZ_MARKS).filter(
       (mark) => !quizDone.current.has(`${book.id}:${mark}`),
     );
@@ -923,7 +937,10 @@ export function LibraryScreen({
               setReading(null);
               close();
               resetReadAloud();
-              // 떠 있던 퀴즈와 그 뒤에 미뤄 둔 문항은 버린다 — 목록 위에 뜨면 안 된다
+              // 떠 있던 퀴즈와 그 뒤에 미뤄 둔 문항은 버린다 — 목록 위에 뜨면 안 된다.
+              // 못 푼 퀴즈는 그 책에 적어 두고 다시 펼치면 띄운다 (unsolvedQuiz)
+              if (quiz && !quiz.solved) unsolvedQuiz.current.set(book.id, quiz.data);
+              else if (heldQuiz.current) unsolvedQuiz.current.set(book.id, heldQuiz.current);
               setQuiz(null);
               quizOpen.current = false;
               queuedCheckpoint.current = null;

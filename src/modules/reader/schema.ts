@@ -61,7 +61,14 @@ export const wordQuizRequestSchema = z.object({
   chapter_no: z.number().int().min(1),
   upto_word: z.number().int().min(0),
   /** 이 책에서 이미 물어본 낱말 — 같은 낱말을 또 내지 않는다. 화면이 들고 있다 */
-  avoid: z.array(z.string().min(1).max(40)).max(10).default([]),
+  // 프롬프트에 그대로 들어가므로 낱말 모양(글자·숫자·띄어쓰기, 40자 안)만 남긴다.
+  // 거절하지 않고 거른다 — 모델이 "의관을 정제하고" 같은 구절을 고르기도 해서, 거절하면
+  // 그다음 퀴즈 요청이 통째로 400 이 된다
+  avoid: z
+    .array(z.string().max(80))
+    .max(10)
+    .default([])
+    .transform((words) => words.filter((word) => /^[\p{L}\p{N} ]{1,40}$/u.test(word))),
 });
 
 /** 퀴즈 한 문제. 정답 자리를 같이 준다 — 걸린 것이 없는 놀이라 화면이 바로 맞춘다 */
