@@ -192,3 +192,30 @@ export interface LevelResult {
   confidence: "low" | "medium" | "high";
   feedback: string;
 }
+
+/**
+ * AI #8 낱말 퀴즈 (2026-09-19) — 서재에서 읽는 도중(책의 25·50·75%)에 뜨는 미니게임.
+ *
+ * 보기를 배열이 아니라 칸 둘(`wrong1`·`wrong2`)로 받는다 — 벤더 JSON 스키마는 `array` 의
+ * `minItems` 가 0·1 이 아니면 400 이다 (AI #7 에서 맞은 벽, docs/submission-ai.md §3 ⑦).
+ * 정답 자리는 모델이 아니라 서버가 섞는다 — 모델은 정답을 늘 첫 칸에 두는 버릇이 있다
+ */
+export const wordQuizSchema = z.object({
+  /** 지문에 **그대로** 나온 꼴. 서버가 지문에서 찾아보고 없으면 버린다 */
+  word: z.string().min(1),
+  /** 그 낱말이 든 문장 — 지문 그대로 */
+  sentence: z.string().min(1),
+  /** 그 문장에서의 뜻. 아이 말로 짧게 */
+  meaning: z.string().min(1),
+  wrong1: z.string().min(1),
+  wrong2: z.string().min(1),
+});
+
+export interface WordQuiz {
+  word: string;
+  sentence: string;
+  /** 보기 셋. 순서는 서버가 섞었다 */
+  choices: [string, string, string];
+  /** 정답 보기의 자리 (0~2) */
+  answer: number;
+}

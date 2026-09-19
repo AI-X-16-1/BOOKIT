@@ -17,6 +17,11 @@ export interface PagedTextControl {
    * 소리 내어 읽기가 다음에 읽을 낱말을 넘긴다 — 쪽 끝까지 읽으면 저절로 다음 쪽이 된다
    */
   reveal: (wordNo: number) => void;
+  /**
+   * 그 쪽의 첫 낱말 번호. 그 쪽이 없으면(마지막 쪽 다음) null.
+   * 스크롤 위치가 아니라 배치로 잰다 — 넘기는 애니메이션 중에도 맞다 (낱말 퀴즈 지문 자르기)
+   */
+  pageStartWord: (page: number) => number | null;
 }
 
 /**
@@ -49,6 +54,7 @@ export function PagedText({
   onPrevChapter,
   onNextChapter,
   onReachEnd,
+  onPage,
   control,
 }: {
   /** 흘려 놓을 본문. 문단은 블록 요소로 — flex 로 감싸면 쪽 경계에서 문단이 안 쪼개진다 */
@@ -65,6 +71,11 @@ export function PagedText({
    * 짧아서 정말 한 쪽인 장은 펼친 순간이 곧 끝이라 그대로 센다.
    */
   onReachEnd?: () => void;
+  /**
+   * 쪽을 펼칠 때마다 (0부터 센 쪽, 전체 쪽 수). 쪽 수를 잰 뒤에만 부른다.
+   * 낱말 퀴즈가 "다음 쪽으로 넘길 때" 뜨는 데 쓴다
+   */
+  onPage?: (page: number, pageCount: number) => void;
   /** 소리 내어 읽기가 쪽을 넘기는 손잡이 (PagedTextControl) */
   control?: Ref<PagedTextControl>;
 }) {
@@ -142,16 +153,28 @@ export function PagedText({
 
   // 소리 내어 읽기 — 다음에 읽을 낱말이 뒤쪽 쪽에 있으면 거기로 넘긴다.
   // 낱말의 가로 위치로 몇 번째 쪽인지 안다 (한 단 = 한 쪽, 단 사이 COLUMN_GAP)
+  /** 이 낱말이 몇 번째 쪽에 흘러 있나 — 낱말의 가로 위치로 안다 */
+  const pageOfNode = (node: HTMLElement): number | null => {
+    const scroller = scrollerRef.current;
+    const content = contentRef.current;
+    if (!scroller || !content) return null;
+    const x = node.getBoundingClientRect().left - content.getBoundingClientRect().left;
+    return Math.floor((x + 1) / (scroller.clientWidth + COLUMN_GAP));
+  };
+
   useImperativeHandle(control, () => ({
     reveal: (wordNo: number) => {
-      const scroller = scrollerRef.current;
-      const content = contentRef.current;
-      if (!scroller || !content) return;
-      const target = content.querySelector<HTMLElement>(`[data-word="${wordNo}"]`);
+      const target = contentRef.current?.querySelector<HTMLElement>(`[data-word="${wordNo}"]`);
       if (!target) return;
-      const x = target.getBoundingClientRect().left - content.getBoundingClientRect().left;
-      const pageOf = Math.floor((x + 1) / (scroller.clientWidth + COLUMN_GAP));
-      if (pageOf > pageRef.current) goTo(pageOf);
+      const pageOf = pageOfNode(target);
+      if (pageOf !== null && pageOf > pageRef.current) goTo(pageOf);
+    },
+    pageStartWord: (page: number) => {
+      const nodes = contentRef.current?.querySelectorAll<HTMLElement>("[data-word]") ?? [];
+      for (const node of nodes) {
+        if (pageOfNode(node) === page) return Number(node.dataset.word);
+      }
+      return null;
     },
   }));
 
@@ -165,6 +188,13 @@ export function PagedText({
     reported.current = true;
     onReachEnd?.();
   }, [measured, atEnd, onReachEnd]);
+
+  // 쪽을 펼칠 때마다 알린다 (낱말 퀴즈). 쪽 수를 재기 전에는 모두 한 쪽으로 보여서 안 부른다
+  useEffect(() => {
+    if (measured) onPage?.(page, pageCount);
+    // onPage 는 매 렌더 새로 온다 — 쪽이 바뀔 때만 알린다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [measured, page, pageCount]);
 
   const prev = () => {
     if (!atStart) goTo(page - 1);

@@ -57,3 +57,7 @@ export {
   type PassageContext,
 } from "./server/level-test";
 export type { LevelQuestions, LevelResult } from "./schema";
+
+/** AI #8 낱말 퀴즈 (2026-09-19) — 서재에서 읽는 도중의 미니게임. 책갈피를 주지 않는다 */
+export { makeWordQuiz } from "./server/word-quiz";
+export type { WordQuiz } from "./schema";

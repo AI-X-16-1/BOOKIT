@@ -258,6 +258,25 @@ Three constraints that shaped the prompt, in order of how much trouble they caus
 
 The same question is reused if the student opens that chapter's checkpoint again (unique per student·book·chapter, 0014). Regenerating it would be anti-cheat theatre here — CLAUDE.md §6's fresh-question rule exists for verification, where points are at stake.
 
+## 8. Word quiz (mid-reading mini-game — 2026-09-19)
+
+**When this runs.** In the 서재 reader, when the student turns past 25 / 50 / 75 % of the book's pages (books under 8 pages: 50 % only). The reader prefetches it one page early (`POST /api/reading/quiz`, `modules/ai/server/word-quiz.ts`) so it appears the moment the page turns. One call; nothing is stored, and the answer is checked in the browser.
+
+**Why multiple choice here, when call 6 bans it.** Call 6 asks *did you read this chapter*, so choices would give the answer away. This one is a vocabulary game in the middle of reading — no points, no hatching, nothing to cheat for — and it has to be one tap so the reading flow is not broken.
+
+Three things the code does instead of trusting the model:
+
+1. **The word must appear verbatim in the passage.** The model sometimes lemmatises ("쿨룩거리기는" → "쿨룩거리다") or invents a near word. Such a quiz is dropped — the child could not find it on the page or tap it for the dictionary.
+2. **The sentence is cut from the source by the server** (`sentenceAround`), not taken from the model. The model re-typed quotes (“ → ") often enough that verbatim matching threw good quizzes away. Short fragments ("…” 하고 탄식을 하였습니다.") are extended back to the previous sentence, up to its opening quote.
+3. **The server shuffles the answer position.** The model puts the right answer first. Choices come back as three fields (`meaning`, `wrong1`, `wrong2`), not an array — the vendor schema rejects `minItems` other than 0/1 (same wall as call 7).
+
+```
+입력: 학년 + 방금 읽은 대목 (서재 원문, 최대 1,500자). 아이가 쓴 것은 없다.
+낱말: 대목에 그대로 나온 꼴. 오늘날에도 쓰는 말. 옛 표기·사투리·고유명사·한 글자·너무 쉬운 말 제외.
+보기: 그 문장에서의 뜻 1 + 그럴듯한 오답 2. 길이·말투를 맞춘다.
+출력: {"word","sentence","meaning","wrong1","wrong2"}
+```
+
 ## Test set (day 2, before anything is wired up)
 
 Build 20 sample reviews at real 초등학생 level and run calls 2-4 on them:

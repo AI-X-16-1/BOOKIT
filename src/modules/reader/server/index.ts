@@ -21,6 +21,7 @@ export {
   answerCheckpoint,
   type CheckpointResult,
 } from "./checkpoint";
+export { chapterLengths, openWordQuiz } from "./quiz";
 export { readBookText, EXCERPT_MAX_CHARS } from "./text";
 export { lookup, DictError, type DictErrorKind } from "./dict";
 export type { DictSense, ReaderDictResponse } from "../schema";

@@ -11,7 +11,7 @@ import type {
   ReaderChapterResponse,
   ReadingProgressResponse,
 } from "@/shared/types";
-import type { ReaderDictResponse } from "./schema";
+import type { ReaderDictResponse, WordQuizResponse } from "./schema";
 
 /** 한 장의 제목과 본문. 없는 장이거나 읽을 수 없는 책이면 ApiClientError(code: "not_found"). */
 export function fetchChapter(
@@ -74,3 +74,25 @@ export function answerCheckpoint(
     answer,
   });
 }
+
+/**
+ * 낱말 퀴즈 한 문제 (AI #8). 지금 펼친 쪽의 첫 낱말 번호를 넘기면 그 앞까지를 지문으로 쓴다.
+ * 낼 수 없으면 null — 화면은 조용히 넘어간다
+ */
+export function fetchWordQuiz(
+  bookId: string,
+  chapterNo: number,
+  uptoWord: number,
+): Promise<WordQuizResponse | null> {
+  return apiPost<WordQuizResponse | null>("/api/reading/quiz", {
+    book_id: bookId,
+    chapter_no: chapterNo,
+    upto_word: uptoWord,
+  });
+}
+
+/** 장마다 글자 수 (1장부터). 낱말 퀴즈가 책 전체 쪽 수를 어림하는 데 쓴다 */
+export function fetchChapterLengths(bookId: string): Promise<number[]> {
+  return apiGet<number[]>(`/api/reader/${encodeURIComponent(bookId)}/lengths`);
+}
+

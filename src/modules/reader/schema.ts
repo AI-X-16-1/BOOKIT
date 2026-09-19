@@ -48,3 +48,25 @@ export const readingProgressSchema = z.object({
   book_id: z.guid(),
   chapter_no: z.number().int().min(1),
 });
+
+/**
+ * POST /api/reading/quiz  { book_id, chapter_no, upto_word } → WordQuizResponse | null
+ *
+ * 낱말 퀴즈 (AI #8, 2026-09-19). 읽는 도중에 뜨는 미니게임 한 문제.
+ * `upto_word` = 지금 펼친 쪽의 첫 낱말 번호(data-word). 그 앞까지가 "방금 읽은 대목" 이다.
+ * 0 이면 앞 장의 끝을 쓴다 — 새 장 첫 쪽을 펼친 순간이 곧 앞 장을 다 읽은 순간이다
+ */
+export const wordQuizRequestSchema = z.object({
+  book_id: z.guid(),
+  chapter_no: z.number().int().min(1),
+  upto_word: z.number().int().min(0),
+});
+
+/** 퀴즈 한 문제. 정답 자리를 같이 준다 — 걸린 것이 없는 놀이라 화면이 바로 맞춘다 */
+export interface WordQuizResponse {
+  word: string;
+  sentence: string;
+  choices: [string, string, string];
+  answer: number;
+}
+

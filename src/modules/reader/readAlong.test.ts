@@ -9,6 +9,7 @@ import {
   splitWords,
   START_WINDOW,
   WINDOW,
+  wordOffset,
 } from "./readAlong";
 
 const BOOK = splitWords(
@@ -162,4 +163,14 @@ test("맞춘 낱말 뒤의 부호뿐인 칸은 함께 넘긴다 — 쪽 끝이 �
   assert.equal(words[words.indexOf("줍시요") + 1], "”");
   const cursor = advance(words, 0, splitWords("돈 한 푼 줍시요"));
   assert.equal(words[cursor], "하고");
+});
+
+test("wordOffset — 화면의 낱말 번호로 원문 글자 위치를 찾는다 (낱말 퀴즈 지문 자르기)", () => {
+  const body = "어느 해 몹시 추운 겨울날이었습니다.\n\n하늘에서는 흰 새의";
+  const words = splitWords(body);
+  for (let n = 0; n < words.length; n += 1) {
+    assert.ok(body.startsWith(words[n], wordOffset(body, n)), `${n}번째 ${words[n]}`);
+  }
+  assert.equal(wordOffset(body, words.length), body.length, "끝을 넘으면 본문 길이");
+  assert.equal(body.slice(0, wordOffset(body, 5)).trim(), "어느 해 몹시 추운 겨울날이었습니다.");
 });
