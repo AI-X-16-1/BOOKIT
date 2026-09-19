@@ -194,8 +194,22 @@ function Tappable({
       {parts.map((part, index) => {
         // 구분자이거나 빈 조각은 그대로 둔다. 앞뒤를 다 읽었으면 사이도 칠한다
         if (!part || TOKEN_PATTERN.test(part)) {
-          const covered =
-            gapNext[index] > Math.max(offset, readFrom) && gapNext[index] < readUpTo;
+          const start = Math.max(offset, readFrom);
+          const covered = gapNext[index] > start && gapNext[index] < readUpTo;
+          // 앞 낱말만 읽었으면 그 낱말에 붙은 부호(. , ! ? ”)까지만 칠한다 — 문장을 다
+          // 읽었는데 마침표만 하얗게 남아 덜 읽은 것처럼 보였다 (실기기, 9/19).
+          // 뒤따르는 띄어쓰기는 다음 낱말을 읽을 때 칠한다
+          const afterRead =
+            !covered && gapNext[index] - 1 >= start && gapNext[index] - 1 < readUpTo;
+          const [, marks = "", rest = ""] = afterRead ? /^(\S*)([\s\S]*)$/.exec(part) ?? [] : [];
+          if (afterRead && marks) {
+            return (
+              <span key={index}>
+                <span className={READ_MARK}>{marks}</span>
+                {rest}
+              </span>
+            );
+          }
           return (
             <span key={index} className={covered ? READ_MARK : undefined}>
               {part}
