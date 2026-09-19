@@ -56,6 +56,9 @@ export {
   judgeLevelTest,
   type PassageContext,
 } from "./server/level-test";
+// 지문 분량은 학년이 정한다. level 모듈이 화면에 보낼 지문을 자를 때 같은 함수를 쓴다 —
+// 아이가 본 것과 판정에 넘기는 것이 달라지면 추천이 뜻을 잃는다
+export { passageLimitFor, cutPassage, PASSAGE_MAX_CHARS } from "./server/prompts";
 export type { LevelQuestions, LevelResult } from "./schema";
 
 /** AI #8 낱말 퀴즈 (2026-09-19) — 서재에서 읽는 도중의 미니게임. 책갈피를 주지 않는다 */
