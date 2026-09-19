@@ -7,6 +7,7 @@
 import { apiGet, apiPost } from "@/shared/api/client";
 import type {
   AnswerCheckpointResponse,
+  CharactersResponse,
   CreateCheckpointResponse,
   ReaderChapterResponse,
   ReadingProgressResponse,
@@ -99,3 +100,10 @@ export function fetchChapterLengths(bookId: string): Promise<number[]> {
   return apiGet<number[]>(`/api/reader/${encodeURIComponent(bookId)}/lengths`);
 }
 
+/**
+ * 내가 가진 캐릭터 (GET /api/characters — verification 모듈의 라우트).
+ * 읽는 동안 옆에 세울 파트너를 고르는 데만 쓴다 (partner.ts)
+ */
+export function fetchMyCharacters(): Promise<CharactersResponse> {
+  return apiGet<CharactersResponse>("/api/characters");
+}

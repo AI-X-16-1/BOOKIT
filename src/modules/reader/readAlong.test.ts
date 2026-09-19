@@ -11,6 +11,7 @@ import {
   WINDOW,
   wordOffset,
 } from "./readAlong";
+import { pickPartner } from "./partner";
 
 const BOOK = splitWords(
   "어느 해 몹시 추운 겨울날이었습니다. 하늘에서는 흰 새의 날개같이 희고도 보드라운 눈송이가 펑 ─ 펑 ─ 쏟아져 내리고",
@@ -173,4 +174,17 @@ test("wordOffset — 화면의 낱말 번호로 원문 글자 위치를 찾는�
   }
   assert.equal(wordOffset(body, words.length), body.length, "끝을 넘으면 본문 길이");
   assert.equal(body.slice(0, wordOffset(body, 5)).trim(), "어느 해 몹시 추운 겨울날이었습니다.");
+});
+
+test("pickPartner — 가장 많이 자란 캐릭터가 파트너, 같으면 최근 것", () => {
+  const base = { book_title: "책", cover_url: null, name: "이름", art_seed: "592b93bc" };
+  const list = [
+    { ...base, book_id: "a", stage: 1 as const, stage_name: "아기 나귀", obtained_at: "2026-09-18T01:00:00Z" },
+    { ...base, book_id: "b", stage: 2 as const, stage_name: "달밤 나귀", obtained_at: "2026-09-17T01:00:00Z" },
+    { ...base, book_id: "c", stage: 2 as const, stage_name: "새 친구", obtained_at: "2026-09-18T02:00:00Z" },
+  ];
+  assert.equal(pickPartner(list)?.name, "새 친구");
+  assert.equal(pickPartner([list[0]])?.face, "🐣");
+  assert.equal(pickPartner([]), null);
+  assert.ok(["🐉", "🦊", "🐢", "🦉", "🐯", "🐰", "🐻", "🦋"].includes(pickPartner(list)!.face));
 });

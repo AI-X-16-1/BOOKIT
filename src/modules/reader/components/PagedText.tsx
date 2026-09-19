@@ -56,6 +56,7 @@ export function PagedText({
   onReachEnd,
   onPage,
   lockForward = false,
+  companion,
   control,
 }: {
   /** 흘려 놓을 본문. 문단은 블록 요소로 — flex 로 감싸면 쪽 경계에서 문단이 안 쪼개진다 */
@@ -83,6 +84,8 @@ export function PagedText({
    * 다시 읽는 것은 막지 않는다
    */
   lockForward?: boolean;
+  /** 쪽 번호 옆에 세울 것 — 같이 읽는 파트너 (LibraryScreen) */
+  companion?: ReactNode;
   /** 소리 내어 읽기가 쪽을 넘기는 손잡이 (PagedTextControl) */
   control?: Ref<PagedTextControl>;
 }) {
@@ -299,8 +302,11 @@ export function PagedText({
         >
           {atStart && hasPrevChapter ? "← 앞 장" : "←"}
         </button>
-        <div className="flex-1 text-center text-[13px] text-muted" aria-live="polite">
-          {lockForward ? "🎮 퀴즈를 맞히면 넘어갈 수 있어" : `${page + 1} / ${pageCount}쪽`}
+        <div className="flex min-w-0 flex-1 items-center justify-center gap-2 text-[13px] text-muted">
+          {companion}
+          <span aria-live="polite">
+            {lockForward ? "🎮 퀴즈를 맞히면 넘어갈 수 있어" : `${page + 1} / ${pageCount}쪽`}
+          </span>
         </div>
         <button
           type="button"

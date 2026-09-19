@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import type { Partner } from "../partner";
 import type { WordQuizResponse } from "../schema";
 
 /** 받침이 있으면 "은", 없으면 "는" — ‘애걸애걸하는’는 이 아니라 ‘애걸애걸하는’은 */
@@ -21,6 +22,9 @@ function topic(word: string): string {
  * 보기가 셋이라 많아야 두 번 틀리면 답이 남으므로 아이가 갇히지 않는다. 맞히기 전에는
  * 닫는 단추가 없고, 리더는 다음 쪽으로 넘기지 못하게 막는다 (PagedText 의 lockForward).
  *
+ * **파트너가 보스를 공격한다** (9/19 강민구 결정 — partner.ts). 맞히면 파트너의 공격이 그 책
+ * 보스에게 명중하고, 틀리면 빗나간다. 연출뿐이다 — 보스전 화면·채점·책갈피는 그대로다.
+ *
  * 화면은 밝은 카드다. 어두운 판은 "검사받는 중" 표시라 (CLAUDE.md §7) 놀이에는 쓰지 않는다.
  * 768px 이상은 오른쪽 패널에, 미만은 WordQuizSheet 에 담는다 (LibraryScreen).
  */
@@ -30,8 +34,14 @@ export function WordQuiz({
   solved,
   onPick,
   onClose,
+  partner,
+  bossName,
 }: {
   quiz: WordQuizResponse;
+  /** 같이 싸우는 내 파트너 */
+  partner: Partner;
+  /** 보스 = 그 책 */
+  bossName: string;
   /** 골랐다가 틀린 보기 자리들 */
   wrong: number[];
   /** 정답을 골랐다 */
@@ -59,6 +69,35 @@ export function WordQuiz({
             ✕
           </button>
         )}
+      </div>
+
+      {/* 파트너 ⚔️ 보스. 맞히면 파트너가 뛰어오르고 보스에 💥, 틀리면 보스가 멀쩡하다 */}
+      <div className="mt-2 flex items-center justify-between rounded-card bg-sunken px-4 py-3">
+        <div className="flex min-w-0 flex-col items-center">
+          <span
+            className={`text-[34px] leading-none ${solved ? "motion-safe:animate-bounce" : ""}`}
+            aria-hidden
+          >
+            {partner.face}
+          </span>
+          <span className="mt-1 max-w-[7rem] truncate text-[11px] font-bold text-ink">
+            {partner.name}
+          </span>
+        </div>
+        <span className="text-lg" aria-hidden>
+          {solved ? "💥" : wrong.length > 0 ? "💨" : "⚔️"}
+        </span>
+        <div className="flex min-w-0 flex-col items-center">
+          <span className="relative text-[34px] leading-none" aria-hidden>
+            📕
+            {solved && (
+              <span className="absolute -top-2 -right-3 text-xl motion-safe:animate-ping">✨</span>
+            )}
+          </span>
+          <span className="mt-1 max-w-[7rem] truncate text-[11px] font-bold text-coral-deep">
+            보스 · {bossName}
+          </span>
+        </div>
       </div>
 
       {/* 원문 문장. 따옴표를 씌우지 않는다 — 대화문이면 원문에 이미 “ ” 가 있다 */}
@@ -105,15 +144,15 @@ export function WordQuiz({
 
       {!solved && wrong.length > 0 && (
         <p className="mt-3 text-[15px] leading-relaxed text-coral-text" aria-live="polite">
-          아쉬워! 위 문장을 한 번 더 읽고 다른 뜻을 골라 볼래?
+          {partner.name}의 공격이 빗나갔어! 위 문장을 한 번 더 읽고 다른 뜻을 골라 볼래?
         </p>
       )}
       {solved && (
         <>
           <p className="mt-3 text-[15px] leading-relaxed text-ink" aria-live="polite">
             {wrong.length === 0
-              ? "맞았어! 🎉 이제 이 낱말은 네 거야."
-              : "찾았다! 🎉 초록 칸이 이 문장에서의 뜻이야."}
+              ? `맞았어! ${partner.name}의 공격이 보스에게 명중했어 💥`
+              : `찾았다! ${partner.name}의 공격이 명중했어 💥 초록 칸이 이 문장에서의 뜻이야.`}
           </p>
           <button
             type="button"

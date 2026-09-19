@@ -17,6 +17,7 @@ import {
   fetchChapter,
   fetchChapterLengths,
   fetchDictEntry,
+  fetchMyCharacters,
   fetchWordQuiz,
   openCheckpoint,
   recordChapterRead,
@@ -27,6 +28,7 @@ import { PagedText, type PagedTextControl } from "./PagedText";
 import { ShelfPagination, useIsWide, useShelfPageSize } from "./ShelfPagination";
 import { useReadAloud } from "./useReadAloud";
 import { WordQuiz, WordQuizSheet } from "./WordQuiz";
+import { pickPartner, type Partner } from "../partner";
 
 /**
  * 책잇 서재. 목업 6 L386-404.
@@ -530,9 +532,23 @@ export function LibraryScreen({
     key: string;
     promise: Promise<WordQuizResponse | null>;
   } | null>(null);
+  /**
+   * 같이 읽는 내 파트너 (partner.ts). 책을 펼칠 때 한 번 불러온다 — 방금 부화·진화했으면
+   * 다음 책부터 바뀐다. 못 불러오거나 아직 캐릭터가 없으면 이 책의 알이 파트너다
+   */
+  const [partner, setPartner] = useState<Partner | null>(null);
+  const partnerOf = (): Partner => partner ?? { face: "🥚", name: "이 책의 알", stage: 0 };
   /** 지금 펼친 책. 늦게 도착한 퀴즈가 다른 책 위에 뜨지 않게 */
   const openBookId = useRef<string | null>(null);
   const readingBookId = reading?.book.id ?? null;
+  useEffect(() => {
+    if (!readingBookId) return;
+    void fetchMyCharacters()
+      .then(({ characters }) => setPartner(pickPartner(characters)))
+      .catch(() => {
+        // 못 받으면 이 책의 알이 파트너다 (partnerOf)
+      });
+  }, [readingBookId]);
   useEffect(() => {
     openBookId.current = readingBookId;
     if (!readingBookId || chapterLengths.current.has(readingBookId)) return;
@@ -1002,6 +1018,15 @@ export function LibraryScreen({
                   onReachEnd={() => markChapterRead(book.id, chapterNo)}
                   onPage={(page, pageCount) => onPageTurn(book, chapterNo, page, pageCount)}
                   lockForward={quizLocked}
+                  companion={
+                    <span
+                      className="flex items-center gap-1 rounded-full bg-sunken px-2.5 py-1 text-xs font-bold text-ink"
+                      title={`${partnerOf().name} — 같이 읽는 파트너`}
+                    >
+                      <span aria-hidden>{partnerOf().face}</span>
+                      <span className="max-w-[5.5rem] truncate">{partnerOf().name}</span>
+                    </span>
+                  }
                   control={paged}
                 >
                   {/* 문단은 블록으로 쌓는다 — flex 로 감싸면 쪽 경계에서 문단이 쪼개지지 않는다 */}
@@ -1062,6 +1087,8 @@ export function LibraryScreen({
                   solved={quiz.solved}
                   onPick={pickQuiz}
                   onClose={closeQuiz}
+                  partner={partnerOf()}
+                  bossName={book.title}
                 />
               </Card>
             )}
@@ -1174,6 +1201,8 @@ export function LibraryScreen({
                 solved={quiz.solved}
                 onPick={pickQuiz}
                 onClose={closeQuiz}
+                partner={partnerOf()}
+                bossName={book.title}
               />
             </WordQuizSheet>
           </div>
