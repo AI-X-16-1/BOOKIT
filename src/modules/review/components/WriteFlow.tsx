@@ -139,6 +139,7 @@ export function WriteFlow({ book, review, gaps: savedGaps, streakDays }: WriteFl
     <ReviewEditor
       bookTitle={book.title}
       bookAuthor={book.author}
+      bookCoverUrl={book.cover_url}
       helperQuestion={helperQuestion}
       value={body}
       onChange={setBody}
