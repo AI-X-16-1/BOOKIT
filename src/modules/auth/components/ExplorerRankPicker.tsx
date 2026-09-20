@@ -14,11 +14,11 @@ import { EXPLORER_RANKS } from "../explorer";
  * 뺐다 (난이도는 학년이 정한다). 같은 카드를 다시 누르면 해제된다. 온보딩과 '나' 화면이 같이 쓴다.
  */
 
-/** 카드 아이콘 칸 배경 — 목업의 노랑·코랄·초록 순서 */
+/** 동그란 이모지 칸 배경 — 목업 10 M01 순서 (초록·코랄·노랑) */
 const TILE_BG: Record<ExplorerRank, string> = {
-  새싹: "bg-yellow-bg",
+  새싹: "bg-green-bg",
   탐험가: "bg-coral-bg-2",
-  대장: "bg-green-bg",
+  대장: "bg-yellow-bg",
 };
 
 export function ExplorerRankPicker({
@@ -31,7 +31,7 @@ export function ExplorerRankPicker({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2.5" role="radiogroup" aria-label="탐험가 등급">
+    <div className="flex flex-col gap-3.5" role="radiogroup" aria-label="탐험가 등급">
       {EXPLORER_RANKS.map((r) => {
         const selected = value === r.value;
         return (
@@ -43,38 +43,46 @@ export function ExplorerRankPicker({
             disabled={disabled}
             onClick={() => onChange(selected ? null : r.value)}
             className={cn(
-              "flex min-h-12 items-center gap-3.5 rounded-card border p-[18px] text-left transition-colors",
+              // 저학년 개편(목업 10 M01): 76px 동그란 이모지, Jua 25px, 3px 테두리
+              "relative flex min-h-14 items-center gap-4 rounded-[26px] border-[3px] px-[18px] py-4 text-left transition-colors",
               selected
-                ? "border-2 border-coral bg-coral-bg"
-                : "border-border bg-white",
+                ? "border-coral bg-coral-bg shadow-[0_12px_26px_rgba(255,107,74,.2)]"
+                : "border-border bg-card",
               disabled && "opacity-60",
             )}
           >
+            {selected && (
+              <span
+                aria-hidden
+                className="absolute -top-4 right-3.5 rounded-full bg-coral px-3.5 py-1.5 font-display text-[16px] text-white animate-[bookit-wiggle_2.6s_ease-in-out_infinite]"
+              >
+                이거!
+              </span>
+            )}
             <span
               aria-hidden
               className={cn(
-                "flex h-12 w-12 flex-none items-center justify-center rounded-[14px] text-[22px]",
+                "relative flex h-[76px] w-[76px] flex-none items-center justify-center rounded-full text-[38px]",
                 TILE_BG[r.value],
+                !selected && "animate-[bookit-bob-s_3.4s_ease-in-out_infinite]",
               )}
             >
+              {selected && (
+                <span className="absolute inset-0 rounded-full border-[3px] border-coral-light animate-[bookit-ring_2.2s_ease-out_infinite]" />
+              )}
               {r.emoji}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[17px] font-bold text-ink">{r.value} 탐험가</span>
+              <span className="block font-display text-[25px] text-ink">{r.value}</span>
               <span
                 className={cn(
-                  "mt-[3px] block text-[13px]",
-                  selected ? "text-yellow-text-2" : "text-muted",
+                  "mt-[2px] block text-[16px] font-medium",
+                  selected ? "text-[#8A6A5C]" : "text-muted",
                 )}
               >
                 {r.blurb}
               </span>
             </span>
-            {selected && (
-              <span aria-hidden className="text-xl text-coral">
-                ✓
-              </span>
-            )}
           </button>
         );
       })}

@@ -14,7 +14,8 @@ export const EXPLORER_RANKS: Array<{
   emoji: string;
   blurb: string;
 }> = [
-  { value: "새싹", emoji: "🌱", blurb: "책 읽기 시작했어" },
-  { value: "탐험가", emoji: "🧭", blurb: "책을 꽤 읽어봤어" },
-  { value: "대장", emoji: "🏔", blurb: "책이라면 자신 있어" },
+  // 카피·이모지는 저학년 개편 목업 10 M01 (2026-09-20)
+  { value: "새싹", emoji: "🌱", blurb: "이제 막 읽기 시작했어" },
+  { value: "탐험가", emoji: "🧭", blurb: "혼자서도 한 권 다 읽어" },
+  { value: "대장", emoji: "👑", blurb: "두꺼운 책도 끝까지" },
 ];

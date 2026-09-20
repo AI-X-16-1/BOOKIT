@@ -13,15 +13,16 @@ export function LevelTestEntry({ className }: { className?: string }) {
   return (
     <Link
       href="/level-test"
-      className={`flex min-h-12 items-center justify-between gap-3 rounded-card border border-border-soft bg-card px-5 py-4 ${className ?? ""}`}
+      className={`flex min-h-14 items-center gap-3.5 rounded-card border-[3px] border-border bg-card px-[18px] py-4 ${className ?? ""}`}
     >
-      <span className="min-w-0">
-        <span className="block text-sm font-bold text-ink">읽기 수준 알아보기</span>
-        <span className="mt-[3px] block text-xs text-muted">
-          짧은 글 하나로 나한테 맞는 책 난이도를 찾아줘
+      <span aria-hidden className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-blue-bg text-[24px]">📖</span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-display text-[20px] text-ink">읽기 수준 알아보기</span>
+        <span className="block text-[15px] font-medium text-muted">
+          짧은 글 하나로 나한테 맞는 책을 찾아줘
         </span>
       </span>
-      <span aria-hidden className="flex-none text-[18px] text-coral">
+      <span aria-hidden className="flex-none text-[22px] text-coral">
         →
       </span>
     </Link>

@@ -3,9 +3,16 @@
 import { useEffect, useState } from "react";
 import type { ChallengesResponse, ClassRankingResponse } from "@/shared/types";
 import { apiGet } from "@/shared/api/client";
-import { Card, Chip } from "@/shared/ui";
 
-/** 챌린지 + 반 랭킹. 목업 4 #3 (L263-300). */
+/**
+ * 반 대항전. 저학년 개편 — 목업 10 M10 (2026-09-20).
+ *
+ * "우리 반 대항전" → 🏆 우리 반 순위 카드(진행바) → 반 순위 🥇🥈🥉 → 반 목표 챌린지.
+ * 개인 순위는 없다 — 등수는 반끼리만 (CLAUDE.md §4·§5). AI 확인을 통과한 완독만 센다.
+ */
+
+const MEDAL = ["🥇", "🥈", "🥉"];
+
 export function ChallengeScreen() {
   const [ch, setCh] = useState<ChallengesResponse | null>(null);
   const [rank, setRank] = useState<ClassRankingResponse | null>(null);
@@ -16,99 +23,97 @@ export function ChallengeScreen() {
   }, []);
 
   const goal = ch?.class_goal;
-  const pct = goal ? Math.round((goal.value / goal.target) * 100) : 0;
+  const goalPct = goal ? Math.round((goal.value / goal.target) * 100) : 0;
+
+  const mine = rank?.my_class;
+  const top = rank?.rows[0];
+  const gap = mine && top && top.class_id !== mine.class_id ? top.verified_count - mine.verified_count + 1 : 0;
+  const barPct = mine && top && top.verified_count > 0 ? Math.round((mine.verified_count / top.verified_count) * 100) : 0;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-[22px] font-bold text-ink">챌린지</h1>
-        <p className="mt-1.5 text-[13px] text-muted">
-          혼자보다 같이, 지금이 아니면 못 얻는 배지도 있어요
+    <div className="flex flex-col gap-3.5">
+      <div className="flex items-center gap-2.5">
+        <h1 className="text-[28px] text-ink">우리 반 대항전</h1>
+        {ch?.season && (
+          <span className="rounded-full bg-blue-bg px-3 py-1.5 font-display text-[15px] text-blue-text">
+            🍂 {ch.season.title}
+          </span>
+        )}
+      </div>
+
+      {/* 우리 반 */}
+      <div className="flex flex-col gap-2.5 rounded-[26px] border-[3px] border-coral-border bg-coral-bg p-[18px]">
+        <div className="flex items-center gap-3.5">
+          <span aria-hidden className="flex h-[72px] w-[72px] flex-none items-center justify-center rounded-[20px] bg-yellow text-[36px] animate-[bookit-wiggle_3.2s_ease-in-out_infinite]">
+            🏆
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-[24px] text-ink">
+              {mine ? (mine.rank === 1 ? "우리 반이 1등이야!" : `우리 반이 ${mine.rank}등이야!`) : "불러오는 중…"}
+            </div>
+            <div className="text-[16px] font-medium text-coral-muted">
+              {mine ? (gap > 0 ? `독후감 ${gap}개만 더 통과하면 1등` : "지금처럼만 하면 돼!") : ""}
+            </div>
+          </div>
+          <span className="flex-none font-display text-[32px] text-coral-ink">{mine?.verified_count ?? "—"}</span>
+        </div>
+        <div className="h-[18px] w-full overflow-hidden rounded-full bg-coral-bg-2">
+          <div
+            className="h-full rounded-full transition-[width] duration-700"
+            style={{ width: `${Math.max(barPct, 4)}%`, background: "linear-gradient(90deg, #FF8F75, #FF6B4A)" }}
+          />
+        </div>
+      </div>
+
+      {/* 반 순위 */}
+      <div className="flex flex-col gap-2.5 rounded-card border-[3px] border-border bg-card px-[18px] py-4">
+        <h2 className="text-[20px] text-ink">반 순위</h2>
+        {rank?.rows.map((row, i) => {
+          const isMine = row.class_id === rank.my_class.class_id;
+          return (
+            <div
+              key={row.class_id}
+              className={
+                isMine
+                  ? "flex items-center gap-3 rounded-[16px] border-[3px] border-coral bg-coral-bg-2 px-3.5 py-[11px]"
+                  : i === 0
+                    ? "flex items-center gap-3 rounded-[16px] bg-yellow-bg px-3.5 py-[11px]"
+                    : "flex items-center gap-3 rounded-[16px] bg-sunken px-3.5 py-[11px]"
+              }
+            >
+              <span aria-hidden className="w-7 flex-none text-center text-[22px]">
+                {MEDAL[i] ?? <span className="font-display text-[18px] text-faint">{row.rank}</span>}
+              </span>
+              <span className="flex-1 truncate font-display text-[20px] text-ink">
+                {row.label}
+                {isMine && <span className="ml-1.5 font-display text-[14px] text-coral-ink">우리 반</span>}
+              </span>
+              <span className={`flex-none font-display text-[20px] ${isMine ? "text-coral-ink" : i === 0 ? "text-yellow-text" : "text-ink-warm"}`}>
+                {row.verified_count}
+              </span>
+            </div>
+          );
+        })}
+        <p className="mt-1 rounded-[16px] bg-sunken px-3.5 py-3 text-[15px] leading-[1.6] font-medium text-muted">
+          독후감을 통과한 책만 세. 등수는 반끼리만 보여
         </p>
       </div>
 
       {/* 반 목표 */}
-      <div className="rounded-[18px] bg-panel p-5">
-        {goal ? (
-          <>
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-base font-bold text-on-dark">
-                {goal.title}
-              </span>
-              <span className="flex-none text-sm font-bold text-yellow">
-                {goal.value} / {goal.target}권
-              </span>
-            </div>
-            <div className="mt-3 h-3 rounded-full bg-panel-line">
-              <div
-                className="h-3 rounded-full bg-coral transition-[width] duration-700"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <p className="mt-3 text-xs text-on-dark-2">+21명 참여 중</p>
-            <p className="mt-3 text-[13px] text-yellow">
-              🎉 목표 달성하면 학급 파티!
-            </p>
-          </>
-        ) : (
-          <p className="text-sm text-on-dark-2">불러오는 중…</p>
-        )}
-      </div>
-
-      {/* 시즌 */}
-      {ch?.season && (
-        <Card className="rounded-[18px] p-5">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-base font-bold text-ink">
-              {ch.season.title}
+      {goal && (
+        <div className="rounded-card border-[3px] border-border bg-card px-[18px] py-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-[20px] text-ink">{goal.title}</h2>
+            <span className="flex-none font-display text-[18px] text-yellow-text">
+              {goal.value} / {goal.target}권
             </span>
-            <Chip tone="yellow">10.1~10.31</Chip>
           </div>
-          <div className="mt-3.5 flex items-center gap-2">
-            {Array.from({ length: ch.season.target }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-2 flex-1 rounded-full ${i < ch.season!.value ? "bg-green" : "bg-sunken"}`}
-              />
-            ))}
+          <div className="mt-3 h-3.5 overflow-hidden rounded-full bg-yellow-bg">
+            <div className="h-full rounded-full bg-yellow transition-[width] duration-700" style={{ width: `${goalPct}%` }} />
           </div>
-          <p className="mt-2.5 text-[13px] text-muted">
-            {ch.season.value} / {ch.season.target}권 완독
-          </p>
-        </Card>
-      )}
-
-      {/* 반 랭킹 — 개인 순위는 없다 */}
-      <div>
-        <h2 className="text-[17px] font-bold text-ink">반 대 반 랭킹</h2>
-        <p className="mt-1 text-[13px] text-muted">
-          AI 확인을 통과한 완독만 세요
-        </p>
-        <div className="mt-3 flex flex-col gap-2">
-          {rank?.rows.map((row) => {
-            const mine = row.class_id === rank.my_class.class_id;
-            return (
-              <Card
-                key={row.class_id}
-                className={`flex items-center gap-3 ${mine ? "border-coral" : ""}`}
-              >
-                <span
-                  className={`w-6 flex-none text-center text-base font-bold ${mine ? "text-coral" : "text-faint"}`}
-                >
-                  {row.rank}
-                </span>
-                <span className="flex-1 truncate text-[15px] font-bold text-ink">
-                  {row.label}
-                </span>
-                {mine && <Chip tone="coral">우리 반</Chip>}
-                <span className="flex-none text-sm text-muted">
-                  {row.verified_count}권
-                </span>
-              </Card>
-            );
-          })}
+          <p className="mt-2.5 text-[15px] font-medium text-muted">🎉 다 채우면 우리 반 파티!</p>
         </div>
-      </div>
+      )}
     </div>
   );
 }

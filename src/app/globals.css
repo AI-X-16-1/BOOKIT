@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../shared/styles/tokens.css";
+@import "../shared/styles/tokens-kids.css";
 
 /*
  * 브랜드 팔레트는 고정 크림톤이다.
@@ -15,7 +16,21 @@ body {
   background: var(--bg-cream);
   color: var(--ink);
   font-family: var(--font-sans);
-  /* 본문 최소 16px (CLAUDE.md §8) */
-  font-size: 16px;
+  /* 저학년 개편(목업 10): 본문 18px 모바일 / 20px 태블릿. 이전 16px */
+  font-size: var(--fs-body-m);
   line-height: 1.6;
+}
+
+@media (min-width: 768px) {
+  body {
+    font-size: var(--fs-body);
+  }
+}
+
+/* 저학년 개편 — 화면 제목·섹션 제목은 Jua 다. 목업 9·10 */
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.5px;
 }

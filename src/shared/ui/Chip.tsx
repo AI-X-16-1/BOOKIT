@@ -30,7 +30,8 @@ export function Chip({ tone = "neutral", className, ...props }: ChipProps) {
   return (
     <span
       className={cn(
-        "inline-block rounded-full px-3 py-1.5 text-xs font-bold whitespace-nowrap",
+        // 저학년 개편: Jua 16px. 이전 12px 700
+        "inline-block rounded-full px-3.5 py-1.5 font-display text-[16px] whitespace-nowrap",
         TONE[tone],
         className,
       )}

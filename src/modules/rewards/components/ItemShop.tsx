@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "@/shared/api/client";
 import type { ItemsResponse, BuyItemResponse, ItemKind } from "@/shared/types";
-import { Chip, cn } from "@/shared/ui";
+import { cn } from "@/shared/ui";
 
 /**
  * 책갈피 상점 (④). 목업에 없는 화면이라 기존 카드 문법으로 짰다.
@@ -63,18 +63,16 @@ export function ItemShop({ className }: { className?: string }) {
   };
 
   return (
-    <section className={cn("rounded-card border border-border-soft bg-card p-5", className)}>
+    // 저학년 개편(목업 10 M09): "책갈피로 꾸미기" — 3열, Jua, 가격은 노랑 칩
+    <section className={cn("rounded-card border-[3px] border-border bg-card px-[18px] py-4", className)}>
       <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-ink">책갈피 상점</h2>
-          <p className="mt-1 text-xs text-muted">모은 책갈피로 꾸며보자</p>
-        </div>
-        <span className="flex-none rounded-full bg-yellow-bg px-3 py-[7px] text-xs font-bold text-yellow-text">
+        <h2 className="text-[21px] text-ink">책갈피로 꾸미기</h2>
+        <span className="flex-none rounded-full bg-yellow-bg px-3 py-1 font-display text-[16px] text-yellow-text">
           🔖 {data.balance.toLocaleString()}
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2.5">
+      <div className="mt-3 grid grid-cols-3 gap-[11px]">
         {data.items.map((item) => {
           const affordable = data.balance >= item.price;
 
@@ -82,22 +80,20 @@ export function ItemShop({ className }: { className?: string }) {
             <div
               key={item.id}
               className={cn(
-                "flex flex-col items-center rounded-2xl p-3",
-                item.owned ? "bg-green-bg" : "bg-sunken",
+                "flex flex-col items-center gap-1.5 rounded-[18px] px-1.5 py-3",
+                item.owned ? "border-[3px] border-green-border bg-green-bg" : "bg-sunken",
+                !item.owned && !affordable && "opacity-55",
               )}
             >
-              <span className="text-[28px] leading-none" aria-hidden>
+              <span className="text-[30px] leading-none" aria-hidden>
                 {item.emoji || "🎁"}
               </span>
-              <div className="mt-2 w-full truncate text-center text-xs font-bold text-ink">
+              <div className="w-full truncate text-center font-display text-[15px] text-ink" title={KIND_LABEL[item.kind]}>
                 {item.name}
               </div>
-              <div className="mt-[2px] text-[11px] text-faint">{KIND_LABEL[item.kind]}</div>
 
               {item.owned ? (
-                <Chip tone="green" className="mt-2.5">
-                  가짐
-                </Chip>
+                <span className="font-display text-[14px] text-green-ink">가지고 있어</span>
               ) : (
                 <button
                   type="button"
@@ -122,7 +118,7 @@ export function ItemShop({ className }: { className?: string }) {
         })}
       </div>
 
-      {message && <p className="mt-3 text-center text-sm text-coral-text">{message}</p>}
+      {message && <p className="mt-3 text-center text-[15px] text-coral-text">{message}</p>}
     </section>
   );
 }

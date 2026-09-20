@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 목업 런타임 — 앱 코드가 아니다 (docs/mockups/README-kids-redesign.md)
+    "docs/mockups/**",
+    "handoff/**",
   ]),
 ]);
 
