@@ -46,11 +46,11 @@ export function ExplorerRankSettings({ className }: { className?: string }) {
 
   return (
     <div className={className}>
-      <div className="text-[13px] text-muted">탐험가 등급</div>
+      <h2 className="text-[20px] text-ink">탐험가 등급 바꾸기</h2>
       <div className="mt-3">
         <ExplorerRankPicker value={rank} onChange={change} disabled={!loaded || busy} />
       </div>
-      {note && <p className="mt-2 text-[13px] text-muted">{note}</p>}
+      {note && <p className="mt-2 text-[15px] font-medium text-muted">{note}</p>}
     </div>
   );
 }
