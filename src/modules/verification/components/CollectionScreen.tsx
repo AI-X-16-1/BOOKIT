@@ -19,13 +19,6 @@ import { cn } from "@/shared/ui";
 
 /** 표지가 없을 때 쓰는 자리표시자 (CLAUDE.md §10). books 모듈의 COVER 와 같은 네 쌍이다 —
  *  그쪽은 모듈 내부 파일이라 가져올 수 없어(CLAUDE.md §2) 같은 값을 여기 적어 둔다 */
-const COVER_TONES = [
-  "bg-linear-160 from-green-light to-green",
-  "bg-linear-160 from-coral-light to-coral",
-  "bg-linear-160 from-blue to-blue-text",
-  "bg-linear-160 from-yellow to-yellow-text-2",
-];
-
 /** 캐릭터 얼굴. art_seed 로 고른다 — 같은 책은 늘 같은 얼굴이 나온다 */
 const FACES = ["🐉", "🦊", "🐢", "🦉", "🐯", "🐰", "🐻", "🦋"];
 
@@ -58,76 +51,54 @@ export interface CollectionScreenProps {
 }
 
 /** 한 칸 */
+/** 도감 한 칸. 저학년 개편(목업 10 M08): 동그란 얼굴 + 이름 + 단계 칩. 표지 대신 얼굴이 주인공이다 */
 function Slot({ entry }: { entry: CollectionEntryView }) {
   const captured = entry.stage === 2;
   const seen = entry.stage !== null;
   const seed = seedNumber(entry.artSeed || entry.bookId);
 
+  if (!seen) {
+    return (
+      <div className="flex min-h-[150px] flex-col items-center justify-center gap-1.5 rounded-[22px] border-[3px] border-dashed border-dash bg-sunken px-2 py-3">
+        <span aria-hidden className="text-[32px] opacity-40">❔</span>
+        <span className="text-center text-[14px] leading-[1.4] font-medium text-faint">
+          {/* 책 제목은 보여준다 — 71권 중 뭘 읽을지 고를 수 있어야 한다 */}
+          <span className="block truncate px-1 text-[13px]">{entry.bookTitle}</span>
+          아직 안 만난 친구
+        </span>
+      </div>
+    );
+  }
+
+  const face = captured ? FACES[seed % FACES.length] : entry.stage === 0 ? "🥚" : "🐣";
   return (
     <div
       className={cn(
-        "rounded-2xl p-2.5",
-        captured ? "border border-border bg-card" : "bg-sunken",
+        "flex min-h-[150px] flex-col items-center gap-1.5 rounded-[22px] border-[3px] px-2 py-3",
+        captured ? "border-coral-border bg-coral-bg" : "border-border bg-card",
       )}
     >
-      <div
+      <span
+        aria-hidden
         className={cn(
-          "relative flex aspect-3/4 items-end justify-center overflow-hidden rounded-[10px] pb-1.5",
-          !entry.coverUrl && COVER_TONES[seed % COVER_TONES.length],
+          "flex h-[66px] w-[66px] items-center justify-center rounded-full text-[34px]",
+          captured ? "bg-coral-bg-2" : entry.stage === 1 ? "bg-yellow-bg animate-[bookit-bob-s_3.4s_ease-in-out_infinite]" : "bg-sunken",
         )}
       >
-        {entry.coverUrl && (
-          // eslint-disable-next-line @next/next/no-img-element -- 외부 표지 URL, 크기 미상
-          <img
-            src={entry.coverUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-        )}
-
-        {/* 아직 못 잡았으면 표지를 덮는다 — 표지 퍼즐과 같은 규칙이다.
-            다 잡으면 표지가 드러나고 그 위에 캐릭터가 앉는다 */}
-        {!captured && (
-          <div className="absolute inset-0 flex items-center justify-center bg-sunken/92 text-2xl text-faint">
-            {seen ? (entry.stage === 0 ? "🥚" : "🐣") : "?"}
-          </div>
-        )}
-
-        {captured && (
-          <>
-            <span className="relative text-4xl drop-shadow-[0_2px_6px_rgba(0,0,0,.45)]" aria-hidden>
-              {FACES[seed % FACES.length]}
-            </span>
-            {entry.stars !== null && (
-              <span
-                className="absolute top-1.5 left-1.5 rounded-full bg-yellow px-[7px] py-[3px] text-[9px] font-bold text-stamp-text"
-                title="보스전을 몇 번에 잡았는지"
-              >
-                {"★".repeat(entry.stars)}
-              </span>
-            )}
-          </>
-        )}
-      </div>
-
-      <div
+        {face}
+      </span>
+      <span className="w-full truncate text-center font-display text-[16px] text-ink">
+        {captured ? entry.name : entry.bookTitle}
+      </span>
+      <span
         className={cn(
-          "mt-2.5 truncate text-xs font-bold",
-          captured ? "text-ink" : "text-muted",
+          "rounded-full px-2.5 py-[3px] font-display text-[13px]",
+          captured ? "bg-coral text-white" : entry.stage === 1 ? "bg-yellow text-yellow-text" : "bg-sunken text-ink-warm",
         )}
+        title={captured && entry.stars !== null ? `보스전 ${"★".repeat(entry.stars)}` : undefined}
       >
-        {captured ? entry.bookTitle : "아직 못 잡음"}
-      </div>
-      {/* 못 잡은 칸의 둘째 줄은 **책 제목**이다. 목업은 "-" 였지만 서재가 71권이라
-          빈 칸이 수십 개 이어지고, 전부 "?" 면 다음에 뭘 읽을지 고를 수가 없다.
-          캐릭터 이름은 그대로 가린다 — 잡았을 때의 재미가 거기 있다 */}
-      <div className="mt-[2px] truncate text-[11px] text-faint">
-        {captured
-          ? entry.name
-          : seen
-            ? `${entry.stageName} · 읽는 중`
-            : entry.bookTitle}
-      </div>
+        {captured ? (entry.stars ? "★".repeat(entry.stars) : "다 자람") : entry.stage === 1 ? "부화" : "알"}
+      </span>
     </div>
   );
 }
@@ -139,29 +110,51 @@ export function CollectionScreen({
   tags,
 }: CollectionScreenProps) {
   const [tag, setTag] = useState<string | null>(null);
+  const [stageFilter, setStageFilter] = useState<"all" | "grown" | "egg">("all");
 
-  const shown = useMemo(
-    () => (tag === null ? entries : entries.filter((e) => e.tags.includes(tag))),
-    [entries, tag],
-  );
+  const shown = useMemo(() => {
+    let list = tag === null ? entries : entries.filter((e) => e.tags.includes(tag));
+    if (stageFilter === "grown") list = list.filter((e) => e.stage === 2);
+    if (stageFilter === "egg") list = list.filter((e) => e.stage === 0 || e.stage === 1);
+    return list;
+  }, [entries, tag, stageFilter]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-[22px] font-bold text-ink">나의 도감</h1>
-          <p className="mt-[5px] text-[13px] text-muted">
-            보스를 잡은 책의 캐릭터가 여기 들어와요
-          </p>
-        </div>
-        <span className="flex-none rounded-xl bg-panel px-3.5 py-2.5 text-[13px] font-bold text-yellow">
+    <div className="flex flex-col gap-3.5">
+      <div className="flex items-center gap-2.5">
+        <h1 className="text-[28px] text-ink">내 친구들</h1>
+        <span className="rounded-full bg-coral-bg-2 px-[15px] py-1.5 font-display text-[18px] text-coral-ink">
           {captured} / {total}
         </span>
       </div>
 
+      {/* 단계 필터 — 목업 M08 의 모두 / 다 자람 / 알 */}
+      <div className="flex gap-2">
+        {(
+          [
+            ["all", "모두"],
+            ["grown", "다 자람"],
+            ["egg", "알"],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setStageFilter(v)}
+            aria-pressed={stageFilter === v}
+            className={cn(
+              "min-h-12 rounded-full px-[18px] font-display text-[17px]",
+              stageFilter === v ? "bg-coral text-white" : "border-2 border-border bg-card text-ink-mid",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* 장르 칩. 책이 늘면 태그도 늘어서 가로로 흐르게 둔다 */}
       {tags.length > 0 && (
-        <div className="-mx-[22px] flex gap-2 overflow-x-auto px-[22px] pb-1">
+        <div className="-mx-[22px] flex gap-2 overflow-x-auto px-[22px] pb-1 [scrollbar-width:none]">
           {[null, ...tags].map((t) => (
             <button
               key={t ?? "all"}
@@ -169,11 +162,8 @@ export function CollectionScreen({
               onClick={() => setTag(t)}
               aria-pressed={tag === t}
               className={cn(
-                // 48px — 손가락으로 누르는 것이라 목업(34px)보다 키운다 (CLAUDE.md §8)
-                "flex min-h-12 flex-none items-center rounded-full px-[15px] text-[13px] whitespace-nowrap",
-                tag === t
-                  ? "bg-ink font-bold text-cream"
-                  : "border border-border bg-card text-ink-warm",
+                "flex min-h-11 flex-none items-center rounded-full px-[15px] font-display text-[15px] whitespace-nowrap",
+                tag === t ? "bg-ink text-cream" : "border-2 border-border bg-card text-ink-warm",
               )}
             >
               {t ?? "전체"}
@@ -183,12 +173,12 @@ export function CollectionScreen({
       )}
 
       {shown.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted">
-          {/* 거르지도 않았는데 비어 있으면 카탈로그 자체가 비어 있는 것이다 —
-              장르 탓으로 말하면 아이가 다른 칩을 눌러 보며 헤맨다 */}
-          {tag === null
-            ? "아직 도감에 책이 없어"
-            : "이 장르에는 아직 캐릭터가 없어"}
+        <p className="py-10 text-center text-[17px] text-muted">
+          {stageFilter === "grown"
+            ? "아직 다 자란 친구가 없어. 독후감을 통과하면 자라!"
+            : tag === null
+              ? "아직 도감에 책이 없어"
+              : "이 장르에는 아직 친구가 없어"}
         </p>
       ) : (
         <div className="grid grid-cols-3 gap-3 md:grid-cols-5 lg:grid-cols-6">
@@ -198,8 +188,8 @@ export function CollectionScreen({
         </div>
       )}
 
-      <div className="rounded-2xl bg-yellow-bg p-[18px] text-[13px] leading-relaxed text-yellow-text">
-        ★ 등급은 보스전을 몇 번에 잡았는지로 정해져요 · 한 번에 잡으면 ★★★
+      <div className="rounded-[18px] bg-yellow-bg p-4 text-[15px] leading-relaxed text-yellow-text">
+        ★ 은 보스전을 몇 번에 잡았는지야 · 한 번에 잡으면 ★★★
       </div>
     </div>
   );
