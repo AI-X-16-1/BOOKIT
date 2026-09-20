@@ -51,6 +51,10 @@
 @keyframes bookit-bob    { 0%,100% { transform: translateY(0) rotate(-2deg) } 50% { transform: translateY(-14px) rotate(2deg) } }
 @keyframes bookit-pop    { 0% { transform: scale(.7); opacity: 0 } 60% { transform: scale(1.12); opacity: 1 } 100% { transform: scale(1); opacity: 1 } }
 @keyframes bookit-ring   { 0% { transform: scale(.9); opacity: .65 } 100% { transform: scale(1.5); opacity: 0 } }
+@keyframes bookit-bob-s  { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-5px) } }
+@keyframes bookit-wiggle { 0%,100% { transform: rotate(-6deg) } 50% { transform: rotate(6deg) } }
+@keyframes bookit-rise   { 0% { transform: translateY(10px); opacity: 0 } 15% { opacity: 1 } 100% { transform: translateY(-34px); opacity: 0 } }
+@keyframes bookit-caret  { 0%,49% { opacity: 1 } 50%,100% { opacity: 0 } }
 @keyframes bookit-twinkle{ 0%,100% { opacity: .25; transform: scale(.8) } 50% { opacity: 1; transform: scale(1.15) } }
 
 @media (prefers-reduced-motion: reduce) {
