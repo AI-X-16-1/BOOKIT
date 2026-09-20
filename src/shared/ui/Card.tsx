@@ -32,7 +32,8 @@ export function Card({
     <div
       className={cn(
         "rounded-card p-[18px]",
-        accent ? ACCENT[accent] : "bg-card border border-border-soft",
+        // 저학년 개편: 카드 경계는 색이 아니라 3px 선으로 (목업 10)
+        accent ? ACCENT[accent] : "bg-card border-[3px] border-border",
         raised && "shadow-card",
         className,
       )}

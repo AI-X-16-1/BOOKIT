@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E9E2D6;font-family:'Noto Sans KR',system-ui,sans-serif;color:#2E241D}
+a{color:#FF6B4A}a:hover{color:#E0512F}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(2deg)}}
+@keyframes bobS{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes pop{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes ring{0%{transform:scale(.9);opacity:.65}100%{transform:scale(1.5);opacity:0}}
+@keyframes twinkle{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes wiggle{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes rise{0%{transform:translateY(10px);opacity:0}15%{opacity:1}100%{transform:translateY(-34px);opacity:0}}
+@keyframes grow{0%{width:22%}100%{width:68%}}
+@keyframes caret{0%,49%{opacity:1}50%,100%{opacity:0}}
+</style>
+</helmet>
+
+<div style="padding:56px 60px 96px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:center;gap:14px">
+<div style="width:52px;height:52px;border-radius:16px;background:#FF6B4A;display:flex;align-items:center;justify-content:center;font:400 26px 'Jua',sans-serif;color:#FFF6EC">책</div>
+<div>
+<div style="font:400 34px 'Jua',sans-serif;letter-spacing:-.5px">책잇 — 모바일 리디자인</div>
+<div style="font:400 15px/1.5 'Noto Sans KR',sans-serif;color:#8A7A69">430×932 기준 · 태블릿 시안과 같은 규칙을 좁은 화면으로 접은 것 · 768px 아래는 하단 탭 5개(홈·독후감·도감·서재·나)</div>
+</div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:22px;margin:6px 0 18px">
+<div style="background:#FFFDF9;border:1px solid #ECDFCD;border-radius:16px;padding:14px 18px;max-width:340px">
+<div style="font:700 13px 'Noto Sans KR';color:#FF6B4A;margin-bottom:6px">반응형 규칙</div>
+<div style="font:400 14px/1.7 'Noto Sans KR';color:#5B4C3F">태블릿의 좌측 레일 → 하단 탭바 / 2단 배치(작성+도우미) → 순차 2단계, 도우미는 바텀시트 / 표지 5열 → 2열</div>
+</div>
+<div style="background:#FFFDF9;border:1px solid #ECDFCD;border-radius:16px;padding:14px 18px;max-width:340px">
+<div style="font:700 13px 'Noto Sans KR';color:#3FA778;margin-bottom:6px">그대로 유지</div>
+<div style="font:400 14px/1.7 'Noto Sans KR';color:#5B4C3F">본문 최소 18px, 주요 버튼 64px 이상, 탭 아이콘 터치 영역 56px 이상 · 검증 화면만 어두움 · 포인트는 책갈피</div>
+</div>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:52px">
+
+<!-- M1 온보딩 -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="M01 온보딩">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:700 12px ui-monospace,monospace;background:#2E241D;color:#FDF6EC;padding:4px 9px;border-radius:6px">M01</span><span style="font:400 19px 'Jua',sans-serif">온보딩</span></div>
+<div style="width:430px;height:932px;border-radius:38px;overflow:hidden;position:relative;background:#FDF6EC;background-image:repeating-linear-gradient(#FDF6EC 0 35px,#F4E5D1 35px 36px);border:1px solid #ECDFCD;box-shadow:0 18px 44px rgba(90,66,40,.16);display:flex;flex-direction:column;padding:56px 24px 30px">
+  <div style="display:flex;align-items:center;gap:10px;align-self:center">
+    <div style="width:38px;height:38px;border-radius:12px;background:#FF6B4A;display:flex;align-items:center;justify-content:center;font:400 19px 'Jua',sans-serif;color:#FFF6EC">책</div>
+    <div style="font:400 23px 'Jua',sans-serif">책잇</div>
+  </div>
+  <div style="font:400 38px 'Jua',sans-serif;text-align:center;margin-top:24px;letter-spacing:-.5px">너는 어떤<br>탐험가야?</div>
+  <div style="font:500 18px 'Noto Sans KR';color:#9A8B7C;text-align:center;margin-top:8px">하나만 골라줘</div>
+  <div style="display:flex;flex-direction:column;gap:14px;margin-top:26px">
+    <div style="background:#FFFDF9;border:3px solid #ECDFCD;border-radius:26px;padding:16px 18px;display:flex;align-items:center;gap:16px">
+      <div style="width:76px;height:76px;border-radius:50%;background:#E2F4E9;display:flex;align-items:center;justify-content:center;font-size:38px;flex:none;animation:bobS 3.4s ease-in-out infinite">🌱</div>
+      <div><div style="font:400 25px 'Jua',sans-serif">새싹</div><div style="font:500 16px 'Noto Sans KR';color:#9A8B7C">이제 막 읽기 시작했어</div></div>
+    </div>
+    <div style="position:relative;background:#FFF2EC;border:3px solid #FF6B4A;border-radius:26px;padding:16px 18px;display:flex;align-items:center;gap:16px;box-shadow:0 12px 26px rgba(255,107,74,.2)">
+      <div style="position:absolute;top:-16px;right:14px;background:#FF6B4A;color:#FFF6EC;font:400 16px 'Jua',sans-serif;padding:6px 14px;border-radius:999px;animation:wiggle 2.6s ease-in-out infinite">이거!</div>
+      <div style="position:relative;width:76px;height:76px;border-radius:50%;background:#FFE3D9;display:flex;align-items:center;justify-content:center;font-size:38px;flex:none"><span style="position:absolute;inset:0;border-radius:50%;border:3px solid #FF8F75;animation:ring 2.2s ease-out infinite"></span>🧭</div>
+      <div><div style="font:400 25px 'Jua',sans-serif">탐험가</div><div style="font:500 16px 'Noto Sans KR';color:#8A6A5C">혼자서도 한 권 다 읽어</div></div>
+    </div>
+    <div style="background:#FFFDF9;border:3px solid #ECDFCD;border-radius:26px;padding:16px 18px;display:flex;align-items:center;gap:16px">
+      <div style="width:76px;height:76px;border-radius:50%;background:#FDF0CD;display:flex;align-items:center;justify-content:center;font-size:38px;flex:none;animation:bobS 3.8s ease-in-out .4s infinite">👑</div>
+      <div><div style="font:400 25px 'Jua',sans-serif">대장</div><div style="font:500 16px 'Noto Sans KR';color:#9A8B7C">두꺼운 책도 끝까지</div></div>
+    </div>
+  </div>
+  <div style="margin-top:30px;display:flex;flex-direction:column;align-items:center;gap:12px">
+    <div style="font:500 17px 'Noto Sans KR';color:#9A8B7C">선생님이 알려준 반 코드</div>
+    <div style="display:flex;gap:8px">
+      <div style="width:54px;height:66px;border-radius:16px;background:#FFFDF9;border:3px solid #ECDFCD;display:flex;align-items:center;justify-content:center;font:400 30px 'Jua',sans-serif">B</div>
+      <div style="width:54px;height:66px;border-radius:16px;background:#FFFDF9;border:3px solid #ECDFCD;display:flex;align-items:center;justify-content:center;font:400 30px 'Jua',sans-serif">7</div>
+      <div style="width:54px;height:66px;border-radius:16px;background:#FFFDF9;border:3px solid #ECDFCD;display:flex;align-items:center;justify-content:center;font:400 30px 'Jua',sans-serif">K</div>
+      <div style="width:54px;height:66px;border-radius:16px;background:#FFFDF9;border:3px solid #ECDFCD;display:flex;align-items:center;justify-content:center;font:400 30px 'Jua',sans-serif">2</div>
+      <div style="width:54px;height:66px;border-radius:16px;background:#FFF2EC;border:3px solid #FF6B4A;display:flex;align-items:center;justify-content:center"><span style="width:3px;height:32px;background:#FF6B4A;animation:caret 1s steps(1) infinite"></span></div>
+      <div style="width:54px;height:66px;border-radius:16px;background:#FFFDF9;border:3px dashed #ECDFCD"></div>
+    </div>
+  </div>
+  <div style="margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div style="width:100%;height:70px;border-radius:22px;background:#FF6B4A;color:#FFF6EC;font:400 26px 'Jua',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 9px 0 #D94F32">출발! →</div>
+    <div style="font:500 15px 'Noto Sans KR';color:#A99A89">코드가 없어도 혼자 시작할 수 있어</div>
+  </div>
+</div>
+</div>
+
+<!-- M2 홈 -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="M02 홈">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:700 12px ui-monospace,monospace;background:#2E241D;color:#FDF6EC;padding:4px 9px;border-radius:6px">M02</span><span style="font:400 19px 'Jua',sans-serif">홈</span></div>
+<div style="width:430px;height:932px;border-radius:38px;overflow:hidden;position:relative;background:#FDF6EC;border:1px solid #ECDFCD;box-shadow:0 18px 44px rgba(90,66,40,.16);display:flex;flex-direction:column">
+  <div style="flex:1;padding:44px 22px 16px;display:flex;flex-direction:column;gap:16px;min-height:0">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="font:400 28px 'Jua',sans-serif">{{ childName }}아, 안녕!</div>
+      <div style="display:flex;align-items:center;gap:5px;background:#FDF0CD;border-radius:999px;padding:6px 13px;font:400 17px 'Jua',sans-serif;color:#7A6320">🔥 3일째</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;background:#FFFDF9;border:2px solid #ECDFCD;border-radius:999px;padding:7px 14px"><span style="font-size:17px">🔖</span><span style="font:400 21px 'Jua',sans-serif">320</span></div>
+    </div>
+    <div style="position:relative;background:#FFF2EC;border:3px solid #FFD2C2;border-radius:28px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:8px;overflow:hidden">
+      <div style="position:absolute;top:14px;right:22px;font-size:17px;animation:twinkle 2.4s ease-in-out infinite">✨</div>
+      <div style="position:absolute;top:52px;left:26px;font-size:13px;animation:twinkle 2.4s ease-in-out .8s infinite">✨</div>
+      <div style="width:132px;height:132px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#FFE3D9,#FFCDBD);display:flex;align-items:center;justify-content:center;font-size:70px;animation:bob 4s ease-in-out infinite">{{ stageEmoji }}</div>
+      <div style="font:500 15px 'Noto Sans KR';color:#B07A63">까치의 옷 요정</div>
+      <div style="font:400 25px 'Jua',sans-serif;text-align:center">{{ stageLine }}</div>
+      <div style="width:100%;height:18px;border-radius:999px;background:#FFE3D9;overflow:hidden;margin-top:4px"><div style="height:100%;border-radius:999px;background:linear-gradient(90deg,#FF8F75,#FF6B4A);animation:grow 2.4s cubic-bezier(.22,1,.36,1) forwards"></div></div>
+      <div style="font:500 15px 'Noto Sans KR';color:#B07A63">4장 중 3장 읽었어</div>
+    </div>
+    <div style="display:flex;gap:9px;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:6px;background:#E2F4E9;border-radius:999px;padding:9px 15px;font:400 17px 'Jua',sans-serif;color:#2F6B4C;flex:none">✓ 한 장 읽기</div>
+      <div style="display:flex;align-items:center;gap:6px;background:#FFFDF9;border:2px solid #ECDFCD;border-radius:999px;padding:9px 15px;font:400 17px 'Jua',sans-serif;color:#7A6A5A;flex:none">○ 독후감 1개</div>
+      <div style="display:flex;align-items:center;gap:6px;background:#FFFDF9;border:2px solid #ECDFCD;border-radius:999px;padding:9px 15px;font:400 17px 'Jua',sans-serif;color:#7A6A5A;flex:none">○ 새 친구</div>
+    </div>
+    <div style="background:#2E241D;border-radius:26px;padding:18px 20px;display:flex;align-items:center;gap:14px;color:#FDF6EC">
+      <div style="min-width:0;flex:1">
+        <div style="font:500 14px 'Noto Sans KR';color:#B3A494">쓰다 만 독후감</div>
+        <div style="font:400 22px 'Jua',sans-serif;margin-top:2px">겁쟁이 도적</div>
+        <div style="font:500 14px 'Noto Sans KR';color:#B3A494">3줄 썼어 · 어제</div>
+      </div>
+      <div style="background:#FFD866;color:#4A3A10;font:400 19px 'Jua',sans-serif;height:54px;padding:0 20px;border-radius:18px;display:flex;align-items:center;flex:none">이어서 ✏️</div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:10px"><span style="font:400 23px 'Jua',sans-serif">너한테 딱 맞는 책</span><span style="font:500 14px 'Noto Sans KR';color:#9A8B7C">2학년 인기</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div><div style="height:196px;border-radius:20px;overflow:hidden;border:3px solid #FFFDF9;box-shadow:0 8px 20px rgba(90,66,40,.14);background:#F6F0E4"><img src="public/covers/0000b001-0000-4000-8000-000000000001.webp" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div><div style="font:400 19px 'Jua',sans-serif;margin-top:7px">겁쟁이 도적</div><div style="font:500 14px 'Noto Sans KR';color:#9A8B7C">방정환</div></div>
+      <div><div style="height:196px;border-radius:20px;overflow:hidden;border:3px solid #FFFDF9;box-shadow:0 8px 20px rgba(90,66,40,.14);background:#F6F0E4"><img src="public/covers/0000b002-0000-4000-8000-000000000002.webp" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div><div style="font:400 19px 'Jua',sans-serif;margin-top:7px">까치의 옷</div><div style="font:500 14px 'Noto Sans KR';color:#9A8B7C">방정환</div></div>
+    </div>
+  </div>
+  <div style="height:92px;border-top:1px solid #ECDFCD;background:#FFFDF9;display:flex;align-items:flex-start;padding:8px 6px 0;flex:none">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px">🏠</span><span style="font:400 14px 'Jua',sans-serif;color:#C1462A">홈</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">✏️</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">독후감</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">🥚</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">도감</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">📚</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">서재</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">😊</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">나</span></div>
+  </div>
+</div>
+</div>
+
+<!-- M3 검색 -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="M03 검색">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:700 12px ui-monospace,monospace;background:#2E241D;color:#FDF6EC;padding:4px 9px;border-radius:6px">M03</span><span style="font:400 19px 'Jua',sans-serif">책 검색</span></div>
+<div style="width:430px;height:932px;border-radius:38px;overflow:hidden;position:relative;background:#FDF6EC;border:1px solid #ECDFCD;box-shadow:0 18px 44px rgba(90,66,40,.16);display:flex;flex-direction:column">
+  <div style="flex:1;padding:44px 22px 16px;display:flex;flex-direction:column;gap:16px;min-height:0">
+    <div style="display:flex;gap:10px">
+      <div style="flex:1;height:64px;border-radius:22px;background:#FFFDF9;border:3px solid #ECDFCD;display:flex;align-items:center;gap:10px;padding:0 18px"><span style="font-size:22px">🔍</span><span style="font:500 19px 'Noto Sans KR';color:#B3A392">어떤 책을 찾을까?</span></div>
+      <div style="width:64px;height:64px;border-radius:22px;background:#FFD866;display:flex;align-items:center;justify-content:center;font-size:27px;box-shadow:0 7px 0 #E0B93F">🎤</div>
+    </div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:6px;background:#FFE3D9;border:3px solid #FF6B4A;border-radius:999px;padding:9px 16px;font:400 18px 'Jua',sans-serif;color:#C1462A">🐉 모험</div>
+      <div style="display:flex;align-items:center;gap:6px;background:#FFFDF9;border:3px solid #ECDFCD;border-radius:999px;padding:9px 16px;font:400 18px 'Jua',sans-serif;color:#6B5B4B">🧚 판타지</div>
+      <div style="display:flex;align-items:center;gap:6px;background:#FFFDF9;border:3px solid #ECDFCD;border-radius:999px;padding:9px 16px;font:400 18px 'Jua',sans-serif;color:#6B5B4B">🌳 자연</div>
+      <div style="display:flex;align-items:center;gap:6px;background:#FFFDF9;border:3px solid #ECDFCD;border-radius:999px;padding:9px 16px;font:400 18px 'Jua',sans-serif;color:#6B5B4B">🤝 우정</div>
+      <div style="display:flex;align-items:center;gap:6px;background:#E2F4E9;border:3px solid #BCE3CD;border-radius:999px;padding:9px 16px;font:400 18px 'Jua',sans-serif;color:#2F6B4C">🆓 공짜로 읽기</div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:9px"><span style="font:400 22px 'Jua',sans-serif">모험 책 24권</span><span style="font:500 14px 'Noto Sans KR';color:#9A8B7C">초록은 바로 읽을 수 있어</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div><div style="position:relative;height:196px;border-radius:20px;overflow:hidden;border:3px solid #FFFDF9;box-shadow:0 8px 20px rgba(90,66,40,.14);background:#F6F0E4"><img src="public/covers/0000b016-0000-4000-8000-000000000016.webp" alt="" style="width:100%;height:100%;object-fit:cover;display:block"><div style="position:absolute;left:8px;top:8px;background:#3FA778;color:#fff;font:400 14px 'Jua',sans-serif;padding:4px 10px;border-radius:999px">바로 읽기</div></div><div style="font:400 18px 'Jua',sans-serif;margin-top:7px">이상한 샘물</div></div>
+      <div><div style="position:relative;height:196px;border-radius:20px;overflow:hidden;border:3px solid #FFFDF9;box-shadow:0 8px 20px rgba(90,66,40,.14);background:#F6F0E4"><img src="public/covers/0000b017-0000-4000-8000-000000000017.webp" alt="" style="width:100%;height:100%;object-fit:cover;display:block"><div style="position:absolute;left:8px;top:8px;background:#3FA778;color:#fff;font:400 14px 'Jua',sans-serif;padding:4px 10px;border-radius:999px">바로 읽기</div></div><div style="font:400 18px 'Jua',sans-serif;margin-top:7px">개구리 왕자</div></div>
+      <div><div style="height:196px;border-radius:20px;overflow:hidden;border:3px solid #FFFDF9;box-shadow:0 8px 20px rgba(90,66,40,.14);background:#F6F0E4"><img src="public/covers/0000b018-0000-4000-8000-000000000018.webp" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div><div style="font:400 18px 'Jua',sans-serif;margin-top:7px">황금 거위</div></div>
+      <div><div style="position:relative;height:196px;border-radius:20px;overflow:hidden;border:3px solid #FFFDF9;box-shadow:0 8px 20px rgba(90,66,40,.14);background:#F6F0E4"><img src="public/covers/0000b019-0000-4000-8000-000000000019.webp" alt="" style="width:100%;height:100%;object-fit:cover;display:block"><div style="position:absolute;left:8px;top:8px;background:#3FA778;color:#fff;font:400 14px 'Jua',sans-serif;padding:4px 10px;border-radius:999px">바로 읽기</div></div><div style="font:400 18px 'Jua',sans-serif;margin-top:7px">노래 주머니</div></div>
+      <div><div style="height:196px;border-radius:20px;overflow:hidden;border:3px solid #FFFDF9;box-shadow:0 8px 20px rgba(90,66,40,.14);background:#F6F0E4"><img src="public/covers/0000b020-0000-4000-8000-000000000020.webp" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div><div style="font:400 18px 'Jua',sans-serif;margin-top:7px">어부와 마귀</div></div>
+      <div><div style="position:relative;height:196px;border-radius:20px;overflow:hidden;border:3px solid #FFFDF9;box-shadow:0 8px 20px rgba(90,66,40,.14);background:#F6F0E4"><img src="public/covers/0000b021-0000-4000-8000-000000000021.webp" alt="" style="width:100%;height:100%;object-fit:cover;display:block"><div style="position:absolute;left:8px;top:8px;background:#3FA778;color:#fff;font:400 14px 'Jua',sans-serif;padding:4px 10px;border-radius:999px">바로 읽기</div></div><div style="font:400 18px 'Jua',sans-serif;margin-top:7px">참된 동정</div></div>
+    </div>
+  </div>
+  <div style="height:92px;border-top:1px solid #ECDFCD;background:#FFFDF9;display:flex;align-items:flex-start;padding:8px 6px 0;flex:none">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">🏠</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">홈</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">✏️</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">독후감</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">🥚</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">도감</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px">📚</span><span style="font:400 14px 'Jua',sans-serif;color:#C1462A">서재</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">😊</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">나</span></div>
+  </div>
+</div>
+</div>
+
+<!-- M4 책 상세 -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="M04 책 상세">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:700 12px ui-monospace,monospace;background:#2E241D;color:#FDF6EC;padding:4px 9px;border-radius:6px">M04</span><span style="font:400 19px 'Jua',sans-serif">책 상세</span></div>
+<div style="width:430px;height:932px;border-radius:38px;overflow:hidden;position:relative;background:#FDF6EC;border:1px solid #ECDFCD;box-shadow:0 18px 44px rgba(90,66,40,.16);display:flex;flex-direction:column">
+  <div style="flex:1;padding:44px 22px 16px;display:flex;flex-direction:column;gap:14px;min-height:0">
+    <div style="width:52px;height:52px;border-radius:17px;background:#F6F0E4;display:flex;align-items:center;justify-content:center;font-size:24px">←</div>
+    <div style="display:flex;justify-content:center"><div style="width:210px;height:280px;border-radius:22px;overflow:hidden;border:4px solid #FFFDF9;box-shadow:0 14px 32px rgba(90,66,40,.2)"><img src="public/covers/0000b002-0000-4000-8000-000000000002.webp" alt="" style="width:100%;height:100%;object-fit:cover;display:block"></div></div>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <span style="background:#E6EEFB;color:#4A6B9C;font:400 16px 'Jua',sans-serif;padding:6px 14px;border-radius:999px">동화</span>
+      <span style="background:#E6EEFB;color:#4A6B9C;font:400 16px 'Jua',sans-serif;padding:6px 14px;border-radius:999px">자연</span>
+      <span style="background:#E2F4E9;color:#2F6B4C;font:400 16px 'Jua',sans-serif;padding:6px 14px;border-radius:999px">1~3학년</span>
+    </div>
+    <div style="text-align:center"><div style="font:400 32px 'Jua',sans-serif">까치의 옷</div><div style="font:500 17px 'Noto Sans KR';color:#9A8B7C;margin-top:2px">방정환 · 4장 · 12분</div></div>
+    <div style="font:400 18px/1.8 'Noto Sans KR';color:#3C3229">추운 겨울, 까치는 입을 옷이 없었어요. 산속 친구들이 실을 하나씩 모아 주는데, 까치는 그 옷을 입고 어디로 날아갔을까요?</div>
+    <div style="background:#F6F0E4;border-radius:22px;padding:16px 18px;display:flex;flex-direction:column;gap:10px">
+      <div style="font:400 19px 'Jua',sans-serif">표지 조각 3 / 4</div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1;height:48px;border-radius:14px;background:#3FA778;color:#fff;display:flex;align-items:center;justify-content:center;font:400 19px 'Jua',sans-serif">1</div>
+        <div style="flex:1;height:48px;border-radius:14px;background:#3FA778;color:#fff;display:flex;align-items:center;justify-content:center;font:400 19px 'Jua',sans-serif">2</div>
+        <div style="flex:1;height:48px;border-radius:14px;background:#3FA778;color:#fff;display:flex;align-items:center;justify-content:center;font:400 19px 'Jua',sans-serif">3</div>
+        <div style="flex:1;height:48px;border-radius:14px;background:#FFFDF9;border:3px dashed #D9C8B2;display:flex;align-items:center;justify-content:center;font-size:20px">🔒</div>
+      </div>
+    </div>
+    <div style="background:#FFF2EC;border:3px solid #FFD2C2;border-radius:24px;padding:14px 16px;display:flex;align-items:center;gap:14px">
+      <div style="width:64px;height:64px;border-radius:50%;background:#FFE3D9;display:flex;align-items:center;justify-content:center;font-size:32px;flex:none;animation:bobS 3s ease-in-out infinite">🥚</div>
+      <div><div style="font:400 20px 'Jua',sans-serif">이 책엔 친구가 숨어 있어</div><div style="font:500 15px/1.5 'Noto Sans KR';color:#B07A63">다 읽으면 알이 부화해</div></div>
+    </div>
+  </div>
+  <div style="padding:12px 22px 26px;background:#FDF6EC;border-top:1px solid #ECDFCD;display:flex;gap:10px;flex:none">
+    <div style="flex:1;height:70px;border-radius:22px;background:#FF6B4A;color:#FFF6EC;font:400 24px 'Jua',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 9px 0 #D94F32">📖 읽기 시작</div>
+    <div style="width:110px;height:70px;border-radius:22px;background:#FFFDF9;border:3px solid #ECDFCD;color:#6B5B4B;font:400 20px 'Jua',sans-serif;display:flex;align-items:center;justify-content:center">✏️ 쓰기</div>
+  </div>
+</div>
+</div>
+
+<!-- M5 독후감 작성 -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="M05 독후감 작성">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:700 12px ui-monospace,monospace;background:#2E241D;color:#FDF6EC;padding:4px 9px;border-radius:6px">M05</span><span style="font:400 19px 'Jua',sans-serif">독후감 작성 + 도우미 바텀시트</span></div>
+<div style="width:430px;height:932px;border-radius:38px;overflow:hidden;position:relative;background:#FDF6EC;border:1px solid #ECDFCD;box-shadow:0 18px 44px rgba(90,66,40,.16);display:flex;flex-direction:column">
+  <div style="height:78px;border-bottom:1px solid #ECDFCD;background:#FFFDF9;display:flex;align-items:flex-end;padding:0 18px 12px;gap:12px;flex:none">
+    <div style="width:44px;height:44px;border-radius:14px;background:#F6F0E4;display:flex;align-items:center;justify-content:center;font-size:22px">←</div>
+    <div><div style="font:400 21px 'Jua',sans-serif">까치의 옷</div></div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:5px;background:#E2F4E9;border-radius:999px;padding:7px 13px;font:400 15px 'Jua',sans-serif;color:#2F6B4C">✓ 저장됨</div>
+  </div>
+  <div style="flex:1;padding:16px 22px;display:flex;flex-direction:column;gap:12px;min-height:0">
+    <div style="display:flex;align-items:center;gap:10px"><span style="font:400 22px 'Jua',sans-serif">내 이야기</span><span style="background:#FDF0CD;color:#7A6320;font:400 16px 'Jua',sans-serif;padding:5px 13px;border-radius:999px">4줄 · 조금만 더!</span></div>
+    <div style="flex:1;border-radius:22px;border:3px solid #ECDFCD;background:#FDF6EC;background-image:repeating-linear-gradient(#FDF6EC 0 39px,#F4E5D1 39px 40px);padding:12px 18px;font:400 19px/40px 'Noto Sans KR';min-height:0;overflow:hidden">
+      까치가 추워서 떨고 있을 때 친구들이 실을 하나씩 가져다줬다. 나는 까치가 제일 고마웠을 것 같다. 나도 작년에 우산이 없을 때 짝꿍이 우산을 같이 써줬다. <span style="background:linear-gradient(transparent 62%,#FFD866 62%)">그래서 까치 마음을 조금 알 것 같다</span><span style="display:inline-block;width:3px;height:22px;vertical-align:-4px;background:#FF6B4A;animation:caret 1s steps(1) infinite"></span>
+    </div>
+  </div>
+  <div style="background:#F6F0E4;border-top:1px solid #ECDFCD;border-radius:26px 26px 0 0;padding:14px 22px 24px;display:flex;flex-direction:column;gap:12px;flex:none;box-shadow:0 -10px 26px rgba(90,66,40,.08)">
+    <div style="width:52px;height:5px;border-radius:999px;background:#DCCDB7;align-self:center"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:44px;height:44px;border-radius:50%;background:#FFE3D9;display:flex;align-items:center;justify-content:center;font-size:23px;animation:bobS 3.2s ease-in-out infinite">🐦</div>
+      <div style="font:400 20px 'Jua',sans-serif">막히면 눌러봐</div>
+    </div>
+    <div style="display:flex;gap:9px;overflow:hidden">
+      <div style="background:#FFFDF9;border:3px solid #ECDFCD;border-radius:18px;padding:11px 14px;font:500 16px 'Noto Sans KR';flex:none">기억에 남는 장면은?</div>
+      <div style="background:#FFF2EC;border:3px solid #FF6B4A;border-radius:18px;padding:11px 14px;font:500 16px 'Noto Sans KR';flex:none">비슷한 일이 있었어?</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div style="width:70px;height:70px;border-radius:22px;background:#FFD866;display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 7px 0 #E0B93F;flex:none">🎤</div>
+      <div style="flex:1;height:70px;border-radius:22px;background:#FF6B4A;color:#FFF6EC;font:400 24px 'Jua',sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 9px 0 #D94F32">다 썼어요! →</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- M6 꼬리질문 -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="M06 AI 꼬리질문">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:700 12px ui-monospace,monospace;background:#2E241D;color:#FDF6EC;padding:4px 9px;border-radius:6px">M06</span><span style="font:400 19px 'Jua',sans-serif">AI 꼬리질문</span></div>
+<div style="width:430px;height:932px;border-radius:38px;overflow:hidden;position:relative;background:#2B211B;border:1px solid #ECDFCD;box-shadow:0 18px 44px rgba(90,66,40,.16);display:flex;flex-direction:column;align-items:center;padding:52px 22px 26px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:46px;height:46px;border-radius:50%;background:#3A2D25;display:flex;align-items:center;justify-content:center;font-size:24px;animation:bobS 3s ease-in-out infinite">🦉</div>
+    <div style="font:400 24px 'Jua',sans-serif;color:#FDF6EC">한 가지만 물어볼게</div>
+  </div>
+  <div style="position:relative;width:150px;height:150px;margin-top:22px;flex:none">
+    <div style="position:absolute;inset:0;border-radius:50%;background:conic-gradient(#FFD866 0turn .62turn,#463830 .62turn 1turn)"></div>
+    <div style="position:absolute;inset:12px;border-radius:50%;background:#2B211B;display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font:400 48px 'Jua',sans-serif;color:#FFD866">38</span><span style="font:500 14px 'Noto Sans KR';color:#B3A494">초 남았어</span></div>
+  </div>
+  <div style="width:100%;background:#3A2D25;border:2px solid #463830;border-radius:22px;padding:16px 18px;margin-top:22px">
+    <div style="font:500 14px 'Noto Sans KR';color:#B3A494;margin-bottom:7px">네가 쓴 문장이야</div>
+    <div style="font:400 19px/1.7 'Noto Sans KR';color:#FDF6EC">“짝꿍이 우산을 같이 써줬다. <span style="color:#FF8F75;font-weight:700">그래서 까치 마음을 조금 알 것 같다</span>”</div>
+  </div>
+  <div style="font:400 28px 'Jua',sans-serif;color:#FDF6EC;margin-top:22px;text-align:center;line-height:1.35">까치 마음이<br>어떤 마음이었는데?</div>
+  <div style="font:400 19px 'Jua',sans-serif;color:#FFD866;margin-top:6px">한 문장이면 충분해</div>
+  <div style="width:100%;margin-top:18px;height:82px;border-radius:22px;background:#211a15;border:3px solid #463830;display:flex;align-items:center;padding:0 18px;gap:10px">
+    <span style="font:500 18px 'Noto Sans KR';color:#7A695B">여기에 답을 써줘</span>
+    <span style="width:3px;height:28px;background:#FFD866;animation:caret 1s steps(1) infinite"></span>
+    <div style="margin-left:auto;width:56px;height:56px;border-radius:18px;background:#463830;display:flex;align-items:center;justify-content:center;font-size:24px">🎤</div>
+  </div>
+  <div style="margin-top:auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div style="font:500 16px 'Noto Sans KR';color:#B3A494">천천히 생각해도 괜찮아</div>
+    <div style="width:100%;height:72px;border-radius:22px;background:#FFD866;color:#4A3A10;font:400 26px 'Jua',sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 9px 0 #C8A335">답했어!</div>
+  </div>
+</div>
+</div>
+
+<!-- M7 결과 -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="M07 결과와 보상">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:700 12px ui-monospace,monospace;background:#2E241D;color:#FDF6EC;padding:4px 9px;border-radius:6px">M07</span><span style="font:400 19px 'Jua',sans-serif">통과 · 책갈피 · 진화</span></div>
+<div style="width:430px;height:932px;border-radius:38px;overflow:hidden;position:relative;background:#FDF6EC;background-image:repeating-linear-gradient(#FDF6EC 0 35px,#F4E5D1 35px 36px);border:1px solid #ECDFCD;box-shadow:0 18px 44px rgba(90,66,40,.16);display:flex;flex-direction:column;align-items:center;padding:52px 22px 26px">
+  <div style="position:absolute;left:40px;top:150px;font-size:20px;animation:twinkle 2s ease-in-out infinite">✨</div>
+  <div style="position:absolute;right:46px;top:120px;font-size:17px;animation:twinkle 2s ease-in-out .6s infinite">✨</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;animation:pop .6s cubic-bezier(.22,1.4,.4,1) both">
+    <div style="width:78px;height:78px;border-radius:50%;background:#3FA778;color:#fff;display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 10px 22px rgba(63,167,120,.35)">✓</div>
+    <div style="font:400 34px 'Jua',sans-serif;text-align:center">진짜로 이해했구나!</div>
+  </div>
+  <div style="font:500 17px 'Noto Sans KR';color:#9A8B7C;margin-top:6px">까치의 옷 · 독후감 통과</div>
+  <div style="width:100%;background:#FFFDF9;border:3px solid #ECDFCD;border-radius:26px;padding:18px;margin-top:20px;display:flex;align-items:center;gap:16px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:16px;left:64px;font:400 20px 'Jua',sans-serif;color:#E0B93F;animation:rise 2.6s ease-out infinite">+50</div>
+    <div style="width:78px;height:78px;border-radius:50%;background:#FDF0CD;display:flex;align-items:center;justify-content:center;font-size:38px;flex:none;animation:bobS 3s ease-in-out infinite">🔖</div>
+    <div><div style="font:400 34px 'Jua',sans-serif;color:#7A6320">+50</div><div style="font:500 16px 'Noto Sans KR';color:#9A8B7C">책갈피를 받았어 · 이제 370개</div></div>
+  </div>
+  <div style="width:100%;background:#FFF2EC;border:3px solid #FFD2C2;border-radius:26px;padding:20px;margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:10px">
+    <div style="font:400 20px 'Jua',sans-serif;color:#C1462A">친구가 다 자랐어!</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:70px;height:70px;border-radius:50%;background:#FFE3D9;display:flex;align-items:center;justify-content:center;font-size:34px;opacity:.5">🐣</div>
+      <div style="font-size:24px;color:#FF8F75">→</div>
+      <div style="position:relative;width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#FFE3D9,#FFCDBD);display:flex;align-items:center;justify-content:center;font-size:54px;animation:bob 3.6s ease-in-out infinite"><span style="position:absolute;inset:0;border-radius:50%;border:3px solid #FF8F75;animation:ring 2.2s ease-out infinite"></span>🐦</div>
+    </div>
+    <div style="font:400 22px 'Jua',sans-serif">까치의 옷 요정</div>
+    <div style="font:500 16px 'Noto Sans KR';color:#B07A63">도감 12번째 친구</div>
+  </div>
+  <div style="width:100%;background:#FFFDF9;border:3px solid #ECDFCD;border-radius:26px;padding:16px 18px;margin-top:14px;display:flex;align-items:center;gap:14px">
+    <div style="width:70px;height:70px;border-radius:20px;background:#E6EEFB;display:flex;align-items:center;justify-content:center;font-size:36px;flex:none;animation:wiggle 3s ease-in-out infinite">🏅</div>
+    <div><div style="font:400 21px 'Jua',sans-serif">새 뱃지 ‘세 밤 연속’</div><div style="font:500 15px 'Noto Sans KR';color:#9A8B7C">3일 내리 독후감을 썼어</div></div>
+  </div>
+  <div style="margin-top:auto;width:100%;display:flex;flex-direction:column;gap:10px">
+    <div style="height:72px;border-radius:22px;background:#FF6B4A;color:#FFF6EC;font:400 25px 'Jua',sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 9px 0 #D94F32">다음 책 고르기 →</div>
+    <div style="height:62px;border-radius:22px;background:#FFFDF9;border:3px solid #ECDFCD;color:#6B5B4B;font:400 21px 'Jua',sans-serif;display:flex;align-items:center;justify-content:center">🥚 도감 보러 가기</div>
+  </div>
+</div>
+</div>
+
+<!-- M8 도감 -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="M08 도감">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:700 12px ui-monospace,monospace;background:#2E241D;color:#FDF6EC;padding:4px 9px;border-radius:6px">M08</span><span style="font:400 19px 'Jua',sans-serif">도감</span></div>
+<div style="width:430px;height:932px;border-radius:38px;overflow:hidden;position:relative;background:#FDF6EC;border:1px solid #ECDFCD;box-shadow:0 18px 44px rgba(90,66,40,.16);display:flex;flex-direction:column">
+  <div style="flex:1;padding:44px 22px 16px;display:flex;flex-direction:column;gap:14px;min-height:0">
+    <div style="display:flex;align-items:center;gap:10px"><span style="font:400 28px 'Jua',sans-serif">내 친구들</span><span style="background:#FFE3D9;color:#C1462A;font:400 18px 'Jua',sans-serif;padding:6px 15px;border-radius:999px">12 / 71</span></div>
+    <div style="display:flex;gap:8px">
+      <div style="background:#FF6B4A;color:#FFF6EC;font:400 17px 'Jua',sans-serif;padding:9px 18px;border-radius:999px">모두</div>
+      <div style="background:#FFFDF9;border:2px solid #ECDFCD;color:#6B5B4B;font:400 17px 'Jua',sans-serif;padding:9px 18px;border-radius:999px">다 자람</div>
+      <div style="background:#FFFDF9;border:2px solid #ECDFCD;color:#6B5B4B;font:400 17px 'Jua',sans-serif;padding:9px 18px;border-radius:999px">알</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div style="background:#FFF2EC;border:3px solid #FFD2C2;border-radius:22px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:66px;height:66px;border-radius:50%;background:#FFE3D9;display:flex;align-items:center;justify-content:center;font-size:34px;animation:bobS 3s ease-in-out infinite">🐦</div><div style="font:400 16px 'Jua',sans-serif;text-align:center">까치 요정</div><div style="font:400 13px 'Jua',sans-serif;background:#FF6B4A;color:#fff;padding:3px 10px;border-radius:999px">다 자람</div></div>
+      <div style="background:#FFF2EC;border:3px solid #FFD2C2;border-radius:22px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:66px;height:66px;border-radius:50%;background:#FFE3D9;display:flex;align-items:center;justify-content:center;font-size:34px">🐸</div><div style="font:400 16px 'Jua',sans-serif;text-align:center">개구리 왕자</div><div style="font:400 13px 'Jua',sans-serif;background:#FF6B4A;color:#fff;padding:3px 10px;border-radius:999px">다 자람</div></div>
+      <div style="background:#FFFDF9;border:3px solid #ECDFCD;border-radius:22px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:66px;height:66px;border-radius:50%;background:#FDF0CD;display:flex;align-items:center;justify-content:center;font-size:34px;animation:bobS 3.4s ease-in-out .3s infinite">🐣</div><div style="font:400 16px 'Jua',sans-serif;text-align:center">두꺼비</div><div style="font:400 13px 'Jua',sans-serif;background:#FFD866;color:#7A6320;padding:3px 10px;border-radius:999px">부화</div></div>
+      <div style="background:#FFFDF9;border:3px solid #ECDFCD;border-radius:22px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:66px;height:66px;border-radius:50%;background:#F6F0E4;display:flex;align-items:center;justify-content:center;font-size:34px">🥚</div><div style="font:400 16px 'Jua',sans-serif;text-align:center">황금 거위</div><div style="font:400 13px 'Jua',sans-serif;background:#F6F0E4;color:#8A7A69;padding:3px 10px;border-radius:999px">알</div></div>
+      <div style="background:#FFF2EC;border:3px solid #FFD2C2;border-radius:22px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:66px;height:66px;border-radius:50%;background:#FFE3D9;display:flex;align-items:center;justify-content:center;font-size:34px">🦊</div><div style="font:400 16px 'Jua',sans-serif;text-align:center">겁쟁이 도적</div><div style="font:400 13px 'Jua',sans-serif;background:#FF6B4A;color:#fff;padding:3px 10px;border-radius:999px">다 자람</div></div>
+      <div style="background:#F6F0E4;border:3px dashed #D9C8B2;border-radius:22px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><div style="font-size:32px;opacity:.4">❔</div><div style="font:500 14px/1.4 'Noto Sans KR';color:#A99A89;text-align:center">아직 안 만난<br>친구</div></div>
+      <div style="background:#FFFDF9;border:3px solid #ECDFCD;border-radius:22px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:66px;height:66px;border-radius:50%;background:#FDF0CD;display:flex;align-items:center;justify-content:center;font-size:34px">🐣</div><div style="font:400 16px 'Jua',sans-serif;text-align:center">노래 주머니</div><div style="font:400 13px 'Jua',sans-serif;background:#FFD866;color:#7A6320;padding:3px 10px;border-radius:999px">부화</div></div>
+      <div style="background:#F6F0E4;border:3px dashed #D9C8B2;border-radius:22px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><div style="font-size:32px;opacity:.4">❔</div><div style="font:500 14px/1.4 'Noto Sans KR';color:#A99A89;text-align:center">아직 안 만난<br>친구</div></div>
+      <div style="background:#F6F0E4;border:3px dashed #D9C8B2;border-radius:22px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px"><div style="font-size:32px;opacity:.4">❔</div><div style="font:500 14px/1.4 'Noto Sans KR';color:#A99A89;text-align:center">아직 안 만난<br>친구</div></div>
+    </div>
+    <div style="margin-top:auto;background:#FFFDF9;border:3px solid #ECDFCD;border-radius:24px;padding:16px 18px;display:flex;align-items:center;gap:14px">
+      <div style="width:64px;height:64px;border-radius:50%;background:#E2F4E9;display:flex;align-items:center;justify-content:center;font-size:32px;flex:none">🌳</div>
+      <div style="flex:1;min-width:0">
+        <div style="font:400 20px 'Jua',sans-serif">나의 책나무 <span style="color:#3F7F5C">12/15</span></div>
+        <div style="font:500 15px 'Noto Sans KR';color:#9A8B7C">3마리 더 모으면 열매가 열려</div>
+        <div style="width:100%;height:14px;border-radius:999px;background:#E2F4E9;margin-top:8px;overflow:hidden"><div style="width:74%;height:100%;border-radius:999px;background:#3FA778"></div></div>
+      </div>
+    </div>
+  </div>
+  <div style="height:92px;border-top:1px solid #ECDFCD;background:#FFFDF9;display:flex;align-items:flex-start;padding:8px 6px 0;flex:none">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">🏠</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">홈</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">✏️</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">독후감</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px">🥚</span><span style="font:400 14px 'Jua',sans-serif;color:#C1462A">도감</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">📚</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">서재</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">😊</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">나</span></div>
+  </div>
+</div>
+</div>
+
+<!-- M9 프로필 -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="M09 프로필">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:700 12px ui-monospace,monospace;background:#2E241D;color:#FDF6EC;padding:4px 9px;border-radius:6px">M09</span><span style="font:400 19px 'Jua',sans-serif">프로필 · 아이템 샵</span></div>
+<div style="width:430px;height:932px;border-radius:38px;overflow:hidden;position:relative;background:#FDF6EC;border:1px solid #ECDFCD;box-shadow:0 18px 44px rgba(90,66,40,.16);display:flex;flex-direction:column">
+  <div style="flex:1;padding:44px 22px 16px;display:flex;flex-direction:column;gap:14px;min-height:0">
+    <div style="background:#FFF2EC;border:3px solid #FFD2C2;border-radius:28px;padding:18px;display:flex;align-items:center;gap:16px">
+      <div style="width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#FFE3D9,#FFCDBD);display:flex;align-items:center;justify-content:center;font-size:50px;flex:none;animation:bob 4.2s ease-in-out infinite">🐦</div>
+      <div style="min-width:0">
+        <div style="font:400 28px 'Jua',sans-serif">{{ childName }}</div>
+        <div style="font:500 16px 'Noto Sans KR';color:#B07A63">2학년 · 햇살초 3반 · 탐험가 🧭</div>
+        <div style="display:flex;gap:7px;margin-top:8px"><span style="background:#FFFDF9;border:2px solid #FFD2C2;font:400 15px 'Jua',sans-serif;color:#C1462A;padding:5px 12px;border-radius:999px">읽은 책 12</span><span style="background:#FFFDF9;border:2px solid #FFD2C2;font:400 15px 'Jua',sans-serif;color:#C1462A;padding:5px 12px;border-radius:999px">독후감 9</span></div>
+      </div>
+    </div>
+    <div style="background:#2E241D;border-radius:26px;padding:18px 22px;color:#FDF6EC;display:flex;align-items:center;gap:14px">
+      <div style="font-size:30px">🔖</div>
+      <div style="font:400 40px 'Jua',sans-serif;color:#FFD866">320</div>
+      <div style="font:500 16px 'Noto Sans KR';color:#B3A494;margin-left:auto">모은 책갈피</div>
+    </div>
+    <div style="background:#FFFDF9;border:3px solid #ECDFCD;border-radius:24px;padding:16px 18px">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="font:400 20px 'Jua',sans-serif">이번 주 읽기</span><span style="background:#FDF0CD;color:#7A6320;font:400 16px 'Jua',sans-serif;padding:5px 12px;border-radius:999px">🔥 3일째</span></div>
+      <div style="display:flex;gap:7px">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:46px;border-radius:14px;background:#FFD866;display:flex;align-items:center;justify-content:center;font-size:20px">🔥</div><span style="font:500 14px 'Noto Sans KR';color:#9A8B7C">월</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:46px;border-radius:14px;background:#FFD866;display:flex;align-items:center;justify-content:center;font-size:20px">🔥</div><span style="font:500 14px 'Noto Sans KR';color:#9A8B7C">화</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:46px;border-radius:14px;background:#FFD866;display:flex;align-items:center;justify-content:center;font-size:20px">🔥</div><span style="font:500 14px 'Noto Sans KR';color:#9A8B7C">수</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:46px;border-radius:14px;background:#FFF2EC;border:3px dashed #FFB79F;display:flex;align-items:center;justify-content:center;font:400 14px 'Jua',sans-serif;color:#FF6B4A">오늘</div><span style="font:500 14px 'Noto Sans KR';color:#9A8B7C">목</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:46px;border-radius:14px;background:#F6F0E4"></div><span style="font:500 14px 'Noto Sans KR';color:#9A8B7C">금</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:46px;border-radius:14px;background:#F6F0E4"></div><span style="font:500 14px 'Noto Sans KR';color:#9A8B7C">토</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="width:100%;height:46px;border-radius:14px;background:#F6F0E4"></div><span style="font:500 14px 'Noto Sans KR';color:#9A8B7C">일</span></div>
+      </div>
+    </div>
+    <div style="flex:1;background:#FFFDF9;border:3px solid #ECDFCD;border-radius:24px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-height:0">
+      <div style="font:400 21px 'Jua',sans-serif">책갈피로 꾸미기</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11px">
+        <div style="background:#F6F0E4;border-radius:18px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="font-size:30px">🍃</div><div style="font:400 15px 'Jua',sans-serif;text-align:center">나뭇잎 모자</div><div style="font:400 14px 'Jua',sans-serif;color:#7A6320;background:#FDF0CD;padding:3px 10px;border-radius:999px">🔖 100</div></div>
+        <div style="background:#F6F0E4;border-radius:18px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="font-size:30px">👑</div><div style="font:400 15px 'Jua',sans-serif;text-align:center">작은 왕관</div><div style="font:400 14px 'Jua',sans-serif;color:#7A6320;background:#FDF0CD;padding:3px 10px;border-radius:999px">🔖 300</div></div>
+        <div style="background:#F6F0E4;border-radius:18px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="font-size:30px">🌾</div><div style="font:400 15px 'Jua',sans-serif;text-align:center">들판 배경</div><div style="font:400 14px 'Jua',sans-serif;color:#7A6320;background:#FDF0CD;padding:3px 10px;border-radius:999px">🔖 150</div></div>
+        <div style="background:#F6F0E4;border-radius:18px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="font-size:30px">🌌</div><div style="font:400 15px 'Jua',sans-serif;text-align:center">별밤 배경</div><div style="font:400 14px 'Jua',sans-serif;color:#7A6320;background:#FDF0CD;padding:3px 10px;border-radius:999px">🔖 250</div></div>
+        <div style="background:#E2F4E9;border:3px solid #BCE3CD;border-radius:18px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:5px"><div style="font-size:30px">🪵</div><div style="font:400 15px 'Jua',sans-serif;text-align:center">나무 액자</div><div style="font:400 14px 'Jua',sans-serif;color:#2F6B4C">가지고 있어</div></div>
+        <div style="background:#F6F0E4;border-radius:18px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:5px;opacity:.55"><div style="font-size:30px">✨</div><div style="font:400 15px 'Jua',sans-serif;text-align:center">금빛 액자</div><div style="font:400 14px 'Jua',sans-serif;color:#8A7A69;background:#ECE3D4;padding:3px 10px;border-radius:999px">🔖 350</div></div>
+      </div>
+    </div>
+  </div>
+  <div style="height:92px;border-top:1px solid #ECDFCD;background:#FFFDF9;display:flex;align-items:flex-start;padding:8px 6px 0;flex:none">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">🏠</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">홈</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">✏️</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">독후감</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">🥚</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">도감</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">📚</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">서재</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px">😊</span><span style="font:400 14px 'Jua',sans-serif;color:#C1462A">나</span></div>
+  </div>
+</div>
+</div>
+
+<!-- M10 랭킹 -->
+<div style="display:flex;flex-direction:column;gap:12px" data-screen-label="M10 랭킹">
+<div style="display:flex;align-items:baseline;gap:9px"><span style="font:700 12px ui-monospace,monospace;background:#2E241D;color:#FDF6EC;padding:4px 9px;border-radius:6px">M10</span><span style="font:400 19px 'Jua',sans-serif">랭킹 — 반 대항전</span></div>
+<div style="width:430px;height:932px;border-radius:38px;overflow:hidden;position:relative;background:#FDF6EC;border:1px solid #ECDFCD;box-shadow:0 18px 44px rgba(90,66,40,.16);display:flex;flex-direction:column">
+  <div style="flex:1;padding:44px 22px 16px;display:flex;flex-direction:column;gap:14px;min-height:0">
+    <div style="display:flex;align-items:center;gap:10px"><span style="font:400 28px 'Jua',sans-serif">우리 반 대항전</span><span style="background:#E6EEFB;color:#4A6B9C;font:400 15px 'Jua',sans-serif;padding:6px 13px;border-radius:999px">🍂 가을</span></div>
+    <div style="background:#FFF2EC;border:3px solid #FFD2C2;border-radius:26px;padding:18px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:72px;height:72px;border-radius:20px;background:#FFD866;display:flex;align-items:center;justify-content:center;font-size:36px;flex:none;animation:wiggle 3.2s ease-in-out infinite">🏆</div>
+        <div style="flex:1;min-width:0"><div style="font:400 24px 'Jua',sans-serif">3반이 2등이야!</div><div style="font:500 16px 'Noto Sans KR';color:#B07A63">독후감 4개만 더 쓰면 1등</div></div>
+        <div style="font:400 32px 'Jua',sans-serif;color:#C1462A;flex:none">86</div>
+      </div>
+      <div style="width:100%;height:18px;border-radius:999px;background:#FFE3D9;overflow:hidden"><div style="width:86%;height:100%;border-radius:999px;background:linear-gradient(90deg,#FF8F75,#FF6B4A)"></div></div>
+    </div>
+    <div style="background:#FFFDF9;border:3px solid #ECDFCD;border-radius:24px;padding:16px 18px;display:flex;flex-direction:column;gap:9px">
+      <div style="font:400 20px 'Jua',sans-serif">반 순위</div>
+      <div style="display:flex;align-items:center;gap:12px;background:#FDF0CD;border-radius:16px;padding:11px 14px"><span style="font-size:22px">🥇</span><span style="font:400 20px 'Jua',sans-serif;flex:1">1반</span><span style="font:400 20px 'Jua',sans-serif;color:#7A6320">91</span></div>
+      <div style="display:flex;align-items:center;gap:12px;background:#FFE3D9;border:3px solid #FF6B4A;border-radius:16px;padding:11px 14px"><span style="font-size:22px">🥈</span><span style="font:400 20px 'Jua',sans-serif;flex:1">3반 <span style="font:400 14px 'Jua',sans-serif;color:#C1462A">우리 반</span></span><span style="font:400 20px 'Jua',sans-serif;color:#C1462A">86</span></div>
+      <div style="display:flex;align-items:center;gap:12px;background:#F6F0E4;border-radius:16px;padding:11px 14px"><span style="font-size:22px">🥉</span><span style="font:400 20px 'Jua',sans-serif;flex:1">2반</span><span style="font:400 20px 'Jua',sans-serif;color:#8A7A69">74</span></div>
+    </div>
+    <div style="flex:1;background:#FFFDF9;border:3px solid #ECDFCD;border-radius:24px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-height:0">
+      <div style="font:400 20px 'Jua',sans-serif">열심히 읽은 친구</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:7px 2px"><div style="width:46px;height:46px;border-radius:50%;background:#FFE3D9;display:flex;align-items:center;justify-content:center;font-size:24px">🦊</div><span style="font:400 19px 'Jua',sans-serif;flex:1">지호</span><span style="font:400 17px 'Jua',sans-serif;color:#8A7A69">11</span></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:7px 2px"><div style="width:46px;height:46px;border-radius:50%;background:#E2F4E9;display:flex;align-items:center;justify-content:center;font-size:24px">🐸</div><span style="font:400 19px 'Jua',sans-serif;flex:1">서아</span><span style="font:400 17px 'Jua',sans-serif;color:#8A7A69">10</span></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:7px 8px;background:#FFF2EC;border-radius:16px"><div style="width:46px;height:46px;border-radius:50%;background:#FFCDBD;display:flex;align-items:center;justify-content:center;font-size:24px">🐦</div><span style="font:400 19px 'Jua',sans-serif;flex:1">{{ childName }} <span style="font:400 14px 'Jua',sans-serif;color:#C1462A">나</span></span><span style="font:400 17px 'Jua',sans-serif;color:#C1462A">9</span></div>
+      <div style="margin-top:auto;font:500 15px/1.6 'Noto Sans KR';color:#9A8B7C;background:#F6F0E4;border-radius:16px;padding:12px 14px">등수는 우리 반 안에서만 보여</div>
+    </div>
+  </div>
+  <div style="height:92px;border-top:1px solid #ECDFCD;background:#FFFDF9;display:flex;align-items:flex-start;padding:8px 6px 0;flex:none">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">🏠</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">홈</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">✏️</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">독후감</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">🥚</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">도감</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px;opacity:.6">📚</span><span style="font:400 14px 'Jua',sans-serif;color:#9A8B7C">서재</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0"><span style="font-size:25px">😊</span><span style="font:400 14px 'Jua',sans-serif;color:#C1462A">나</span></div>
+  </div>
+</div>
+</div>
+
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;childName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;민준&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;내용&quot;},&quot;charStage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;알&quot;,&quot;부화&quot;,&quot;다 자람&quot;],&quot;default&quot;:&quot;부화&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;캐릭터&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const name = this.props.childName ?? "민준";
+    const stage = this.props.charStage ?? "부화";
+    const map = {
+      "알": ["🥚", "첫 장을 읽으면 깨어나"],
+      "부화": ["🐣", "한 장만 더 읽으면 부화!"],
+      "다 자람": ["🐦", "다 자랐어. 도감에 들어갔어"]
+    };
+    const [stageEmoji, stageLine] = map[stage] || map["부화"];
+    return { childName: name, stageEmoji, stageLine };
+  }
+}
+</script>
+</body>
+</html>

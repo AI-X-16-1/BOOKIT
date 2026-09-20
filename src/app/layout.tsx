@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_KR } from "next/font/google";
+import { Jua, Noto_Sans_KR } from "next/font/google";
 
 import { RegisterServiceWorker } from "@/shared/pwa";
 import "./globals.css";
@@ -8,6 +8,14 @@ const notoSansKr = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
   subsets: ["latin"],
   weight: ["400", "500", "700", "900"],
+  display: "swap",
+});
+
+// 저학년 개편(목업 9·10): 제목·숫자·버튼은 Jua. 본문은 Noto Sans KR 그대로
+const jua = Jua({
+  variable: "--font-jua",
+  subsets: ["latin"],
+  weight: "400",
   display: "swap",
 });
 
@@ -36,7 +44,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`${notoSansKr.variable} h-full antialiased`}>
+    <html lang="ko" className={`${notoSansKr.variable} ${jua.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         {children}
         <RegisterServiceWorker />

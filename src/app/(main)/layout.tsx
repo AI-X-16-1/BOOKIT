@@ -10,7 +10,7 @@ export default function MainLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-dvh">
       <SideRail />
-      <main className="min-w-0 flex-1 px-[22px] pt-[52px] pb-[86px] md:pt-8 md:pb-8">
+      <main className="min-w-0 flex-1 px-[22px] pt-[44px] pb-[100px] md:px-[34px] md:pt-8 md:pb-8">
         {children}
       </main>
       <TabBar />

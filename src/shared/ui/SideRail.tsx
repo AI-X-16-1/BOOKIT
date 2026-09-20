@@ -18,14 +18,15 @@ export function SideRail() {
     <nav
       aria-label="주요 메뉴"
       // 뷰포트 높이에 고정하고 붙여 둔다 — 페이지가 길어져도 레일이 따라 늘어나 아바타가 아래로 밀리지 않는다
-      className="sticky top-0 hidden h-dvh w-[76px] flex-none flex-col items-center gap-3.5 self-start bg-panel py-5 md:flex"
+      // 저학년 개편(목업 9): 116px 밝은 레일, 이모지 + Jua 라벨
+      className="sticky top-0 hidden h-dvh w-[116px] flex-none flex-col items-center gap-2 self-start border-r border-border bg-card py-6 md:flex"
     >
       {/* 앱 아이콘 — 홈으로. 목업의 코랄 네모 자리표시자를 실제 아이콘으로 */}
-      <Link href="/home" aria-label="책잇 홈" className="block h-11 w-11 overflow-hidden rounded-[14px]">
+      <Link href="/home" aria-label="책잇 홈" className="block h-13 w-13 overflow-hidden rounded-[16px]">
         {/* eslint-disable-next-line @next/next/no-img-element -- 정적 PWA 아이콘 */}
-        <img src="/icons/icon-192.png" alt="" width={44} height={44} className="h-11 w-11" />
+        <img src="/icons/icon-192.png" alt="" width={52} height={52} className="h-13 w-13" />
       </Link>
-      <div className="h-1.5" />
+      <div className="h-3" />
       {NAV_ITEMS.map((item) => {
         const active = pathname === item.href;
         return (
@@ -35,13 +36,12 @@ export function SideRail() {
             aria-label={item.label}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex h-11 w-11 items-center justify-center rounded-[14px] text-[19px]",
-              active
-                ? "bg-panel-inner text-on-dark"
-                : "text-nav-inactive hover:text-on-dark-2",
+              "flex h-[76px] w-[88px] flex-col items-center justify-center gap-1 rounded-[20px]",
+              active ? "bg-coral-bg text-coral-ink" : "text-muted hover:bg-sunken",
             )}
           >
-            <span aria-hidden>{item.glyph}</span>
+            <span aria-hidden className={cn("text-[28px] leading-none", !active && "opacity-60")}>{item.glyph}</span>
+            <span className="font-display text-[15px] leading-none">{item.label}</span>
           </Link>
         );
       })}
@@ -50,9 +50,9 @@ export function SideRail() {
       <Link
         href="/me"
         aria-label="내 정보"
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow text-base text-stamp-text"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow text-[22px]"
       >
-        <span aria-hidden>☺</span>
+        <span aria-hidden>😊</span>
       </Link>
     </nav>
   );

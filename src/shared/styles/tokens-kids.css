@@ -1,0 +1,58 @@
+/* src/shared/styles/tokens-kids.css
+ * 초등 1~3학년 개편분. 기존 tokens.css 를 덮어쓰지 않는다 — 뒤에 import 해서 얹는다.
+ * 색은 docs/design-tokens.md 그대로다. 달라진 것은 크기·라운드·모션뿐이다.
+ */
+
+:root {
+  /* ── 타이포 (저학년) ───────────────────────────── */
+  /* --font-display 는 tokens.css @theme 에서 next/font 변수(--font-jua)로 정의한다 */
+  --font-sans-kids: "Noto Sans KR", system-ui, sans-serif;
+
+  --fs-body:        20px;   /* 태블릿 본문. 모바일 18px */
+  --fs-body-m:      18px;
+  --fs-caption:     17px;
+  --fs-section:     26px;   /* 섹션 제목, display */
+  --fs-title:       38px;   /* 화면 제목, display */
+  --fs-hero:        52px;   /* 온보딩·결과 화면, display */
+  --fs-number:      44px;   /* 책갈피 수치, display */
+  --lh-body:        1.8;
+
+  /* ── 모양 ─────────────────────────────────────── */
+  --r-card:         28px;
+  --r-card-sm:      22px;
+  --r-button:       24px;
+  --r-chip:         999px;
+  --r-frame:        38px;   /* 목업 기기 프레임 */
+  --border-w:       3px;    /* 저학년은 테두리를 두껍게 — 카드 경계를 색이 아니라 선으로 */
+
+  /* ── 크기 ─────────────────────────────────────── */
+  --h-button:       86px;   /* 태블릿 주요 버튼. 모바일 70px */
+  --h-button-m:     70px;
+  --h-tabbar:       92px;
+  --w-rail:         116px;  /* >=768px 좌측 아이콘 레일 */
+  --tap-min:        56px;
+
+  --pad-screen:     34px;
+  --pad-screen-m:   22px;
+  --gap-card:       18px;
+
+  /* ── 그림자 ───────────────────────────────────── */
+  --shadow-card:    0 12px 34px rgba(90, 66, 40, .10);
+  --shadow-press:   0 10px 0 #D94F32;   /* 코랄 버튼 아래 눌리는 면 */
+  --shadow-press-y: 0 10px 0 #C8A335;   /* 노랑 버튼 */
+
+  /* ── 모션 ─────────────────────────────────────── */
+  --ease-pop:       cubic-bezier(.22, 1.4, .4, 1);
+  --dur-pop:        .6s;
+  --dur-bob:        4s;
+}
+
+/* 캐릭터·보상 모션. 저학년 화면의 시선 유도는 전부 이 4개로 끝낸다 */
+@keyframes bookit-bob    { 0%,100% { transform: translateY(0) rotate(-2deg) } 50% { transform: translateY(-14px) rotate(2deg) } }
+@keyframes bookit-pop    { 0% { transform: scale(.7); opacity: 0 } 60% { transform: scale(1.12); opacity: 1 } 100% { transform: scale(1); opacity: 1 } }
+@keyframes bookit-ring   { 0% { transform: scale(.9); opacity: .65 } 100% { transform: scale(1.5); opacity: 0 } }
+@keyframes bookit-twinkle{ 0%,100% { opacity: .25; transform: scale(.8) } 50% { opacity: 1; transform: scale(1.15) } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important }
+}

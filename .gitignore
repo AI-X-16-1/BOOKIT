@@ -37,3 +37,4 @@ supabase/.temp/
 
 # superpowers subagent-driven-development 작업 스크래치
 .superpowers/
+handoff/
