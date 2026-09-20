@@ -25,6 +25,8 @@ const SAVE_LABEL: Record<SaveState, string> = {
 export interface ReviewEditorProps {
   bookTitle: string;
   bookAuthor: string;
+  /** books.cover_url — 없으면 그라데이션 자리표시자 */
+  bookCoverUrl?: string | null;
   /** AI #1 글쓰기 도우미. 없으면 상자를 그리지 않는다 */
   helperQuestion?: string;
   value: string;
@@ -41,6 +43,7 @@ export interface ReviewEditorProps {
 export function ReviewEditor({
   bookTitle,
   bookAuthor,
+  bookCoverUrl = null,
   helperQuestion,
   value,
   onChange,
@@ -72,9 +75,18 @@ export function ReviewEditor({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* 헤더 — 책 표지는 알라딘 이미지가 붙기 전까지 그라데이션 자리표시자 */}
+      {/* 헤더 — 표지가 있으면(알라딘 URL 또는 서재 생성 표지) 그리고, 없으면 그라데이션 자리표시자 */}
       <div className="flex items-center gap-3">
-        <div className="h-9 w-9 flex-none rounded-[9px] bg-linear-160 from-green-light to-green" />
+        {bookCoverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- 외부 알라딘 URL 이 섞여 next/image 도메인 설정을 못 한다
+          <img
+            src={bookCoverUrl}
+            alt=""
+            className="h-12 w-9 flex-none rounded-[9px] object-cover"
+          />
+        ) : (
+          <div className="h-12 w-9 flex-none rounded-[9px] bg-linear-160 from-green-light to-green" />
+        )}
         <div className="min-w-0 flex-1">
           <div className="truncate text-[17px] font-bold text-ink">
             {bookTitle} · 독후감
