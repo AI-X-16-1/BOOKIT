@@ -2,30 +2,31 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { libraryHref } from "@/modules/reader";
+import { faceOf, libraryHref, pickPartner } from "@/modules/reader";
 import { apiGet } from "@/shared/api/client";
 import type {
   Book,
-  ClassRankingResponse,
+  BookRecommendResponse,
+  CharactersResponse,
+  CharacterView,
   GrowthResponse,
+  MeResponse,
   PointsResponse,
 } from "@/shared/types";
-import { Chip } from "@/shared/ui";
+import { cn } from "@/shared/ui";
 import { COVER, type CoverTone } from "../mock";
 
 /**
- * 홈. 목업 7 #1 / 목업 8 #1 (보스전·성장 개편).
+ * 홈. 저학년 개편 — 목업 10 M02 / 목업 9 (2026-09-20).
  *
- * 9/18 마감 스프린트(docs/sprint-0918.md) ① 로 갈래를 둘로 줄였다 — **책 읽기** 와
- * **독후감 쓰기**. 검색과 추천 카드는 여기서 뺐다.
+ * 위에서부터: 인사 + 🔥 연속 + 🔖 책갈피 → 지금 키우는 친구(캐릭터) 카드 + 진행바 →
+ * 오늘의 미션 칩 → 쓰다 만 독후감(어두운 카드) → 너한테 딱 맞는 책 2열.
  *
- * 검색을 왜 뺄 수 있었나: 검색은 사실상 "직접 작성" 진입로였고(#106), 그 화면이
- * 이미 /write 에 있다 (review 모듈의 PickBookFirst, #116). 그래서 홈에서 지워도
- * 종이책으로 읽고 온 학생의 경로는 그대로다 — "독후감 쓰기" 카드가 거기로 보낸다.
- * 추천은 읽을 책을 고르는 자리이므로 서재(/library)가 받는다.
+ * 9/18 의 "두 갈래" 원칙은 지킨다 — 캐릭터 카드가 **책 읽기**(서재로), 어두운 카드가
+ * **독후감 쓰기**(/write 로) 다. 검색은 여전히 /write 안에 있다 (#106·#116).
  *
- * 책갈피·연속 기록·반 순위는 각 모듈 API 를 그대로 읽는다. 큰 카드 세 장 대신
- * 머리말의 칩 한 줄로 줄였다 — 홈의 주인공이 두 갈래 카드여야 하기 때문이다.
+ * 캐릭터 단계는 클라이언트가 계산하지 않는다 — /api/characters 의 stage 를 그대로 읽는다
+ * (docs/mockups/README-kids-redesign.md). 얼굴 이모지는 reader 의 faceOf 와 같은 규칙.
  */
 
 const TONES: CoverTone[] = ["green", "coral", "blue", "yellow"];
@@ -39,18 +40,14 @@ function coverClass(book: CoverBook): string {
   return COVER[TONES[n % TONES.length]];
 }
 
-function Cover({ book, size }: { book: CoverBook; size: string }) {
+function Cover({ book, className }: { book: CoverBook; className: string }) {
   if (book.cover_url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- 외부 표지 URL, 크기 미상
-      <img
-        src={book.cover_url}
-        alt=""
-        className={`${size} flex-none rounded-md object-cover`}
-      />
+      <img src={book.cover_url} alt="" className={cn("object-cover", className)} />
     );
   }
-  return <div className={`${size} flex-none rounded-md ${coverClass(book)}`} />;
+  return <div className={cn(coverClass(book), className)} />;
 }
 
 /** 쓰던 독후감 카드에 필요한 것. null 이면 그 줄을 그리지 않는다 */
@@ -76,131 +73,181 @@ export interface HomeScreenProps {
   reading?: HomeReading | null;
 }
 
+/** 단계별 한 줄 — 목업 10 의 stageLine */
+function stageLine(stage: 0 | 1 | 2, left: number): string {
+  if (stage === 2) return "다 자랐어! 도감에 들어갔어";
+  if (stage === 1) return left <= 1 ? "한 장만 더 읽으면 부화!" : `${left}장 더 읽으면 부화해`;
+  return "첫 장을 읽으면 깨어나";
+}
+
 export function HomeScreen({ draft, reading }: HomeScreenProps) {
+  const [name, setName] = useState<string | null>(null);
   const [points, setPoints] = useState<number | null>(null);
   const [streak, setStreak] = useState<number | null>(null);
-  const [rank, setRank] = useState<number | null>(null);
+  const [characters, setCharacters] = useState<CharacterView[]>([]);
+  const [picks, setPicks] = useState<Book[]>([]);
 
   useEffect(() => {
+    apiGet<MeResponse>("/api/profile")
+      .then((r) => setName(r.display_name))
+      .catch(() => {});
     apiGet<PointsResponse>("/api/points")
       .then((r) => setPoints(r.balance))
       .catch(() => {});
     apiGet<GrowthResponse>("/api/growth")
       .then((r) => setStreak(r.streak.current_days))
       .catch(() => {});
-    apiGet<ClassRankingResponse>("/api/ranking/class")
-      .then((r) => setRank(r.my_class.rank))
+    apiGet<CharactersResponse>("/api/characters")
+      .then((r) => setCharacters(r.characters))
+      .catch(() => {});
+    apiGet<BookRecommendResponse>("/api/books/recommend")
+      .then((r) => setPicks(r.books.slice(0, 4)))
       .catch(() => {});
   }, []);
 
+  // 카드의 주인공: 읽던 책의 친구 → 없으면 가장 자란 친구 → 없으면 알
+  const current = reading ? characters.find((c) => c.book_id === reading.bookId) : undefined;
+  const partner = current
+    ? {
+        face: faceOf(current.stage as 0 | 1 | 2, current.art_seed, current.book_id),
+        name: current.stage_name,
+        stage: current.stage as 0 | 1 | 2,
+      }
+    : pickPartner(characters);
+  const left = reading ? Math.max(reading.totalChapters - reading.readChapters, 0) : 0;
   const percent =
     reading && reading.totalChapters > 0
       ? Math.round((reading.readChapters / reading.totalChapters) * 100)
       : 0;
 
+  const grown = characters.filter((c) => c.stage === 2).length;
+
   return (
     <div className="flex flex-col gap-4">
-      {/* 책갈피·순위는 머리말 칩으로. 주인공 자리는 아래 두 카드다 */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="rounded-full bg-yellow-bg px-3 py-[7px] text-xs font-bold text-yellow-text">
-          🔖 {points === null ? "—" : points.toLocaleString()}
+      {/* 인사 + 연속 + 책갈피 */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <h1 className="text-[28px] text-ink">{name ? `${name}아, 안녕!` : "안녕!"}</h1>
+        {streak !== null && streak > 0 && (
+          <span className="rounded-full bg-yellow-bg px-3 py-1.5 font-display text-[17px] text-yellow-text">
+            🔥 {streak}일째
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-1.5 rounded-full border-2 border-border bg-card px-3.5 py-1.5">
+          <span aria-hidden className="text-[17px]">🔖</span>
+          <span className="font-display text-[21px] text-ink">
+            {points === null ? "—" : points.toLocaleString()}
+          </span>
         </span>
-        {rank !== null && <Chip tone="blue">우리 반 {rank}위</Chip>}
       </div>
 
-      <div>
-        <h1 className="text-[26px] leading-[1.3] font-bold text-ink">
-          오늘은 어떤 책을
-          <br />
-          잡아볼까?
-        </h1>
-        <p className="mt-2 text-sm text-muted">
-          {streak === null
-            ? "책을 읽고 독후감을 써 보자"
-            : streak > 0
-              ? `${streak}일째 연속 잡기 성공 🔥`
-              : "오늘 한 권 읽고 연속 기록을 시작해 볼까?"}
-        </p>
-      </div>
-
-      {/* ① 책 읽기 — 읽던 책이 있으면 이어서, 없으면 서재로 */}
+      {/* ① 책 읽기 — 지금 키우는 친구. 읽던 책이 있으면 이어서, 없으면 서재로 */}
       <Link
-        href={reading ? libraryHref(reading.bookId) : "/library"}
-        className="flex flex-col gap-4 rounded-[20px] bg-panel p-6"
+        href={reading ? libraryHref(reading.bookId, reading.readChapters + 1) : "/library"}
+        className="relative flex flex-col items-center gap-2 overflow-hidden rounded-[28px] border-[3px] border-coral-border bg-coral-bg p-5"
       >
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-panel-inner text-2xl">
-            📖
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-xl font-bold text-on-dark">책 읽기</div>
-            <div className="mt-1 truncate text-[13px] text-on-dark-2">
-              {reading
-                ? `서재에서 이어 읽기 · ${reading.title}`
-                : "책잇 서재에서 바로 읽을 수 있어"}
-            </div>
-          </div>
-          <span className="flex-none text-[22px] text-coral">→</span>
-        </div>
-
-        {/* 표지 퍼즐과 같은 진행률 — 조각 = 읽은 장 (spec §2b) */}
+        <span aria-hidden className="absolute top-3.5 right-5 text-[17px] animate-[bookit-twinkle_2.4s_ease-in-out_infinite]">✨</span>
+        <span aria-hidden className="absolute top-[52px] left-6 text-[13px] animate-[bookit-twinkle_2.4s_ease-in-out_.8s_infinite]">✨</span>
+        <span
+          aria-hidden
+          className="flex h-[132px] w-[132px] items-center justify-center rounded-full text-[70px] animate-[bookit-bob_4s_ease-in-out_infinite]"
+          style={{ background: "radial-gradient(circle at 50% 35%, #FFE3D9, #FFCDBD)" }}
+        >
+          {partner?.face ?? "🥚"}
+        </span>
+        <span className="text-[15px] font-medium text-coral-muted">
+          {reading ? `${reading.title}` : partner ? partner.name : "책을 펼치면 알을 받아"}
+        </span>
+        <span className="text-center font-display text-[25px] text-ink">
+          {reading
+            ? partner
+              ? stageLine(partner.stage, left)
+              : "이어서 읽어볼까?"
+            : partner
+              ? `${partner.name}이랑 새 책 읽으러 가자`
+              : "오늘은 어떤 책을 읽어볼까?"}
+        </span>
         {reading && (
           <>
-            <div className="h-2 overflow-hidden rounded-full bg-panel-line">
-              <div
-                className="h-2 rounded-full bg-coral"
-                style={{ width: `${percent}%` }}
+            <span className="mt-1 h-[18px] w-full overflow-hidden rounded-full bg-coral-bg-2">
+              <span
+                className="block h-full rounded-full transition-[width] duration-700"
+                style={{ width: `${Math.max(percent, 4)}%`, background: "linear-gradient(90deg, #FF8F75, #FF6B4A)" }}
               />
-            </div>
-            <div className="text-xs text-panel-muted">
-              {percent}% 읽음 · 표지 조각 {reading.readChapters}/
-              {reading.totalChapters}
-            </div>
+            </span>
+            <span className="text-[15px] font-medium text-coral-muted">
+              {reading.totalChapters}장 중 {reading.readChapters}장 읽었어
+            </span>
           </>
         )}
       </Link>
+
+      {/* 오늘의 미션 — 셋 다 화면에 이미 있는 값으로만 판단한다 */}
+      <div className="-mx-1 flex gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+        <Mission done={!!reading && reading.readChapters > 0} label="한 장 읽기" />
+        <Mission done={!!draft} label={draft ? "독후감 쓰는 중" : "독후감 1개"} />
+        <Mission done={grown > 0} label={grown > 0 ? `친구 ${grown}마리` : "새 친구"} />
+      </div>
 
       {/* ② 독후감 쓰기 — 초고가 있으면 이어서, 없으면 책 고르기(직접 작성) 화면 */}
       <Link
         href="/write"
-        className="flex flex-col gap-4 rounded-[20px] border border-border-soft bg-card p-6"
+        className="flex items-center gap-3.5 rounded-[26px] bg-ink px-5 py-[18px] text-on-dark"
       >
-        <div className="flex items-center gap-3.5">
-          <div className="flex h-14 w-14 flex-none items-center justify-center rounded-2xl bg-yellow-bg text-2xl">
-            ✎
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-xl font-bold text-ink">독후감 쓰기</div>
-            <div className="mt-1 text-[13px] text-muted">
-              다 읽은 책으로 보스전 도전
-            </div>
-          </div>
-          <span className="flex-none text-[22px] text-coral">→</span>
-        </div>
-
-        {draft && (
-          <>
-            <div className="h-px bg-border-soft" />
-            <div className="flex items-center gap-3">
-              <Cover book={draft} size="h-11 w-8.5" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-bold text-ink">
-                  {draft.title}
-                </div>
-                <div className="mt-[3px] text-xs text-muted">
-                  초고 저장됨 · 이어서 쓰기
-                </div>
-              </div>
-              <Chip tone="yellow">진행 중</Chip>
-            </div>
-          </>
-        )}
-
-        <div className="text-xs text-faint">
-          {/* 검색이 이 화면 안으로 들어왔다는 안내 — 홈에서 찾던 아이가 길을 잃지 않게 */}
-          종이책으로 읽은 책도 여기서 제목을 찾아 쓸 수 있어
-        </div>
+        {draft && <Cover book={draft} className="h-14 w-[42px] flex-none rounded-[10px]" />}
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14px] font-medium text-on-dark-2">
+            {draft ? "쓰다 만 독후감" : "다 읽은 책이 있어?"}
+          </span>
+          <span className="mt-0.5 block truncate font-display text-[22px]">
+            {draft ? draft.title : "독후감 쓰기"}
+          </span>
+          <span className="block text-[14px] font-medium text-on-dark-2">
+            {draft ? "이어서 쓰면 돼" : "종이책도 제목 찾아서 쓸 수 있어"}
+          </span>
+        </span>
+        <span className="flex h-[54px] flex-none items-center rounded-[18px] bg-yellow px-5 font-display text-[19px] text-[#4A3A10]">
+          {draft ? "이어서 ✏️" : "쓰기 ✏️"}
+        </span>
       </Link>
+
+      {/* 너한테 딱 맞는 책 — 추천 API. 서재 책은 바로 읽기, 아니면 독후감 쓰기 */}
+      {picks.length > 0 && (
+        <>
+          <div className="mt-1 flex items-baseline gap-2.5">
+            <h2 className="text-[23px] text-ink">너한테 딱 맞는 책</h2>
+            <span className="text-[14px] font-medium text-muted">지금 인기</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3.5">
+            {picks.map((b) => (
+              <Link key={b.id} href={b.is_public_domain ? libraryHref(b.id) : `/write?book=${b.id}`} className="block">
+                <span className="relative block h-[196px] overflow-hidden rounded-[20px] border-[3px] border-card bg-sunken shadow-[0_8px_20px_rgba(90,66,40,.14)]">
+                  <Cover book={b} className="block h-full w-full" />
+                  {b.is_public_domain && (
+                    <span className="absolute top-2 left-2 rounded-full bg-green px-2.5 py-1 font-display text-[14px] text-white">
+                      바로 읽기
+                    </span>
+                  )}
+                </span>
+                <span className="mt-1.5 block truncate font-display text-[19px] text-ink">{b.title}</span>
+                <span className="block truncate text-[14px] font-medium text-muted">{b.author}</span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
     </div>
+  );
+}
+
+function Mission({ done, label }: { done: boolean; label: string }) {
+  return (
+    <span
+      className={cn(
+        "flex flex-none items-center gap-1.5 rounded-full px-4 py-2 font-display text-[17px]",
+        done ? "bg-green-bg text-green-ink" : "border-2 border-border bg-card text-coral-text-2",
+      )}
+    >
+      {done ? "✓" : "○"} {label}
+    </span>
   );
 }
