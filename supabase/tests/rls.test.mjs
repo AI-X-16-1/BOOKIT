@@ -193,8 +193,11 @@ check('§5 진도뷰에 자유 서술 컬럼이 없다',
   !progressCols.some(c => ['body', 'answer', 'quote', 'reason', 'feedback', 'question'].includes(c)),
   progressCols.join(', '));
 
+// last_passed_on 은 트리거(0011)와 같은 식으로 KST "오늘"을 넣는다. UTC current_date 를
+// 넣으면 KST 00~09시(UTC 전날 15~24시)에 돌릴 때 "어제"가 돼, 뒤의 V_OPEN 통과가
+// 하루 1회 캡이 아니라 증가(7→8)로 가서 스트릭 테스트가 그 시간대에만 깨졌다 (#181).
 await db.exec(`insert into streaks (student_id, current_days, longest_days, last_passed_on)
-               values ('${S1}', 7, 9, current_date)
+               values ('${S1}', 7, 9, (now() at time zone 'Asia/Seoul')::date)
                on conflict (student_id) do update set current_days = 7;`);
 
 const prog = await as(T1, 'select name, streak, class_id from v_teacher_student_progress');
@@ -390,14 +393,6 @@ const kst = await db.query(
   `select (timestamptz '2026-01-01 16:00:00+00' at time zone 'Asia/Seoul')::date = date '2026-01-02' as ok`);
 check('KST 변환이 UTC 자정 경계에서 날짜를 하루 앞당긴다',
   kst.rows[0]?.ok === true, JSON.stringify(kst.rows[0]));
-
-// "0007" 구간의 시드는 last_passed_on 을 UTC current_date 로 넣었다. 트리거는 KST 로
-// "오늘"을 판단하므로, UTC 저녁(KST 새벽) 시간대에 테스트를 돌리면 이 값이 실제로는
-// "어제"가 돼 버려 다음 통과가 캡이 아니라 증가로 갈 수 있다 — 그 시간대 의존성을
-// 없애려고 트리거와 같은 식으로 "오늘"을 다시 맞춰 둔다.
-await db.exec(`
-  update streaks set last_passed_on = (now() at time zone 'Asia/Seoul')::date
-  where student_id = '${S1}'`);
 
 // S1 의 streaks 는 위 "0007" 구간에서 이미 (current=7, longest=9, last_passed_on=오늘)
 // 로 시드돼 있고, 그 뒤 V_OPEN 통과가 트리거를 한 번 거쳤다 — 오늘 이미 센 것으로 보고
