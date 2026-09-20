@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #FDF6EC;
+         background-image: repeating-linear-gradient(#FDF6EC 0 31px, #F4E5D1 31px 32px);
+         font-family: 'Noto Sans KR', sans-serif; color: #2E241D; position: relative; }
+  .blob { position: absolute; border-radius: 50%; }
+  .blob.a { width: 760px; height: 760px; right: -220px; top: -260px; background: radial-gradient(circle at 40% 40%, #FFD2C2, #FFE3D9 60%, rgba(255,227,217,0) 72%); }
+  .blob.b { width: 420px; height: 420px; right: 180px; bottom: -260px; background: radial-gradient(circle, #FDF0CD, rgba(253,240,205,0) 70%); }
+
+  .left { position: absolute; left: 64px; top: 58px; width: 540px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .mark { width: 46px; height: 46px; border-radius: 14px; background: #FF6B4A; color: #FFF6EC; font: 400 24px 'Jua'; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 0 #D94F32; }
+  .brand .name { font: 400 30px 'Jua'; }
+  .brand .tag { margin-left: 6px; background: #2E241D; color: #FDF6EC; font: 400 15px 'Jua'; padding: 6px 13px; border-radius: 999px; }
+
+  h1 { margin: 34px 0 0; font: 400 72px/1.08 'Jua'; letter-spacing: -1.5px; }
+  h1 .q { display: inline-block; position: relative; color: #FF6B4A; font-size: 110px; line-height: 1; margin-top: 2px; }
+  h1 .q::after { content: ""; position: absolute; left: -4px; right: -4px; bottom: 10px; height: 18px; background: #FFD866; z-index: -1; border-radius: 6px; transform: rotate(-1.5deg); }
+  h1 .bubble { display: inline-block; background: #FFFDF9; border: 3px solid #ECDFCD; border-radius: 22px 22px 22px 6px; padding: 8px 20px; font-size: 44px; color: #6B5B4B; position: relative; }
+  .sub { margin-top: 22px; font: 500 21px/1.55 'Noto Sans KR'; color: #7A6A5A; }
+  .sub b { color: #2E241D; font-weight: 700; }
+  .chips { display: flex; gap: 10px; margin-top: 26px; flex-wrap: wrap; }
+  .chip { display: flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 999px; font: 400 18px 'Jua'; border: 3px solid; }
+  .chip.y { background: #FDF0CD; border-color: #FFD866; color: #7A6320; }
+  .chip.c { background: #FFE3D9; border-color: #FFB79F; color: #C1462A; }
+  .chip.g { background: #E2F4E9; border-color: #BCE3CD; color: #2F6B4C; }
+  .url { position: absolute; left: 64px; bottom: 30px; font: 500 16px 'Noto Sans KR'; color: #A99A89; }
+
+  /* 진화 줄 — 알 → 부화 → 새 */
+  .evo { position: absolute; left: 64px; bottom: 74px; display: flex; align-items: center; gap: 10px; }
+  .evo .egg { width: 58px; height: 58px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; background: #F6F0E4; border: 3px solid #ECDFCD; }
+  .evo .arrow { font: 400 22px 'Jua'; color: #B07A63; }
+  .evo .big { width: 74px; height: 74px; font-size: 40px; background: radial-gradient(circle at 50% 35%, #FFE3D9, #FFCDBD); border-color: #FF8F75; }
+  .evo .lab { font: 400 16px 'Jua'; color: #B07A63; margin-left: 4px; }
+
+  /* 태블릿 */
+  .tab { position: absolute; width: 1194px; height: 834px; transform-origin: 0 0; }
+  .tab .bezel { position: absolute; inset: -22px; border-radius: 48px; background: #2E241D; box-shadow: 0 40px 80px rgba(46,36,29,.35), inset 0 0 0 3px #4a3d33; }
+  .tab .bezel::after { content: ""; position: absolute; top: 50%; right: -4px; width: 6px; height: 90px; margin-top: -45px; background: #4a3d33; border-radius: 3px; }
+  .tab iframe { position: absolute; inset: 0; width: 1194px; height: 834px; border: 0; border-radius: 30px; background: #FDF6EC; }
+  .tab.back { left: 600px; top: 44px; transform: scale(.43) rotate(-6deg); opacity: .96; }
+  .tab.front { left: 712px; top: 152px; transform: scale(.47) rotate(3deg); }
+
+  /* 타이머 콜아웃 */
+  .callout { position: absolute; right: 44px; top: 34px; background: #FFD866; color: #4A3A10; font: 400 24px 'Jua'; padding: 12px 22px; border-radius: 999px 999px 999px 8px; box-shadow: 0 8px 0 #C8A335; transform: rotate(6deg); z-index: 5; }
+  .callout small { display: block; font: 500 13px 'Noto Sans KR'; color: #7A6320; margin-top: 2px; }
+</style>
+</head>
+<body>
+  <div class="blob a"></div>
+  <div class="blob b"></div>
+
+  <div class="left">
+    <div class="brand">
+      <span class="mark">책</span><span class="name">책잇</span>
+      <span class="tag">초등 저학년 · AI 독서 이해도 검증</span>
+    </div>
+    <h1>
+      <span class="bubble">“다 읽었어요!”</span><br>
+      <span class="q">진짜?</span>
+    </h1>
+    <p class="sub"><b>독후감을 읽은 AI가 45초 안에 되묻습니다.</b><br>대답하면 책갈피가 쌓이고, 그 책의 친구가 진화해요.</p>
+    <div class="chips">
+      <span class="chip c">🦉 매번 새 질문</span>
+      <span class="chip y">🔖 베끼면 못 통과</span>
+      <span class="chip g">📚 서재 56권 공짜</span>
+    </div>
+  </div>
+
+  <div class="evo">
+    <span class="egg">🥚</span><span class="arrow">→</span>
+    <span class="egg">🐣</span><span class="arrow">→</span>
+    <span class="egg big">🐦</span>
+    <span class="lab">읽고 · 답하고 · 키운다</span>
+  </div>
+  <div class="url">bookit-edu.vercel.app · 원티드 AI Championship 2026</div>
+
+  <div class="tab back"><div class="bezel"></div><iframe src="9 저학년 개편 (태블릿).dc.html 의 02 홈 프레임"></iframe></div>
+  <div class="tab front"><div class="bezel"></div><iframe src="9 저학년 개편 (태블릿).dc.html 의 06 꼬리질문 프레임"></iframe></div>
+  <div class="callout">⏱ 38초 남았어<small>다른 창 열 시간은 없어요</small></div>
+</body>
+</html>
