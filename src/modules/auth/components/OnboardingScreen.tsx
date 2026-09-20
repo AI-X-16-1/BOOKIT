@@ -29,7 +29,7 @@ export interface OnboardingScreenProps {
 export function OnboardingScreen({ displayName }: OnboardingScreenProps) {
   const router = useRouter();
   const [role, setRole] = useState<"student" | "teacher">("student");
-  const [grade, setGrade] = useState<GradeLevel>(5);
+  const [grade, setGrade] = useState<GradeLevel>(2);
   const [code, setCode] = useState("");
   /** 탐험가 등급 — 선택. 안 고르면 null 로 보낸다 (spec §2b) */
   const [rank, setRank] = useState<ExplorerRank | null>(null);
