@@ -75,7 +75,7 @@ export interface HomeScreenProps {
 
 /** 단계별 한 줄 — 목업 10 의 stageLine */
 function stageLine(stage: 0 | 1 | 2, left: number): string {
-  if (stage === 2) return "다 자랐어! 도감에 들어갔어";
+  if (stage === 2) return left > 0 ? "다 자란 친구랑 마저 읽자" : "다 자랐어! 도감에 들어갔어";
   if (stage === 1) return left <= 1 ? "한 장만 더 읽으면 부화!" : `${left}장 더 읽으면 부화해`;
   return "첫 장을 읽으면 깨어나";
 }
@@ -101,7 +101,7 @@ export function HomeScreen({ draft, reading }: HomeScreenProps) {
       .then((r) => setCharacters(r.characters))
       .catch(() => {});
     apiGet<BookRecommendResponse>("/api/books/recommend")
-      .then((r) => setPicks(r.books.slice(0, 4)))
+      .then((r) => setPicks(r.books.slice(0, 5)))
       .catch(() => {});
   }, []);
 
@@ -217,7 +217,7 @@ export function HomeScreen({ draft, reading }: HomeScreenProps) {
             <h2 className="text-[23px] text-ink">너한테 딱 맞는 책</h2>
             <span className="text-[14px] font-medium text-muted">지금 인기</span>
           </div>
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-2 gap-3.5 md:grid-cols-4 xl:grid-cols-5">
             {picks.map((b) => (
               <Link key={b.id} href={b.is_public_domain ? libraryHref(b.id) : `/write?book=${b.id}`} className="block">
                 <span className="relative block h-[196px] overflow-hidden rounded-[20px] border-[3px] border-card bg-sunken shadow-[0_8px_20px_rgba(90,66,40,.14)]">
