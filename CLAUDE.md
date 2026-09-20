@@ -1,6 +1,6 @@
 # CLAUDE.md — 책잇 (Bookit)
 
-AI reading-comprehension verification service for Korean elementary/middle school students (초1~중3).
+AI reading-comprehension verification service for Korean lower-elementary students (초1~초3 — narrowed from 초1~중3 on 2026-09-20; the schema still allows 1..9 so existing seed classes/profiles keep working, but the onboarding picker, copy, and UI target 7~9-year-olds. See `docs/mockups/README-kids-redesign.md`).
 Flow: pick book → write review → AI finds logic gaps → AI asks one follow-up question (timed) → AI grades → award points (책갈피).
 
 Contest: 원티드 AI Championship 2026. Submit by 2026-09-20. Deployed link must stay up through 2026-10-05.
