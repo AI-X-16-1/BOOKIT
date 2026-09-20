@@ -51,41 +51,41 @@ export function QuestionPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [left]);
 
-  const mm = String(Math.floor(left / 60)).padStart(2, "0");
-  const ss = String(left % 60).padStart(2, "0");
   const pct = (left / question.seconds) * 100;
 
   return (
-    <div className="-mx-[22px] -mt-[52px] flex min-h-dvh flex-col bg-panel px-[22px] pt-[52px] pb-[26px] md:mx-0 md:mt-0 md:min-h-0 md:flex-1 md:rounded-card md:pt-8">
-      <div className="flex items-baseline justify-between">
-        <span className="text-[19px] font-bold text-on-dark">
-          책잇 AI가 물어봐
-        </span>
-        <span className="text-[17px] font-bold text-yellow tabular-nums">
-          {mm}:{ss}
-        </span>
+    <div className="-mx-[22px] -mt-[44px] flex min-h-dvh flex-col bg-panel px-[22px] pt-[52px] pb-[26px] md:mx-0 md:mt-0 md:min-h-0 md:flex-1 md:rounded-card md:pt-8">
+      {/* 저학년 개편(목업 10 M06): 🦉 한 가지만 물어볼게 → 원형 타이머 → 네가 쓴 문장 → 질문 → 답 → 답했어! */}
+      <div className="flex items-center gap-3">
+        <span aria-hidden className="flex h-[46px] w-[46px] items-center justify-center rounded-full bg-panel-inner text-[24px] animate-[bookit-bob-s_3s_ease-in-out_infinite]">🦉</span>
+        <span className="font-display text-[24px] text-on-dark">한 가지만 물어볼게</span>
       </div>
 
-      {/* 남은 시간 막대 */}
-      <div className="mt-3 h-1 rounded-full bg-panel-line">
+      {/* 원형 타이머 — 표시용. 진실은 서버의 asked_at / answered_at */}
+      <div className="relative mx-auto mt-5 h-[150px] w-[150px] flex-none">
         <div
-          className="h-1 rounded-full bg-coral transition-[width] duration-1000 ease-linear"
-          style={{ width: `${pct}%` }}
+          className="absolute inset-0 rounded-full transition-[background] duration-1000 ease-linear"
+          style={{ background: `conic-gradient(var(--yellow) 0turn ${pct / 100}turn, var(--panel-line) ${pct / 100}turn 1turn)` }}
         />
+        <div className="absolute inset-3 flex flex-col items-center justify-center rounded-full bg-panel">
+          <span className="font-display text-[48px] leading-none text-yellow tabular-nums">{left}</span>
+          <span className="mt-1 text-[14px] font-medium text-on-dark-2">초 남았어</span>
+        </div>
       </div>
 
       {/* 네가 쓴 문장 */}
-      <div className="mt-[22px] rounded-xl bg-panel-inner p-4">
-        <div className="text-xs text-panel-muted">네가 쓴 문장</div>
-        <div className="mt-[7px] text-[15px] text-panel-text">
-          &ldquo;{question.quote}&rdquo;
+      <div className="mt-5 rounded-[22px] border-2 border-panel-line bg-panel-inner px-[18px] py-4">
+        <div className="text-[14px] font-medium text-on-dark-2">네가 쓴 문장이야</div>
+        <div className="mt-[7px] text-[19px] leading-[1.7] text-on-dark">
+          &ldquo;<span className="font-bold text-coral-light">{question.quote}</span>&rdquo;
         </div>
       </div>
 
       {/* 질문 */}
-      <div className="mt-3.5 rounded-xl bg-card p-5 text-[17px] leading-[1.65] text-ink">
+      <div className="mt-5 text-center font-display text-[28px] leading-[1.35] text-on-dark">
         {question.question}
       </div>
+      <div className="mt-1.5 text-center font-display text-[19px] text-yellow">한 문장이면 충분해</div>
 
       {/* 답변 */}
       <textarea
@@ -93,19 +93,21 @@ export function QuestionPanel({
         value={answer}
         onChange={(e) => setAnswer(e.target.value)}
         disabled={submitting}
-        placeholder="떠오르는 대로 적어도 괜찮아."
-        className="mt-3.5 min-h-40 flex-1 resize-none rounded-xl bg-panel-inner p-[18px] text-base leading-[1.75] text-panel-text caret-coral-light outline-none placeholder:text-panel-muted"
+        placeholder="여기에 답을 써줘"
+        className="mt-4 min-h-[110px] flex-1 resize-none rounded-[22px] border-[3px] border-panel-line bg-[#211A15] px-[18px] py-4 text-[18px] leading-[1.7] text-panel-text caret-yellow outline-none placeholder:text-panel-muted"
       />
 
-      <p className="mt-3.5 text-center text-xs text-panel-muted">
-        {attempt > 1
-          ? "아까와 다른 문장으로 새로 물어봤어"
-          : "질문은 제출할 때마다 새로 만들어져요"}
+      <p className="mt-3.5 text-center text-[16px] font-medium text-on-dark-2">
+        {attempt > 1 ? "아까와 다른 걸 물어봤어" : "천천히 생각해도 괜찮아"}
       </p>
 
       <div className="pt-3">
-        <Button onClick={() => handleSubmit(answer)} disabled={submitting}>
-          {submitting ? "확인하고 있어…" : "답변 제출"}
+        <Button
+          onClick={() => handleSubmit(answer)}
+          disabled={submitting}
+          className="bg-yellow text-[#4A3A10] shadow-[var(--shadow-press-y)]"
+        >
+          {submitting ? "확인하고 있어…" : "답했어!"}
         </Button>
       </div>
     </div>

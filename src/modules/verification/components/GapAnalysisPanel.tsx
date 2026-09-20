@@ -68,10 +68,10 @@ export function GapAnalysisPanel({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-3">
-        <div className="h-9 w-9 flex-none rounded-[9px] bg-linear-160 from-green-light to-green" />
+        <span aria-hidden className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-coral-bg-2 text-[26px] animate-[bookit-bob-s_3.2s_ease-in-out_infinite]">🐦</span>
         <div className="min-w-0 flex-1">
-          <div className="text-[17px] font-bold text-ink">빈틈 분석 결과</div>
-          <div className="mt-0.5 truncate text-[13px] text-muted">
+          <h1 className="text-[24px] leading-tight text-ink">여기가 궁금해</h1>
+          <div className="mt-0.5 truncate text-[14px] font-medium text-muted">
             {bookTitle} · 독후감
           </div>
         </div>
@@ -83,11 +83,11 @@ export function GapAnalysisPanel({
       </div>
 
       {noGaps && (
-        <p className="mt-3 text-sm font-bold text-green-text">{NO_GAPS_NOTICE}</p>
+        <p className="mt-3 font-display text-[19px] text-green-text">{NO_GAPS_NOTICE}</p>
       )}
 
       {/* 본문 + 하이라이트 */}
-      <div className="mt-4 rounded-[14px] border border-border-soft bg-card p-[18px] text-[15px] leading-[2] text-ink-soft">
+      <div className="mt-4 rounded-[22px] border-[3px] border-border bg-card p-[18px] text-[18px] leading-[2] text-ink-soft">
         {parts.map((p, i) =>
           p.tone ? (
             <span key={i} className={GAP_HIGHLIGHT[p.tone]}>
@@ -106,13 +106,13 @@ export function GapAnalysisPanel({
           const text = GAP_CARD_TEXT[tone];
           return (
             <Card key={g.id} accent={tone}>
-              <div className={`text-[13px] font-bold ${text.title}`}>
+              <div className={`font-display text-[17px] ${text.title}`}>
                 {/* core_claim 은 빈틈이 아니라 번호를 붙이지 않는다 */}
                 {g.type === "core_claim"
                   ? GAP_LABEL[g.type]
                   : `${String(g.ord).padStart(2, "0")} · ${GAP_LABEL[g.type]}`}
               </div>
-              <p className={`mt-1.5 text-sm leading-relaxed ${text.body}`}>
+              <p className={`mt-1.5 text-[16px] leading-relaxed ${text.body}`}>
                 &ldquo;{g.quote}&rdquo;
                 <br />
                 {g.reason}
@@ -129,7 +129,7 @@ export function GapAnalysisPanel({
           <p className="mb-3 text-center text-sm text-coral-text">{error}</p>
         )}
         <Button onClick={onNext} disabled={loading}>
-          {loading ? "질문을 만들고 있어…" : "질문 받고 답하기"}
+          {loading ? "질문을 만들고 있어…" : "질문 받을래! →"}
         </Button>
       </div>
     </div>

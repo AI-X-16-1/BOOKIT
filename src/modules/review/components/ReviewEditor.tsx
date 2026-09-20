@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/shared/ui";
+import { Button, cn } from "@/shared/ui";
 import { MAX_REVIEW_CHARS, MIN_SUBMIT_CHARS } from "../schema";
 
 /**
@@ -16,10 +16,11 @@ const AUTOSAVE_DELAY_MS = 2000;
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 const SAVE_LABEL: Record<SaveState, string> = {
-  idle: "쓰는 대로 자동 저장돼",
-  saving: "저장하고 있어…",
-  saved: "초고 자동 저장됨",
-  error: "저장이 안 됐어. 인터넷 연결을 확인해줘",
+  // 저학년 개편: 머리 칩에 들어가는 짧은 말
+  idle: "자동 저장",
+  saving: "저장 중…",
+  saved: "✓ 저장됨",
+  error: "저장 안 됨",
 };
 
 export interface ReviewEditorProps {
@@ -73,66 +74,84 @@ export function ReviewEditor({
     return () => clearTimeout(t);
   }, [value, locked, submitting, onAutosave]);
 
+  const lines = value.trim() ? value.trim().split(/\n+/).length : 0;
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* 헤더 — 표지가 있으면(알라딘 URL 또는 서재 생성 표지) 그리고, 없으면 그라데이션 자리표시자 */}
+      {/* 저학년 개편(목업 10 M05): 표지 + 제목 + 저장 칩 → "내 이야기" + 줄 수 → 공책 에디터 → 도우미 → 다 썼어요! */}
       <div className="flex items-center gap-3">
         {bookCoverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- 외부 알라딘 URL 이 섞여 next/image 도메인 설정을 못 한다
-          <img
-            src={bookCoverUrl}
-            alt=""
-            className="h-12 w-9 flex-none rounded-[9px] object-cover"
-          />
+          <img src={bookCoverUrl} alt="" className="h-14 w-[42px] flex-none rounded-[12px] object-cover" />
         ) : (
-          <div className="h-12 w-9 flex-none rounded-[9px] bg-linear-160 from-green-light to-green" />
+          <div className="h-14 w-[42px] flex-none rounded-[12px] bg-linear-160 from-green-light to-green" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[17px] font-bold text-ink">
-            {bookTitle} · 독후감
-          </div>
-          <div className="mt-0.5 text-[13px] text-muted">{bookAuthor}</div>
+          <div className="truncate font-display text-[21px] text-ink">{bookTitle}</div>
+          <div className="text-[14px] font-medium text-muted">{bookAuthor}</div>
         </div>
-        <div className="text-[13px] text-faint">{value.length}자</div>
+        <span
+          className={cn(
+            "flex-none rounded-full px-3 py-1.5 font-display text-[15px]",
+            locked
+              ? "bg-blue-bg text-blue-text"
+              : save === "saved"
+                ? "bg-green-bg text-green-ink"
+                : save === "error"
+                  ? "bg-coral-bg text-coral-ink"
+                  : "bg-sunken text-muted",
+          )}
+        >
+          {locked ? "제출했어" : SAVE_LABEL[save]}
+        </span>
       </div>
 
-      {/* 글쓰기 도우미 (AI #1) */}
-      {helperQuestion && (
-        <div className="mt-[18px] rounded-xl border-l-[3px] border-l-yellow bg-yellow-bg p-4">
-          <div className="text-sm font-bold text-yellow-text">✎ 글쓰기 도우미</div>
-          <p className="mt-1.5 text-sm leading-relaxed text-yellow-text-2">
-            {helperQuestion}
-          </p>
-        </div>
-      )}
+      <div className="mt-4 flex items-center gap-2.5">
+        <span className="font-display text-[22px] text-ink">내 이야기</span>
+        <span className="rounded-full bg-yellow-bg px-3 py-1 font-display text-[16px] text-yellow-text">
+          {lines === 0 ? "시작해볼까?" : value.trim().length < MIN_SUBMIT_CHARS ? `${lines}줄 · 조금만 더!` : `${lines}줄 · 좋아!`}
+        </span>
+      </div>
 
-      {/* 에디터 */}
+      {/* 공책 에디터 — 줄 간격 40px 에 맞춘 괘선 */}
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         readOnly={locked || submitting}
         maxLength={MAX_REVIEW_CHARS}
         placeholder="읽으면서 들었던 생각을 편하게 적어봐."
-        className="mt-4 min-h-64 flex-1 resize-none rounded-[14px] border border-border-soft bg-card p-5 text-[15px] leading-[2] text-ink-soft outline-none placeholder:text-faint focus:border-coral"
+        className="mt-3 min-h-64 flex-1 resize-none rounded-[22px] border-[3px] border-border px-[18px] py-3 text-[19px] leading-[40px] text-ink-soft outline-none placeholder:text-faint focus:border-coral"
+        style={{
+          backgroundColor: "var(--bg-cream)",
+          backgroundImage: "repeating-linear-gradient(var(--bg-cream) 0 39px, var(--bg-rule) 39px 40px)",
+          backgroundAttachment: "local",
+        }}
       />
+
+      {/* 글쓰기 도우미 (AI #1) — 막히면 눌러봐 */}
+      {helperQuestion && !locked && (
+        <div className="mt-4 rounded-[22px] bg-sunken px-4 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden className="flex h-11 w-11 items-center justify-center rounded-full bg-coral-bg-2 text-[23px] animate-[bookit-bob-s_3.2s_ease-in-out_infinite]">🐦</span>
+            <span className="font-display text-[20px] text-ink">막히면 이걸 생각해봐</span>
+          </div>
+          <p className="mt-2.5 rounded-[18px] border-[3px] border-coral bg-coral-bg px-3.5 py-2.5 text-[16px] font-medium leading-relaxed text-ink">
+            {helperQuestion}
+          </p>
+        </div>
+      )}
 
       <div className="pt-4">
         {notice && (
-          <p className="mb-3 rounded-xl bg-yellow-bg p-3.5 text-sm leading-relaxed text-yellow-text-2">
+          <p className="mb-3 rounded-[18px] bg-yellow-bg p-3.5 text-[16px] leading-relaxed text-yellow-text-2">
             {notice}
           </p>
         )}
         {!locked && (
-          <Button
-            onClick={onSubmit}
-            disabled={submitting || value.trim().length < MIN_SUBMIT_CHARS}
-          >
-            {submitting ? "빈틈을 찾고 있어…" : "이해도 확인 받기"}
+          <Button onClick={onSubmit} disabled={submitting || value.trim().length < MIN_SUBMIT_CHARS}>
+            {submitting ? "읽어보는 중…" : "다 썼어요! →"}
           </Button>
         )}
-        <p className="mt-3 text-center text-[13px] text-faint">
-          {locked ? "제출한 독후감이야" : SAVE_LABEL[save]}
-        </p>
       </div>
     </div>
   );
