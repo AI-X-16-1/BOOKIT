@@ -12,7 +12,7 @@ profile_role      : 'student' | 'teacher'
 review_status     : 'draft' | 'analyzing' | 'questioning' | 'passed' | 'failed'
 gap_type          : 'unsupported_claim' | 'vague_statement' | 'feeling_only' | 'core_claim'
                     -- core_claim: 빈틈 0개일 때 AI 가 고른 핵심 주장 (0013, issue #14). 빈틈이 아니다
-grade_level       : 1..9   -- 1=초1 ... 6=초6, 7=중1, 8=중2, 9=중3
+grade_level       : 1..9   -- 1=초1 ... 6=초6, 7=중1, 8=중2, 9=중3. 2026-09-20 타겟을 초1~3 으로 좁혔다 — 온보딩은 1·2·3 만 고르게 하고(#192) check 제약은 그대로 둔다 (시드 반 5학년·기존 프로필·서재 target_grade 가 그 위에 있다)
 point_reason      : 'verification_pass' | 'ebook_pass' | 'audiobook_pass' | 'admin_adjust' | 'item_purchase'
                     -- item_purchase: 아이템 샵 (0016). delta = -price, ref_id = student_items.id
 item_kind         : 'hat' | 'bg' | 'frame'
@@ -205,7 +205,7 @@ Never delete a failed attempt. Retry inserts a new row with `attempt_no + 1` and
 
 | 이름 | 무엇 | 상태 |
 |---|---|---|
-| `profiles.grade_level` | 1~9. 학생이 온보딩에서 **고른다.** AI 난이도·서재 필터가 쓴다 | 구현됨 |
+| `profiles.grade_level` | 1~9 (온보딩 선택지는 초1~3, 2026-09-20 #192). 학생이 온보딩에서 **고른다.** AI 난이도·서재 필터가 쓴다 | 구현됨 |
 | `profiles.explorer_rank` | `새싹·탐험가·대장`. 자기 선언, 검증 없음, 화면 톤 전용 (§2b) | 구현됨 |
 | 레벨·뱃지 | 누적 책갈피 기반 등급 (`plan-ko.md` §4-10) | 스키마 없음 · 축소 순서 3번 |
 | **레벨테스트** | 지문 + 문항으로 읽기 수준을 가늠해 **권장 학년**을 낸다 (§5c) | 구현됨 · 표 없음 |
