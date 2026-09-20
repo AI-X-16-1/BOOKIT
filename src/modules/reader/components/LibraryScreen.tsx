@@ -948,16 +948,16 @@ export function LibraryScreen({
               // ?book= 으로 들어왔다면 주소를 목록으로 돌린다 — 새로고침에 그 책이 다시 열리지 않게
               window.history.replaceState(null, "", "/library");
             }}
-            className="flex h-12 w-12 flex-none items-center justify-center text-muted"
+            className="flex h-11 w-11 flex-none items-center justify-center rounded-[14px] bg-sunken text-[22px] text-ink"
             aria-label="서재로 돌아가기"
           >
             ←
           </button>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[15px] font-bold text-ink">
+            <div className="truncate font-display text-[21px] text-ink">
               {book.title}
             </div>
-            <div className="text-xs text-muted">{subtitleOf(book)}</div>
+            <div className="text-[13px] font-medium text-muted">{subtitleOf(book)}</div>
           </div>
           {/* 768px 미만에서는 이 칩을 눌러 표지 퍼즐을 연다 (목업 7 #4).
               768px 이상은 오른쪽 패널에 퍼즐이 늘 보이므로 칩은 표시만 한다.
@@ -973,7 +973,7 @@ export function LibraryScreen({
                     setPuzzleOpen(true);
                   }}
                   aria-label={`표지 조각 ${readChapters[book.id]} / ${book.chapterCount} 보기`}
-                  className="flex min-h-12 flex-none items-center gap-1.5 rounded-full bg-yellow-bg px-3.5 text-xs font-bold text-yellow-text md:hidden"
+                  className="flex min-h-12 flex-none items-center gap-1.5 rounded-full bg-yellow-bg px-3.5 font-display text-[15px] text-yellow-text md:hidden"
                 >
                   {chapterNo} / {book.chapterCount}장
                   <span aria-hidden>🧩</span>
@@ -998,7 +998,7 @@ export function LibraryScreen({
             className={
               readAloud.state === "listening"
                 ? "flex h-12 w-12 flex-none items-center justify-center rounded-full bg-coral text-white"
-                : "flex h-12 w-12 flex-none items-center justify-center rounded-full border border-border-strong bg-card text-lg"
+                : "flex h-12 w-12 flex-none items-center justify-center rounded-[16px] bg-yellow text-[22px] shadow-[0_5px_0_#E0B93F]"
             }
           >
             {readAloud.state === "listening" ? (
@@ -1010,9 +1010,9 @@ export function LibraryScreen({
           {/* 서재 책은 DB 행이 있어 바로 독후감으로 이어진다 — /write?book= 이 초고를 만든다 */}
           <Link
             href={`/write?book=${book.id}`}
-            className="flex h-12 flex-none items-center rounded-btn bg-ink px-4 text-[15px] font-bold text-on-dark"
+            className="flex h-12 flex-none items-center rounded-[16px] border-[3px] border-border bg-card px-3.5 font-display text-[17px] text-ink-mid"
           >
-            독후감 쓰기
+            ✏️ 쓰기
           </Link>
         </div>
 
@@ -1303,23 +1303,22 @@ export function LibraryScreen({
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-[22px] font-bold text-ink">책잇 서재</h1>
-        <p className="mt-1.5 text-[13px] text-muted">
-          저작권이 풀린 책은 여기서 바로 읽을 수 있어
-        </p>
+      <div className="flex items-baseline gap-2.5">
+        {/* 저학년 개편(목업 10 M03): 표지 2열(태블릿 5열), 초록 "바로 읽기" 라벨 */}
+        <h1 className="text-[28px] text-ink">책잇 서재</h1>
+        <span className="text-[14px] font-medium text-muted">초록은 바로 읽을 수 있어</span>
       </div>
 
       {books.length === 0 ? (
         <Card>
-          <p className="text-[15px] text-muted">
+          <p className="text-[17px] text-muted">
             아직 서재에 꽂힌 책이 없어. 곧 채워 둘게!
           </p>
         </Card>
       ) : (
         <div>
           {/* 학년대 칩. 누르면 첫 쪽으로 돌아간다 — 3쪽을 보다 필터를 바꾸면 빈 쪽이 뜬다 */}
-          <div className="mb-3 flex flex-wrap gap-2">
+          <div className="mb-3.5 flex flex-wrap gap-2">
             {BANDS.map((b) => {
               const count = books.filter(b.has).length;
               const on = band === b.key;
@@ -1332,8 +1331,8 @@ export function LibraryScreen({
                     setBand(b.key);
                     setShelfPage(1);
                   }}
-                  className={`flex min-h-12 items-center rounded-full px-4 text-[14px] font-bold ${
-                    on ? "bg-ink text-on-dark" : "bg-card text-muted"
+                  className={`flex min-h-12 items-center rounded-full px-4 font-display text-[18px] ${
+                    on ? "border-[3px] border-coral bg-coral-bg-2 text-coral-ink" : "border-[3px] border-border bg-card text-ink-mid"
                   }`}
                 >
                   {b.label} {count}
@@ -1342,55 +1341,43 @@ export function LibraryScreen({
             })}
           </div>
 
-          {/* 폰 1열 · 태블릿 2열 · 넓은 PC 3열. 태블릿은 왼쪽 레일이 자리를 차지해 3열이면 제목이 잘린다 */}
-          <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
-            {pageBooks.map((book) => (
-              <button
-                key={book.id}
-                type="button"
-                onClick={() => openChapter(book, 1)}
-                className="text-left"
-              >
-                <Card className="flex h-full items-center gap-3">
-                  {book.coverUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- 정적 표지 파일
-                    <img
-                      src={book.coverUrl}
-                      alt=""
-                      width={44}
-                      height={56}
-                      className="h-14 w-11 flex-none rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="h-14 w-11 flex-none rounded-lg bg-linear-160 from-yellow to-yellow-text-2" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[15px] font-bold text-ink">
-                      {book.title}
-                    </div>
-                    <div className="mt-1 text-[13px] text-muted">
-                      {subtitleOf(book)}
-                    </div>
-                  </div>
-                  {gradeBucket(book, myGrade) === 2 ? (
-                    <Chip tone="yellow">조금 어려워</Chip>
-                  ) : (
-                    <Chip tone="green">무료</Chip>
-                  )}
-                </Card>
-              </button>
-            ))}
-            {/* 마지막 쪽처럼 책이 pageSize 보다 적으면 빈 칸을 같은 높이로 채운다.
-                안 그러면 쪽을 넘길 때 번호 버튼이 위로 튀어 올라온다 (CLS). 보이지 않고 눌리지도 않는다 */}
+          {/* 폰 2열 · 태블릿 3열 · 넓은 PC 5열 — 표지가 주인공이다 */}
+          <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3 xl:grid-cols-5">
+            {pageBooks.map((book) => {
+              const hard = gradeBucket(book, myGrade) === 2;
+              return (
+                <button
+                  key={book.id}
+                  type="button"
+                  onClick={() => openChapter(book, 1)}
+                  className="text-left"
+                >
+                  <span className="relative block h-[196px] overflow-hidden rounded-[20px] border-[3px] border-card bg-sunken shadow-[0_8px_20px_rgba(90,66,40,.14)]">
+                    {book.coverUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- 정적 표지 파일
+                      <img src={book.coverUrl} alt="" className="block h-full w-full object-cover" />
+                    ) : (
+                      <span className="block h-full w-full bg-linear-160 from-yellow to-yellow-text-2" />
+                    )}
+                    <span
+                      className={`absolute top-2 left-2 rounded-full px-2.5 py-1 font-display text-[14px] ${
+                        hard ? "bg-yellow text-yellow-text" : "bg-green text-white"
+                      }`}
+                    >
+                      {hard ? "조금 어려워" : "바로 읽기"}
+                    </span>
+                  </span>
+                  <span className="mt-1.5 block truncate font-display text-[18px] text-ink">{book.title}</span>
+                  <span className="block truncate text-[14px] font-medium text-muted">{subtitleOf(book)}</span>
+                </button>
+              );
+            })}
+            {/* 마지막 쪽처럼 책이 pageSize 보다 적으면 빈 칸을 같은 높이로 채운다 (CLS) */}
             {Array.from({ length: Math.max(0, pageSize - pageBooks.length) }).map((_, i) => (
               <div key={`pad-${i}`} aria-hidden className="invisible">
-                <Card className="flex items-center gap-3">
-                  <div className="h-14 w-11 flex-none" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-bold">&nbsp;</div>
-                    <div className="mt-1 text-[13px]">&nbsp;</div>
-                  </div>
-                </Card>
+                <span className="block h-[196px]" />
+                <span className="mt-1.5 block text-[18px]">&nbsp;</span>
+                <span className="block text-[14px]">&nbsp;</span>
               </div>
             ))}
           </div>
