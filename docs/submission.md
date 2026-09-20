@@ -173,7 +173,7 @@ AI는 독후감을 "채점"하지 않습니다. **읽고, 되묻고, 답변을 �
 | 항목 | 내용 |
 |---|---|
 | 모델 | **Anthropic Claude `claude-sonnet-5`** — 처음엔 Gemini 로 만들었지만 Google 생성형 AI 약관이 18세 미만 대상 서비스를 금지해 9/16 에 전환. Anthropic 은 API 입력을 학습에 쓰지 않고 30일 내 삭제 |
-| 대체 모델 | `claude-opus-5` (503·429 가 이어지면 자동 전환 — 폴백 때 채점이 헐거워지지 않게 상위 모델로) |
+| 대체 모델 | `claude-haiku-4-5` (503·429 가 이어지면 자동 전환 — 비상용이라 더 싼 모델) |
 | 표지 일러스트 | OpenAI `gpt-image-1` — 저작권 만료 서재 책 56권의 그림책풍 표지를 **제출 전 한 번** 생성해 정적 파일로. 런타임 호출 없음 |
 | 음성 인식 | 브라우저 Web Speech API — 서재 "소리 내어 읽기". 서버는 음성을 받지도 저장하지도 않음 |
 | 호출 | 검증 3종(빈틈 분석 · 질문 생성 · 채점) + 글쓰기 도우미 + 장 끝 체크포인트 + 레벨테스트 + 읽는 도중 낱말 퀴즈, 배치로 장르 태그. 전부 서버 측 Route Handler에서만. 클라이언트에 API 키 노출 없음 |
@@ -192,7 +192,7 @@ AI는 독후감을 "채점"하지 않습니다. **읽고, 되묻고, 답변을 �
 | 데이터베이스 | Supabase PostgreSQL — 모든 테이블 RLS 적용 |
 | 인증 | Supabase Auth, Google OAuth |
 | 서버리스 | Vercel Route Handlers (Edge Functions 미사용) |
-| LLM | Anthropic Claude `claude-sonnet-5` (과부하 시 `claude-opus-5` 자동 전환). Google 생성형 AI 약관이 18세 미만 대상 서비스를 금지해 9/16 에 Gemini 에서 전환 |
+| LLM | Anthropic Claude `claude-sonnet-5` (과부하 시 `claude-haiku-4-5` 자동 전환). Google 생성형 AI 약관이 18세 미만 대상 서비스를 금지해 9/16 에 Gemini 에서 전환 |
 | 배포 | Vercel (Pro) |
 | 플랫폼 | 반응형 웹 + PWA (홈 화면 추가 시 앱처럼 실행). 430px 모바일 기준, 768px 이상 사이드 레일, 교사 대시보드는 데스크톱 전용 |
 | 폰트·UI | 본문 Noto Sans KR 18~20px, 제목·버튼 Jua. 저학년 개편(9/20): 카드 24px·3px 선, 버튼 70px 이상, 이모지 탭바, 캐릭터·진행바로 상태를 보여줌 |
