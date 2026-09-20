@@ -26,6 +26,8 @@ export function TeacherDashboard({ actions }: { actions?: ReactNode }) {
   const [students, setStudents] = useState<TeacherStudentsResponse | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+  /** 반 순위 범위 — 우리 학교(같은 school_name 의 반만) / 전국(모든 반). 기본은 우리 학교 */
+  const [scope, setScope] = useState<"school" | "all">("school");
 
   useEffect(() => {
     Promise.all([
@@ -47,9 +49,18 @@ export function TeacherDashboard({ actions }: { actions?: ReactNode }) {
       });
   }, []);
 
-  const top = rank?.rows[0]?.verified_count ?? 1;
   const myClassId = cls?.class.id;
-  const mine = rank?.rows.find((r) => r.class_id === myClassId);
+  const school = cls?.class.school_name ?? "";
+  /*
+   * v_class_ranking 은 학교 컬럼을 따로 주지 않고 label 이 "학교 학년 반" 이다 (0003).
+   * 우리 학교만 보려면 label 앞머리로 거른다 — 학교가 붙기 전까지는 전국과 같다.
+   * 걸러낸 뒤 순위를 다시 매긴다 (전국 3위가 우리 학교 1위일 수 있다).
+   */
+  const rows = (rank?.rows ?? [])
+    .filter((r) => scope === "all" || !school || r.label.startsWith(`${school} `))
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+  const top = rows[0]?.verified_count ?? 1;
+  const mine = rows.find((r) => r.class_id === myClassId);
   // 이번 주 기여는 따로 집계하지 않는다. 이미 받아 온 진도에서 상위 3명만 뽑는다
   const contributors = (students?.rows ?? []).slice(0, 3);
 
@@ -76,14 +87,32 @@ export function TeacherDashboard({ actions }: { actions?: ReactNode }) {
         )}
         <div className="flex items-end justify-between gap-5">
           <div>
-            <h1 className="text-[22px] font-bold text-ink">한빛초 반 대항전</h1>
+            <h1 className="text-[22px] font-bold text-ink">
+              {scope === "school" ? `${school || "우리 학교"} 반 대항전` : "전국 반 대항전"}
+            </h1>
             <p className="mt-1.5 text-[13px] text-muted">
               AI 검증을 통과한 독후감만 집계돼요 · 9월 1주차
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Chip tone="dark">우리 학교</Chip>
-            <Chip tone="neutral">전국</Chip>
+            {(
+              [
+                ["school", "우리 학교"],
+                ["all", "전국"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={scope === value}
+                onClick={() => setScope(value)}
+                className={`min-h-11 rounded-full px-4 text-[14px] font-bold ${
+                  scope === value ? "bg-ink text-on-dark" : "border-2 border-border bg-card text-muted"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
             {cls && (
               <Chip tone="yellow">참여 코드 {cls.join_code}</Chip>
             )}
@@ -118,7 +147,7 @@ export function TeacherDashboard({ actions }: { actions?: ReactNode }) {
           <Card className="p-[22px]">
             <div className="text-[13px] text-muted">반 순위</div>
             <div className="mt-2">
-              {rank?.rows.map((row) => {
+              {rows.map((row) => {
                 const isMine = row.class_id === myClassId;
                 return (
                   <div
